@@ -595,12 +595,27 @@ function missingAttachment(
 ): string | null {
   const attached = ctx.attachedImages ?? [];
   if (attached.length === 0) return null;
-  if (attached.some((url) => sources.includes(url))) return null;
+  // Compare on resolved URLs. The message carries an attachment however the
+  // composer wrote it — a site-relative `/imgs/examples/x.webp` for the
+  // bundled samples — while `sources` has already been made absolute, so a
+  // raw string match reads a used attachment as an ignored one.
+  const used = new Set(sources.map(resolveAttachmentForCompare));
+  if (attached.some((url) => used.has(resolveAttachmentForCompare(url))))
+    return null;
   return JSON.stringify({
     status: 'error',
     message: `The ${attached.length} image(s) attached to this message were not used.`,
     guidance: `Attached but left out: ${attached.join(', ')}. If the result should show what's in them — a new person, a garment, a logo, a background — call edit_image again with every source in \`images\` (the attachment plus whichever earlier image the request builds on) and describe them as "image 1", "image 2" in the prompt. If the attachment genuinely has nothing to do with this edit, don't call the tool again — say so in your reply and ask the user what they meant.`,
   });
+}
+
+/** Best-effort absolute form, for comparing two references to one image. */
+function resolveAttachmentForCompare(url: string): string {
+  try {
+    return resolveReferenceImage(url);
+  } catch {
+    return url;
+  }
 }
 
 export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
