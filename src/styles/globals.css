@@ -143,6 +143,55 @@
     @apply bg-background text-foreground;
   }
 
+  /* The default scrollbar is 15px of opaque grey on macOS with "always show"
+     on — next to a chat transcript it reads as a divider between panes rather
+     than a control. Slim it down and let the thumb sit on a transparent
+     track, so it stays a hint until you reach for it. */
+  /* Firefox only. Chromium ignores every ::-webkit-scrollbar rule below the
+     moment `scrollbar-width` is set anywhere, and its `thin` bar can't be
+     rounded or inset — so the standard properties are scoped to the one
+     engine that has nothing else. */
+  @supports (-moz-appearance: none) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(
+          in oklch,
+          var(--muted-foreground) 30%,
+          transparent
+        )
+        transparent;
+    }
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(
+      in oklch,
+      var(--muted-foreground) 30%,
+      transparent
+    );
+    border-radius: 9999px;
+    /* Inset via a transparent border so the thumb is ~4px of visible colour
+       inside an 8px lane — a wider hit area than it looks. */
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(
+      in oklch,
+      var(--muted-foreground) 55%,
+      transparent
+    );
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   @keyframes drift-a {
     0%,
     100% {

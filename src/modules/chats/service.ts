@@ -164,6 +164,8 @@ export interface ChatListItem {
   id: string;
   title: string;
   preview: string;
+  /** Newest image the chat produced, for the conversation-list thumbnail. */
+  cover: string;
   updatedAt: Date;
 }
 
@@ -224,30 +226,36 @@ export async function listChats(
 
   if (chats.length === 0) return { items: [], total };
 
-  const items: ChatListItem[] = [];
-  for (const c of chats) {
-    const [latest] = await db()
-      .select()
-      .from(chatMessage)
-      .where(
-        and(
-          eq(chatMessage.chatId, c.id),
-          eq(chatMessage.status, CHAT_STATUS_ACTIVE)
-        )
-      )
-      .orderBy(desc(chatMessage.createdAt))
-      .limit(1);
+  const items = await Promise.all(
+    chats.map(async (c: (typeof chats)[number]) => {
+      const [latest, cover] = await Promise.all([
+        db()
+          .select()
+          .from(chatMessage)
+          .where(
+            and(
+              eq(chatMessage.chatId, c.id),
+              eq(chatMessage.status, CHAT_STATUS_ACTIVE)
+            )
+          )
+          .orderBy(desc(chatMessage.createdAt))
+          .limit(1)
+          .then((rows: ChatMessage[]) => rows[0]),
+        getChatCover(c.id),
+      ]);
 
-    const previewSource = latest
-      ? withoutAttachedImages(firstText(decodeParts(latest.parts)))
-      : c.title;
-    items.push({
-      id: c.id,
-      title: c.title || 'New Chat',
-      preview: snippet(previewSource, 60),
-      updatedAt: c.updatedAt,
-    });
-  }
+      const previewSource = latest
+        ? withoutAttachedImages(firstText(decodeParts(latest.parts)))
+        : c.title;
+      return {
+        id: c.id,
+        title: c.title || 'New Chat',
+        preview: snippet(previewSource, 60),
+        cover,
+        updatedAt: c.updatedAt,
+      };
+    })
+  );
   return { items, total };
 }
 
@@ -319,6 +327,35 @@ function extractGeneratedImagesFromResult(
   }
 
   return images;
+}
+
+/**
+ * The newest generated image in a chat. Tool result payloads are JSON rather
+ * than a dedicated image table, so inspect newest tool messages first and
+ * stop as soon as one carries a usable image.
+ */
+async function getChatCover(chatId: string): Promise<string> {
+  const messages = await db()
+    .select({ parts: chatMessage.parts })
+    .from(chatMessage)
+    .where(
+      and(
+        eq(chatMessage.chatId, chatId),
+        eq(chatMessage.status, CHAT_STATUS_ACTIVE),
+        like(chatMessage.parts, '%"tool_call"%')
+      )
+    )
+    .orderBy(desc(chatMessage.createdAt));
+
+  for (const message of messages) {
+    for (const part of decodeParts(message.parts)) {
+      if (part.type !== 'tool_call') continue;
+      const [src] = extractGeneratedImagesFromResult(part.result);
+      if (src) return src;
+    }
+  }
+
+  return '';
 }
 
 export interface GeneratedImagePage {
@@ -515,27 +552,8 @@ export async function listAllChats(
   const covers = new Map<string, string>();
   await Promise.all(
     rows.map(async (row: (typeof rows)[number]) => {
-      const [message] = await db()
-        .select({ parts: chatMessage.parts })
-        .from(chatMessage)
-        .where(
-          and(
-            eq(chatMessage.chatId, row.id),
-            eq(chatMessage.status, CHAT_STATUS_ACTIVE),
-            like(chatMessage.parts, '%"tool_call"%')
-          )
-        )
-        .orderBy(desc(chatMessage.createdAt))
-        .limit(1);
-      if (!message) return;
-      for (const part of decodeParts(message.parts)) {
-        if (part.type !== 'tool_call') continue;
-        const [src] = extractGeneratedImagesFromResult(part.result);
-        if (src) {
-          covers.set(row.id, src);
-          return;
-        }
-      }
+      const cover = await getChatCover(row.id);
+      if (cover) covers.set(row.id, cover);
     })
   );
 

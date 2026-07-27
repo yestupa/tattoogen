@@ -17,6 +17,7 @@ import { apiGet } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
 import { useAgentHeader } from '@/components/agent/agent-header-context';
 import { useChatActions } from '@/components/agent/chat-actions';
+import { ChatCover } from '@/components/agent/chat-cover';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,6 +34,7 @@ interface ChatRow {
   id: string;
   title: string;
   preview: string;
+  cover: string;
   updatedAt: string;
 }
 
@@ -95,21 +97,30 @@ function ChatsPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/chat/${chat.id}`)}
-                  className="min-w-0 flex-1 text-left"
+                  className="group flex min-w-0 flex-1 items-center gap-3 text-left"
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium">
-                      {chat.title}
+                  {chat.cover && (
+                    <ChatCover
+                      src={chat.cover}
+                      alt={chat.title}
+                      className="size-14 rounded-md transition-transform group-hover:scale-[1.02]"
+                    />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium">
+                        {chat.title}
+                      </span>
+                      {runningSessions.includes(chat.id) && (
+                        <Loader2
+                          className="text-primary size-3.5 shrink-0 animate-spin"
+                          aria-label={m['agent.chats.working']()}
+                        />
+                      )}
                     </span>
-                    {runningSessions.includes(chat.id) && (
-                      <Loader2
-                        className="text-primary size-3.5 shrink-0 animate-spin"
-                        aria-label={m['agent.chats.working']()}
-                      />
-                    )}
-                  </span>
-                  <span className="text-muted-foreground mt-0.5 block truncate text-xs">
-                    {chat.preview}
+                    <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+                      {chat.preview}
+                    </span>
                   </span>
                 </button>
                 <time

@@ -3,6 +3,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 import type { PendingAttachment } from '@/lib/agent';
 import {
   buildAgentMessage,
+  markPendingToolsCancelled,
   newId,
   parseToolError,
   reduceContent,
@@ -330,6 +331,9 @@ export async function startRun({
       );
     }
   } finally {
+    // A stopped turn leaves its image call mid-flight; without this the row
+    // spins forever even though nothing is running any more.
+    updateMessages(sessionId, markPendingToolsCancelled);
     update(sessionId, { streaming: false, controller: null });
     emitRunning();
     onSettled?.();

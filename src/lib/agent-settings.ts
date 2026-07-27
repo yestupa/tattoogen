@@ -122,6 +122,16 @@ export const AGENT_RESOLUTIONS = [
 export type AgentModelOptionValue =
   (typeof AGENT_MODEL_OPTIONS)[number]['value'];
 
+/**
+ * The only model names anything server-side will accept. The composer's
+ * picker is the contract: a model the user can't select is a model we have no
+ * price for and no provider mapping for, so the agent may not reach past this
+ * list either.
+ */
+export const AGENT_MODEL_OPTION_VALUES = AGENT_MODEL_OPTIONS.map(
+  (item) => item.value
+) as readonly AgentModelOptionValue[];
+
 export interface AgentComposerSettings {
   modelOption: AgentModelOptionValue;
   aspectRatio: string;

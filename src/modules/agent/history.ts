@@ -73,6 +73,62 @@ export function mapRowsToHistory(
   return history;
 }
 
+/**
+ * The image URLs this conversation has already produced or been given, oldest
+ * first.
+ *
+ * They're all in the replayed history already — as `files` in a tool result,
+ * or as an "Attached images" block on a user turn — but buried in JSON and
+ * markdown the model has to dig through. A request like "marry her" needs the
+ * groom from three turns ago *and* the photo just attached, and the model was
+ * dropping the older one. Listing the URLs plainly on the turn makes both
+ * candidates visible at the point of the tool call.
+ */
+export function collectConversationImages(
+  history: NormalizedMessageParam[],
+  limit = 8
+): string[] {
+  const urls: string[] = [];
+
+  const push = (url: string) => {
+    // Keep the newest position of a repeated image: an URL re-used as a
+    // source is more relevant than its first appearance.
+    const at = urls.indexOf(url);
+    if (at !== -1) urls.splice(at, 1);
+    urls.push(url);
+  };
+
+  for (const message of history) {
+    const blocks =
+      typeof message.content === 'string'
+        ? [{ type: 'text', text: message.content }]
+        : message.content;
+    for (const block of blocks as any[]) {
+      if (block?.type === 'tool_result' && typeof block.content === 'string') {
+        try {
+          const parsed = JSON.parse(block.content);
+          if (Array.isArray(parsed?.files)) {
+            for (const file of parsed.files) {
+              if (typeof file === 'string' && /^https?:\/\//i.test(file))
+                push(file);
+            }
+          }
+        } catch {
+          // Not a tool result we can read — nothing to collect.
+        }
+      } else if (block?.type === 'text' && typeof block.text === 'string') {
+        for (const match of block.text.matchAll(
+          /^- image \d+: (https?:\/\/\S+)$/gm
+        )) {
+          push(match[1]);
+        }
+      }
+    }
+  }
+
+  return urls.slice(-limit);
+}
+
 function textOf(parts: StoredPart[]): string {
   return parts
     .filter(

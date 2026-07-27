@@ -19,6 +19,7 @@ import {
   hasRun,
   seedRun,
   startRun,
+  stopRun,
   useAgentRun,
 } from '@/lib/agent-runs';
 import {
@@ -31,7 +32,10 @@ import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { useComposerSettings } from '@/hooks/use-composer-settings';
 import { useAgentHeader } from '@/components/agent/agent-header-context';
-import { ChatComposer } from '@/components/agent/chat-composer';
+import {
+  ChatComposer,
+  type LibraryAttachment,
+} from '@/components/agent/chat-composer';
 import { ChatShareMenu } from '@/components/agent/chat-share-menu';
 import {
   ChatTranscript,
@@ -40,7 +44,10 @@ import {
 } from '@/components/agent/chat-transcript';
 import { notifyChatsChanged } from '@/components/agent/chats-sidebar';
 import { notifyCreditsChanged } from '@/components/agent/plan-card';
-import { usePreviewPane } from '@/components/agent/preview-pane-context';
+import {
+  usePreviewPane,
+  type ImageAnnotationSubmission,
+} from '@/components/agent/preview-pane-context';
 import { UpgradeDialog } from '@/components/agent/upgrade-dialog';
 import { CreditTopUpDialog } from '@/components/credit-topup-dialog';
 import { Button } from '@/components/ui/button';
@@ -75,6 +82,7 @@ function ChatSessionPage() {
     clearImage: clearPreviewImage,
     setImages: setPreviewImages,
     openImage,
+    setAnnotationHandler,
   } = usePreviewPane();
 
   const sessionLabel = sessionId.replace(/^s-/, '').slice(0, 12);
@@ -311,48 +319,55 @@ function ChatSessionPage() {
     );
   }
 
-  async function handleFiles(files: File[]) {
-    const selected = files.filter((file) => file.type.startsWith('image/'));
-    if (selected.length === 0) return;
+  const handleFiles = useCallback(
+    async (
+      files: File[],
+      kind: NonNullable<PendingAttachment['kind']> = 'source'
+    ) => {
+      const selected = files.filter((file) => file.type.startsWith('image/'));
+      if (selected.length === 0) return;
 
-    const created = selected.map((file) => ({
-      id: newAttachmentId(),
-      name: file.name || 'image',
-      preview: URL.createObjectURL(file),
-      status: 'uploading' as const,
-      file,
-    }));
+      const created = selected.map((file) => ({
+        id: newAttachmentId(),
+        name: file.name || 'image',
+        preview: URL.createObjectURL(file),
+        status: 'uploading' as const,
+        kind,
+        file,
+      }));
 
-    setAttachments((prev) => [
-      ...prev,
-      ...created.map(({ file: _file, ...item }) => item),
-    ]);
+      setAttachments((prev) => [
+        ...prev,
+        ...created.map(({ file: _file, ...item }) => item),
+      ]);
 
-    await Promise.all(
-      created.map(async (item) => {
-        try {
-          const url = await uploadChatImage(item.file);
-          setAttachments((prev) =>
-            prev.map((att) =>
-              att.id === item.id ? { ...att, url, status: 'uploaded' } : att
-            )
-          );
-        } catch (err) {
-          setAttachments((prev) =>
-            prev.map((att) =>
-              att.id === item.id
-                ? {
-                    ...att,
-                    status: 'error',
-                    error: (err as Error).message || 'Upload failed',
-                  }
-                : att
-            )
-          );
-        }
-      })
-    );
-  }
+      await Promise.all(
+        created.map(async (item) => {
+          try {
+            const url = await uploadChatImage(item.file);
+            setAttachments((prev) =>
+              prev.map((att) =>
+                att.id === item.id ? { ...att, url, status: 'uploaded' } : att
+              )
+            );
+          } catch (err) {
+            setAttachments((prev) =>
+              prev.map((att) =>
+                att.id === item.id
+                  ? {
+                      ...att,
+                      status: 'error',
+                      error: (err as Error).message || 'Upload failed',
+                    }
+                  : att
+              )
+            );
+          }
+        })
+      );
+    },
+    []
+  );
 
   function removeAttachment(id: string) {
     setAttachments((prev) => {
@@ -362,6 +377,55 @@ function ChatSessionPage() {
       return prev.filter((item) => item.id !== id);
     });
   }
+
+  function addLibraryImages(images: LibraryAttachment[]) {
+    setAttachments((previous) => {
+      const selected = images.filter(
+        (image) => !previous.some((attachment) => attachment.url === image.src)
+      );
+      return [
+        ...previous,
+        ...selected.map((image) => ({
+          id: newAttachmentId(),
+          name: image.name || 'image',
+          preview: image.src,
+          url: image.src,
+          status: 'uploaded' as const,
+        })),
+      ];
+    });
+  }
+
+  const addAnnotatedImage = useCallback(
+    ({ source, guide }: ImageAnnotationSubmission) => {
+      setAttachments((previous) => {
+        if (previous.some((attachment) => attachment.url === source.src)) {
+          return previous;
+        }
+        return [
+          ...previous,
+          {
+            id: newAttachmentId(),
+            name: source.name || m['agent.preview.image'](),
+            preview: source.src,
+            url: source.src,
+            status: 'uploaded' as const,
+            kind: 'source' as const,
+          },
+        ];
+      });
+      setValue((previous) =>
+        previous.trim() ? previous : m['agent.annotation.prompt']()
+      );
+      void handleFiles([guide], 'annotation');
+    },
+    [handleFiles]
+  );
+
+  useEffect(() => {
+    setAnnotationHandler(addAnnotatedImage);
+    return () => setAnnotationHandler(null);
+  }, [addAnnotatedImage, setAnnotationHandler]);
 
   function scrollToBottom() {
     const el = scrollRef.current;
@@ -441,7 +505,7 @@ function ChatSessionPage() {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-6"
+        className="relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-6 pb-4"
       >
         <ChatTranscript
           messages={messages}
@@ -451,22 +515,35 @@ function ChatSessionPage() {
           surfacedSrcs={surfacedSrcs}
         />
 
+        {/* Sticky, not absolute: `absolute` inside a scroll container anchors
+            to the content box, so this used to ride along mid-transcript.
+            Stuck to the bottom of the scrollport it sits just above the
+            composer, and it only exists while there's somewhere to scroll to. */}
         {!atBottom && (
-          <button
-            type="button"
-            onClick={scrollToBottom}
-            aria-label="Scroll to bottom"
-            className="border-border bg-background text-muted-foreground hover:text-foreground absolute bottom-4 left-1/2 flex size-8 -translate-x-1/2 items-center justify-center rounded-full border shadow-sm"
-          >
-            <ArrowDown className="size-4" />
-          </button>
+          <div className="pointer-events-none sticky bottom-0 flex justify-center pt-3">
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              aria-label="Scroll to bottom"
+              className="border-border bg-background text-muted-foreground hover:text-foreground pointer-events-auto flex size-8 items-center justify-center rounded-full border shadow-sm"
+            >
+              <ArrowDown className="size-4" />
+            </button>
+          </div>
         )}
       </div>
 
       {/* Composer */}
-      <div className="shrink-0 overflow-hidden px-4 pb-6">
+      {/* pt-4 is the gap the transcript can never eat into: the scroll
+          container's own bottom padding only shows at rest, so mid-scroll the
+          last line used to run right up against the input box. */}
+      <div className="shrink-0 overflow-hidden px-4 pt-4 pb-6">
         <div className="mx-auto w-full max-w-3xl min-w-0 space-y-2">
           <ChatComposer
+            // Rebuild per session: the composer's own state (expanded or
+            // still a single line) belongs to the conversation you're in, and
+            // switching chats keeps this component mounted.
+            key={sessionId}
             size="sm"
             value={value}
             onValueChange={setValue}
@@ -474,10 +551,14 @@ function ChatSessionPage() {
             placeholder={m['agent.chat.placeholder']()}
             attachments={attachments}
             onAddFiles={(files) => void handleFiles(files)}
+            onAddLibraryImages={addLibraryImages}
             onRemoveAttachment={removeAttachment}
             settings={composerSettings}
             onSettingsChange={setComposerSettings}
             disabled={streaming}
+            streaming={streaming}
+            onStop={() => stopRun(sessionId)}
+            collapsible
             submitDisabled={
               attachments.some((item) => item.status === 'uploading') ||
               (!value.trim() &&

@@ -13,7 +13,10 @@ import {
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { useComposerSettings } from '@/hooks/use-composer-settings';
-import { ChatComposer } from '@/components/agent/chat-composer';
+import {
+  ChatComposer,
+  type LibraryAttachment,
+} from '@/components/agent/chat-composer';
 import {
   promptCategories,
   type PromptExample,
@@ -143,6 +146,24 @@ export function PromptLauncher({ className }: { className?: string }) {
     });
   }
 
+  function addLibraryImages(images: LibraryAttachment[]) {
+    setAttachments((previous) => {
+      const selected = images.filter(
+        (image) => !previous.some((attachment) => attachment.url === image.src)
+      );
+      return [
+        ...previous,
+        ...selected.map((image) => ({
+          id: newAttachmentId(),
+          name: image.name || 'image',
+          preview: image.src,
+          url: image.src,
+          status: 'uploaded' as const,
+        })),
+      ];
+    });
+  }
+
   function handleSubmit() {
     const prompt = value.trim();
     if ((!prompt && !hasUploaded) || uploading || submitting) return;
@@ -183,6 +204,7 @@ export function PromptLauncher({ className }: { className?: string }) {
         placeholder={m['agent.home.placeholder']()}
         attachments={attachments}
         onAddFiles={(files) => void addFiles(files)}
+        onAddLibraryImages={addLibraryImages}
         onRemoveAttachment={removeAttachment}
         settings={composerSettings}
         onSettingsChange={setComposerSettings}

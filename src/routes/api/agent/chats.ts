@@ -22,6 +22,7 @@ async function GET({ request }: { request: Request }) {
       id: c.id,
       title: c.title,
       preview: c.preview,
+      cover: c.cover,
       updatedAt: c.updatedAt.toISOString(),
     })),
     total,

@@ -20,6 +20,7 @@ import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
 
 import {
+  isCancelledToolResult,
   splitAttachedImages,
   type Message,
   type ToolCall,
@@ -440,7 +441,12 @@ function ToolGroupBlock({
         {msg.tools.map((tc) => {
           const isExpanded = !!expandedTool[tc.id];
           const running = tc.result === undefined;
-          const { icon: Icon, label } = toolPresentation(tc, running);
+          const cancelled = isCancelledToolResult(tc.result);
+          const presentation = toolPresentation(tc, running);
+          const Icon = presentation.icon;
+          const label = cancelled
+            ? m['agent.chat.tool_cancelled']()
+            : presentation.label;
           return (
             <div key={tc.id} className="min-w-0">
               <button

@@ -20,6 +20,8 @@ export interface PendingAttachment {
   preview: string;
   url?: string;
   status: 'uploading' | 'uploaded' | 'error';
+  /** A marked-up copy that explains how its paired source image should change. */
+  kind?: 'source' | 'annotation';
   error?: string;
 }
 

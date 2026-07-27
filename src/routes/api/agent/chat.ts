@@ -11,6 +11,7 @@ import {
 import { getBalance } from '@/modules/credits/service';
 import { getCurrentSubscription } from '@/modules/subscriptions/service';
 import { isAgentSessionId } from '@/lib/agent';
+import { CANCELLED_TOOL_RESULT } from '@/lib/agent-chat';
 import type { AgentGenerationSettings } from '@/lib/agent-settings';
 
 interface ChatRequest {
@@ -113,6 +114,16 @@ async function POST({ request }: { request: Request }) {
     if (current.length > 0) {
       rounds.push(current);
       current = [];
+    }
+    // A turn the user stopped (or a dropped connection) ends with its image
+    // call unanswered. Replay reads a missing result as "still running", so
+    // record what actually happened before writing the rounds out.
+    for (const round of rounds) {
+      for (const part of round) {
+        if (part.type === 'tool_call' && part.result === undefined) {
+          part.result = CANCELLED_TOOL_RESULT;
+        }
+      }
     }
     for (const round of rounds) {
       if (round.length === 0) continue;

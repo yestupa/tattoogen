@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { Download, ExternalLink, ImageIcon, X } from 'lucide-react';
+import { Download, ExternalLink, ImageIcon, Pencil, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { ImageAnnotationEditor } from '@/components/agent/image-annotation';
 import {
   usePreviewPane,
   type PreviewImage,
@@ -45,9 +46,11 @@ function clampPaneWidth(next: number) {
 }
 
 export function PreviewPane() {
-  const { open, setOpen, image, images, openImage } = usePreviewPane();
+  const { open, setOpen, image, images, openImage, annotationHandler } =
+    usePreviewPane();
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
   const [width, setWidth] = useState(620);
+  const [annotating, setAnnotating] = useState(false);
   // Only re-open the sidebar if we're the ones who closed it.
   const autoCollapsed = useRef(false);
 
@@ -62,6 +65,10 @@ export function PreviewPane() {
       window.removeEventListener('mouseup', stopDrag);
       stopDrag();
     };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setAnnotating(false);
   }, [open]);
 
   // Re-clamp when the window changes size so a wide pane can't eat the whole
@@ -92,8 +99,6 @@ export function PreviewPane() {
     }
   }, [open, width, sidebarOpen, setSidebarOpen]);
 
-  if (!open) return null;
-
   function startResize(event: MouseEvent<HTMLDivElement>) {
     event.preventDefault();
     document.body.style.cursor = 'col-resize';
@@ -113,6 +118,12 @@ export function PreviewPane() {
 
   // Nothing picked yet — show the newest image, the one a viewer came for.
   const current = image ?? images[images.length - 1] ?? null;
+
+  useEffect(() => {
+    setAnnotating(false);
+  }, [current?.src, annotationHandler]);
+
+  if (!open) return null;
 
   const index = current ? images.findIndex((i) => i.src === current.src) : -1;
   const title =
@@ -136,10 +147,25 @@ export function PreviewPane() {
       </div>
       <div className="bg-background flex min-h-0 w-full flex-col overflow-hidden rounded-xl shadow-2xl lg:shadow-sm">
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 px-4">
-          <span className="truncate text-sm font-medium">{title}</span>
+          <span className="truncate text-sm font-medium">
+            {annotating ? m['agent.annotation.title']() : title}
+          </span>
           <div className="flex shrink-0 items-center gap-1">
-            {current?.src && (
+            {current?.src && !annotating && (
               <>
+                {annotationHandler && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAnnotating(true)}
+                    aria-label={m['agent.annotation.start']()}
+                    title={m['agent.annotation.start']()}
+                    className="text-muted-foreground hover:text-foreground size-8 rounded-md"
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                )}
                 <a
                   href={current.src}
                   target="_blank"
@@ -173,8 +199,15 @@ export function PreviewPane() {
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => setOpen(false)}
-              aria-label={m['agent.preview.close']()}
+              onClick={() => {
+                if (annotating) setAnnotating(false);
+                else setOpen(false);
+              }}
+              aria-label={
+                annotating
+                  ? m['agent.annotation.cancel']()
+                  : m['agent.preview.close']()
+              }
               className="text-muted-foreground hover:text-foreground size-8 rounded-md"
             >
               <X className="size-4" />
@@ -182,7 +215,16 @@ export function PreviewPane() {
           </div>
         </div>
 
-        {current ? (
+        {current && annotating && annotationHandler ? (
+          <ImageAnnotationEditor
+            source={current}
+            onCancel={() => setAnnotating(false)}
+            onComplete={(guide) => {
+              annotationHandler({ source: current, guide });
+              setAnnotating(false);
+            }}
+          />
+        ) : current ? (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-auto p-6">
               {/* Centred both ways: a short image shouldn't hug the top of a
@@ -201,7 +243,10 @@ export function PreviewPane() {
               <FilmStrip
                 images={images}
                 current={current}
-                onSelect={openImage}
+                onSelect={(next) => {
+                  setAnnotating(false);
+                  openImage(next);
+                }}
               />
             )}
           </div>

@@ -18,6 +18,7 @@ import {
 import { getAllConfigs } from '@/modules/config/service';
 import { getStorage } from '@/modules/storage/service';
 import {
+  AGENT_MODEL_OPTION_VALUES,
   creditsForModelOption,
   isModelOptionValue,
   providerModelFor,
@@ -33,10 +34,50 @@ export interface AgentToolContext {
   userId: string;
   sessionId: string;
   settings?: AgentGenerationSettings;
+  /** Image URLs the user attached to the message being answered. */
+  attachedImages?: string[];
 }
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 180_000;
+
+/**
+ * A provider's safety filter refusing the inputs is a dead end, not a hiccup.
+ * The model's instinct is to reword the prompt and go again, but the filter
+ * read the *images* — "The input or output was flagged as sensitive" comes
+ * back identically however the sentence is phrased, and the user watches the
+ * same failure scroll past three times. This remembers what was refused
+ * during the turn so the second attempt is stopped here, before it costs
+ * another round-trip.
+ */
+interface ModerationGuard {
+  /** Source-image sets the filter has already rejected this turn. */
+  refused: Set<string>;
+  count: number;
+}
+
+function createModerationGuard(): ModerationGuard {
+  return { refused: new Set(), count: 0 };
+}
+
+/** Signature of the images a call runs on — the part a reword can't change. */
+function sourceSignature(kind: string, options: Record<string, unknown>) {
+  const sources = Array.isArray(options.image_input)
+    ? options.image_input.map(String).slice().sort().join('|')
+    : '';
+  return `${kind}:${sources}`;
+}
+
+/**
+ * Does this provider error mean "we won't make this image", as opposed to
+ * "something went wrong"? Covers the gateway's wording plus the phrasings
+ * fal/Replicate/OpenAI use for the same refusal.
+ */
+function isContentRefusal(message: string): boolean {
+  return /flagged as sensitive|content[_ ]policy|safety (system|filter|checker)|moderation|nsfw|prohibited content|violat\w* (our|the) (content|usage) polic/i.test(
+    message
+  );
+}
 
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolveSleep, rejectSleep) => {
@@ -170,13 +211,27 @@ async function runImageGeneration(params: {
   prompt: string;
   /** Picker key (`gpt-image-2`) — mapped to the active provider's id. */
   modelKey?: string;
-  /** A raw provider id the agent asked for, used verbatim when present. */
-  rawModel?: string;
   kind: 'generate' | 'edit';
   options: Record<string, unknown>;
   signal?: AbortSignal;
+  /** Per-turn record of what the safety filter already refused. */
+  moderation: ModerationGuard;
 }): Promise<string> {
-  const { ctx, prompt, options, signal, kind } = params;
+  const { ctx, prompt, options, signal, kind, moderation } = params;
+
+  // Already refused once this turn — either for these very images, or twice
+  // over for anything. Answer from here instead of paying for the same "no".
+  const signature = sourceSignature(kind, options);
+  if (moderation.refused.has(signature) || moderation.count >= 2) {
+    return JSON.stringify({
+      status: 'error',
+      retryable: false,
+      message: "Blocked by the image provider's content filter.",
+      guidance:
+        'The same inputs were already refused in this turn, and the filter judges the images rather than the wording — another attempt returns the same refusal. Stop calling the tool: tell the user their image was blocked by the provider, and suggest a different source photo or a milder edit.',
+    });
+  }
+
   const configs = await getAllConfigs();
 
   const selectedProvider = pickImageProvider(configs);
@@ -195,14 +250,12 @@ async function runImageGeneration(params: {
       selectedProvider,
       kind,
       selectedProvider === 'grouter' ? grouterModelMap(configs) : undefined
-    ) ||
-    params.rawModel ||
-    defaultModelFor(selectedProvider);
+    ) || defaultModelFor(selectedProvider);
 
   if (!model) {
     return JSON.stringify({
       status: 'error',
-      message: `Model "${params.modelKey ?? params.rawModel ?? ''}" has no id configured for the ${selectedProvider} provider.`,
+      message: `Model "${params.modelKey ?? ''}" has no id configured for the ${selectedProvider} provider.`,
     });
   }
 
@@ -220,10 +273,13 @@ async function runImageGeneration(params: {
     provider = new FalProvider({ apiKey: configs.fal_api_key });
   }
 
-  // Priced from the model catalog, never from the request body — the
-  // composer sends `creditCost` for display, but trusting it would let a
-  // crafted request buy a 50-credit image for nothing.
-  const costCredits = creditsForModelOption(ctx.settings?.modelName);
+  // Priced from the model catalog for the model this call actually runs on,
+  // never from the request body — the composer sends `creditCost` for
+  // display, but trusting it would let a crafted request buy a 50-credit
+  // image for nothing.
+  const costCredits = creditsForModelOption(
+    params.modelKey ?? ctx.settings?.modelName
+  );
 
   // createTask consumes credits atomically and stores the credit id so a
   // failed generation can be refunded via updateTask(FAILED).
@@ -332,11 +388,30 @@ async function runImageGeneration(params: {
       taskId: task.id,
       status: DbTaskStatus.FAILED,
       taskResult: { error: raw },
-    }).catch(() => {});
-    return JSON.stringify({
-      status: 'error',
-      message: summarizeProviderError(raw),
+    }).catch((refundErr) => {
+      // This call is what gives the credits back. Swallowing it silently
+      // means the user paid for an image they never got and nothing anywhere
+      // says so — at minimum it has to be findable in the logs.
+      console.error(
+        `[agent tools] failed to refund task ${task.id} for user ${ctx.userId}`,
+        refundErr
+      );
     });
+
+    const summary = summarizeProviderError(raw);
+    if (isContentRefusal(raw)) {
+      moderation.refused.add(signature);
+      moderation.count += 1;
+      return JSON.stringify({
+        status: 'error',
+        retryable: false,
+        message: summary,
+        guidance:
+          "This is the provider's content filter judging the images, not the prompt wording — rewording and retrying returns the same refusal. Do not call the tool again for this request: tell the user their image was blocked by the provider's safety filter, and suggest a different source photo or a milder edit.",
+      });
+    }
+
+    return JSON.stringify({ status: 'error', message: summary });
   }
 }
 
@@ -480,20 +555,59 @@ function nativeResolutionForModel(
 }
 
 /**
- * The agent may name a model as a picker key (`gpt-image-2`) or as a raw
- * provider id. A key is mapped per provider; a raw id is passed through
- * untouched so "use flux-kontext" style requests still work.
+ * Resolve which catalog model this call runs on.
+ *
+ * Only the keys the composer offers are accepted. Raw provider ids used to be
+ * passed through, which let the agent "try another model" with something like
+ * `black-forest-labs/flux-dev` — a model the user can't pick, that we hold no
+ * price for, and that the configured provider usually rejects outright.
+ * Anything off the list comes back as an error the agent can act on, before
+ * any credits are spent.
  */
 function modelSelection(
   requested: string,
   ctx: AgentToolContext
-): { modelKey?: string; rawModel?: string } {
-  if (requested && !isModelOptionValue(requested))
-    return { rawModel: requested };
+): { modelKey?: string; error?: string } {
+  if (requested && !isModelOptionValue(requested)) {
+    return {
+      error: JSON.stringify({
+        status: 'error',
+        message: `Unsupported model "${requested}".`,
+        guidance: `This app only generates with: ${AGENT_MODEL_OPTION_VALUES.join(', ')}. Leave \`model\` empty to use the one the user picked in the composer, or pass exactly one of those names.`,
+      }),
+    };
+  }
   return { modelKey: requested || ctx.settings?.modelName };
 }
 
+/**
+ * Refuse an edit that uses none of the images the user just attached.
+ *
+ * Someone who attaches a photo and says "swap the partner for her" wants both
+ * pictures in the result, but the model kept sending one source and rewriting
+ * the older image alone — the attachment silently did nothing, and the user
+ * paid for an image they didn't ask for. Nothing has been charged at this
+ * point, so bouncing the call costs a retry and nothing else.
+ */
+function missingAttachment(
+  sources: string[],
+  ctx: AgentToolContext
+): string | null {
+  const attached = ctx.attachedImages ?? [];
+  if (attached.length === 0) return null;
+  if (attached.some((url) => sources.includes(url))) return null;
+  return JSON.stringify({
+    status: 'error',
+    message: `The ${attached.length} image(s) attached to this message were not used.`,
+    guidance: `Attached but left out: ${attached.join(', ')}. If the result should show what's in them — a new person, a garment, a logo, a background — call edit_image again with every source in \`images\` (the attachment plus whichever earlier image the request builds on) and describe them as "image 1", "image 2" in the prompt. If the attachment genuinely has nothing to do with this edit, don't call the tool again — say so in your reply and ask the user what they meant.`,
+  });
+}
+
 export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
+  // One guard per turn: the tools are rebuilt for every request, so a refusal
+  // stops the retries inside this turn without following the user forever.
+  const moderation = createModerationGuard();
+
   const generateImage = defineTool({
     name: 'generate_image',
     description:
@@ -513,8 +627,8 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
         },
         model: {
           type: 'string',
-          description:
-            'Optional Replicate model id override (owner/name). Leave empty to use the default text-to-image model.',
+          enum: [...AGENT_MODEL_OPTION_VALUES],
+          description: `Optional image model, and only one of: ${AGENT_MODEL_OPTION_VALUES.join(', ')}. No other model exists here — never pass a provider id such as "black-forest-labs/flux-dev". Leave empty to use the model the user selected in the composer.`,
         },
         resolution: {
           type: 'string',
@@ -526,7 +640,8 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
     },
     isConcurrencySafe: true,
     async call(input, context) {
-      const requested = String(input.model ?? '');
+      const selection = modelSelection(String(input.model ?? ''), ctx);
+      if (selection.error) return selection.error;
       const options: Record<string, unknown> = {};
       const aspectRatio = input.aspect_ratio || ctx.settings?.aspectRatio;
       if (aspectRatio) options.aspect_ratio = aspectRatio;
@@ -535,10 +650,11 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
       return runImageGeneration({
         ctx,
         prompt: promptWithResolution(String(input.prompt ?? ''), resolution),
-        ...modelSelection(requested, ctx),
+        modelKey: selection.modelKey,
         kind: 'generate',
         options,
         signal: context.abortSignal,
+        moderation,
       });
     },
   });
@@ -546,7 +662,7 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
   const editImage = defineTool({
     name: 'edit_image',
     description:
-      'Edit, restyle or combine existing images based on instructions. Accepts the http(s) URLs of uploaded or previously generated images. Pass several to compose them — e.g. a person plus a garment for a virtual try-on. Returns JSON with `files` — public URLs of the edited images.',
+      'Edit, restyle or combine existing images based on instructions. Accepts the http(s) URLs of uploaded or previously generated images. Pass several in `images` whenever the result must contain elements from more than one of them — two people in one wedding photo, a person plus a garment for a virtual try-on, a logo onto a product. An image the user just attached and an image generated earlier in the conversation combine the same way: send both rather than editing one of them alone. Returns JSON with `files` — public URLs of the edited images.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -557,13 +673,13 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
         image: {
           type: 'string',
           description:
-            'Source image: the http(s) URL of an uploaded or previously generated image. Use `images` instead when the edit needs more than one.',
+            'Source image: the http(s) URL of an uploaded or previously generated image. Use this ONLY when exactly one image is involved; anything that merges two subjects goes in `images`.',
         },
         images: {
           type: 'array',
           items: { type: 'string' },
           description:
-            'Several source images, in the order the prompt refers to them (e.g. ["<person>", "<garment>"]). Takes precedence over `image`.',
+            'Two or more source images, in the order the prompt refers to them (e.g. ["<person A>", "<person B>"] or ["<person>", "<garment>"]). Takes precedence over `image`. Refer to them in the prompt as "image 1", "image 2", … so the model knows which is which.',
         },
         aspect_ratio: {
           type: 'string',
@@ -571,8 +687,8 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
         },
         model: {
           type: 'string',
-          description:
-            'Optional Replicate model id override. Leave empty to use the default image-editing model.',
+          enum: [...AGENT_MODEL_OPTION_VALUES],
+          description: `Optional image model, and only one of: ${AGENT_MODEL_OPTION_VALUES.join(', ')}. No other model exists here — never pass a provider id such as "black-forest-labs/flux-dev". Leave empty to use the model the user selected in the composer.`,
         },
         resolution: {
           type: 'string',
@@ -584,7 +700,8 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
     },
     isConcurrencySafe: true,
     async call(input, context) {
-      const requested = String(input.model ?? '');
+      const selection = modelSelection(String(input.model ?? ''), ctx);
+      if (selection.error) return selection.error;
       const sources = (
         Array.isArray(input.images) && input.images.length > 0
           ? input.images
@@ -601,6 +718,8 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
       const inputImages = sources.map((src: string) =>
         resolveReferenceImage(src)
       );
+      const ignoredAttachment = missingAttachment(inputImages, ctx);
+      if (ignoredAttachment) return ignoredAttachment;
       // Normalized key — each provider's formatInput() maps this to the
       // field name the selected model actually expects (e.g. `image_url`
       // for fal-ai/flux-pro/kontext, `input_image` for Replicate's
@@ -613,10 +732,11 @@ export function createAgentTools(ctx: AgentToolContext): ToolDefinition[] {
       return runImageGeneration({
         ctx,
         prompt: promptWithResolution(String(input.prompt ?? ''), resolution),
-        ...modelSelection(requested, ctx),
+        modelKey: selection.modelKey,
         kind: 'edit',
         options,
         signal: context.abortSignal,
+        moderation,
       });
     },
   });

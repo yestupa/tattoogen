@@ -5,29 +5,55 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   ArrowUp,
+  Check,
   ChevronLeft,
   ChevronRight,
+  ImageIcon,
+  Images,
   Loader2,
   Paperclip,
   Plus,
+  Square,
   X,
 } from 'lucide-react';
 
 import { imageFilesFromClipboard, type PendingAttachment } from '@/lib/agent';
 import { type AgentComposerSettings } from '@/lib/agent-settings';
+import { apiGet } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { ComposerControls } from '@/components/agent/composer-controls';
 import { ComposerSettings } from '@/components/agent/composer-settings';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+export interface LibraryAttachment {
+  id: string;
+  src: string;
+  name: string;
+  alt: string;
+}
+
+interface LibraryData {
+  images?: LibraryAttachment[];
+  nextCursor?: string;
+}
 
 /**
  * The prompt input shared by the launcher (landing hero + /chat) and the
@@ -42,11 +68,15 @@ export function ChatComposer({
   placeholder,
   attachments,
   onAddFiles,
+  onAddLibraryImages,
   onRemoveAttachment,
   settings,
   onSettingsChange,
   disabled = false,
   submitDisabled = false,
+  streaming = false,
+  onStop,
+  collapsible = false,
   size = 'lg',
   toolbarExtra,
   textareaRef,
@@ -58,11 +88,17 @@ export function ChatComposer({
   placeholder: string;
   attachments: PendingAttachment[];
   onAddFiles: (files: File[]) => void;
+  onAddLibraryImages: (images: LibraryAttachment[]) => void;
   onRemoveAttachment: (id: string) => void;
   settings: AgentComposerSettings;
   onSettingsChange: (settings: AgentComposerSettings) => void;
   disabled?: boolean;
   submitDisabled?: boolean;
+  /** A turn is in flight: submit turns into a stop button. */
+  streaming?: boolean;
+  onStop?: () => void;
+  /** Start as a single-line pill and open on click (the chat page). */
+  collapsible?: boolean;
   /** `lg` on the start screens, `sm` for the follow-up box in a session. */
   size?: 'sm' | 'lg';
   /** Rendered next to the "+" menu (e.g. the selected example category). */
@@ -71,22 +107,119 @@ export function ChatComposer({
   className?: string;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ownTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const textarea = textareaRef ?? ownTextareaRef;
   const [zoomIndex, setZoomIndex] = useState<number | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   // Removing an attachment while zoomed shouldn't leave a dangling index.
   const zoomed = zoomIndex !== null && !!attachments[zoomIndex];
+
+  // Under a transcript the composer is one line until it's needed: the full
+  // box (model, ratio, quality) is a lot of furniture to park over the
+  // conversation when the next message is usually a sentence. Anything that
+  // means work is pending — typed text, an attachment — keeps it open.
+  const collapsed =
+    collapsible && !expanded && !value.trim() && attachments.length === 0;
+
+  // The collapsed pill has no textarea to focus, so focus it once it exists.
+  useEffect(() => {
+    if (collapsible && expanded) textarea.current?.focus();
+  }, [collapsible, expanded, textarea]);
+
+  const submit = () => {
+    onSubmit();
+    // Back to one line for the next message — but only when there was
+    // something to send, or a blocked submit would fold the box away.
+    if (value.trim() || attachments.some((item) => item.status === 'uploaded'))
+      setExpanded(false);
+  };
+
+  // Mid-turn the same slot stops the run — a generation can take a minute,
+  // and waiting one out for a prompt you've already changed your mind about
+  // is the worst part of the wait.
+  const actionButton =
+    streaming && onStop ? (
+      <Button
+        type="button"
+        size="icon"
+        onClick={onStop}
+        aria-label={m['agent.chat.stop']()}
+        title={m['agent.chat.stop']()}
+        className="size-8 shrink-0 rounded-full"
+      >
+        <Square className="size-3 fill-current" />
+      </Button>
+    ) : (
+      <Button
+        type="submit"
+        size="icon"
+        aria-label={m['agent.home.submit']()}
+        disabled={disabled || submitDisabled}
+        className="size-8 shrink-0 rounded-full"
+      >
+        <ArrowUp className="size-4" />
+      </Button>
+    );
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit();
+        submit();
+      }}
+      onBlur={(event) => {
+        // Focus leaving an empty composer folds it back to one line. Menus
+        // and dialogs are portalled out of this form, so focus landing in one
+        // reads as "left the composer" — check for that before collapsing, or
+        // picking a model would close the box the menu is anchored to.
+        if (!collapsible || !expanded) return;
+        if (value.trim() || attachments.length > 0) return;
+        const next = event.relatedTarget as HTMLElement | null;
+        if (next) {
+          if (event.currentTarget.contains(next)) return;
+          if (
+            next.closest(
+              '[data-slot="dropdown-menu-content"],[data-slot="dropdown-menu-sub-content"],[data-slot="dialog-content"],[data-slot="popover-content"]'
+            )
+          )
+            return;
+        }
+        setExpanded(false);
       }}
       className={cn(
         'border-border bg-card rounded-3xl border shadow-sm transition-shadow focus-within:shadow-md',
         className
       )}
     >
-      {attachments.length > 0 && (
+      {collapsed && (
+        <div
+          role="button"
+          tabIndex={disabled ? -1 : 0}
+          onClick={() => !disabled && setExpanded(true)}
+          onKeyDown={(event) => {
+            if (disabled) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setExpanded(true);
+            }
+          }}
+          className="flex cursor-text items-center gap-2 px-3 py-2.5"
+        >
+          <span
+            aria-hidden
+            className="border-border text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-full border"
+          >
+            <Plus className="size-4" />
+          </span>
+          <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm">
+            {placeholder}
+          </span>
+          {actionButton}
+        </div>
+      )}
+
+      {!collapsed && attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 px-3 pt-3">
           {attachments.map((item, index) => (
             <div
@@ -137,7 +270,7 @@ export function ChatComposer({
       )}
 
       <textarea
-        ref={textareaRef}
+        ref={textarea}
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         onPaste={(e) => {
@@ -149,7 +282,7 @@ export function ChatComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
-            onSubmit();
+            submit();
           }
         }}
         placeholder={placeholder}
@@ -157,13 +290,19 @@ export function ChatComposer({
         disabled={disabled}
         className={cn(
           'text-foreground placeholder:text-muted-foreground w-full resize-none rounded-3xl bg-transparent px-4 pt-4 pb-2 leading-relaxed focus:outline-none',
-          size === 'lg' ? 'min-h-[92px] text-sm' : 'min-h-[64px] text-sm'
+          size === 'lg' ? 'min-h-[92px] text-sm' : 'min-h-[64px] text-sm',
+          collapsed && 'hidden'
         )}
       />
 
       {/* Wraps on narrow screens: "+" + category chip + model + settings +
           submit is wider than a 390px viewport. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 pb-3">
+      <div
+        className={cn(
+          'flex flex-wrap items-center justify-between gap-2 px-3 pb-3',
+          collapsed && 'hidden'
+        )}
+      >
         <div className="flex min-w-0 items-center gap-1.5">
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -187,6 +326,13 @@ export function ChatComposer({
               >
                 <Paperclip className="size-4" />
                 {m['landing.hero.upload_local']()}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setLibraryOpen(true)}
+                className="gap-2"
+              >
+                <Images className="size-4" />
+                {m['agent.composer.add_from_library']()}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -215,18 +361,151 @@ export function ChatComposer({
             onChange={onSettingsChange}
             disabled={disabled}
           />
-          <Button
-            type="submit"
-            size="icon"
-            aria-label={m['agent.home.submit']()}
-            disabled={disabled || submitDisabled}
-            className="size-8 rounded-full"
-          >
-            <ArrowUp className="size-4" />
-          </Button>
+          {actionButton}
         </div>
       </div>
+
+      <LibraryPicker
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+        onAdd={(images) => {
+          onAddLibraryImages(images);
+          setLibraryOpen(false);
+        }}
+      />
     </form>
+  );
+}
+
+/** Select already-generated images without asking the user to upload again. */
+function LibraryPicker({
+  open,
+  onOpenChange,
+  onAdd,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAdd: (images: LibraryAttachment[]) => void;
+}) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const libraryQuery = useInfiniteQuery({
+    queryKey: ['agent-library', 'composer-picker'],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      apiGet<LibraryData>(
+        pageParam
+          ? `/api/agent/library?limit=30&cursor=${encodeURIComponent(pageParam)}`
+          : '/api/agent/library?limit=30'
+      ),
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: open,
+  });
+  const images =
+    libraryQuery.data?.pages.flatMap((page) => page.images ?? []) ?? [];
+
+  useEffect(() => {
+    if (!open) setSelectedIds(new Set());
+  }, [open]);
+
+  function toggleImage(id: string) {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const selected = images.filter((image) => selectedIds.has(image.id));
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="h-[min(80dvh,46rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{m['agent.composer.library_title']()}</DialogTitle>
+          <DialogDescription>
+            {m['agent.composer.library_description']()}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="min-h-0 overflow-y-auto overscroll-contain pr-1">
+          {libraryQuery.isLoading ? (
+            <LibraryPickerState text={m['agent.library.loading']()} />
+          ) : libraryQuery.isError ? (
+            <LibraryPickerState
+              text={m['agent.composer.library_load_failed']()}
+            />
+          ) : images.length === 0 ? (
+            <LibraryPickerState text={m['agent.composer.library_empty']()} />
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {images.map((image) => {
+                  const selected = selectedIds.has(image.id);
+                  return (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() => toggleImage(image.id)}
+                      aria-pressed={selected}
+                      className={cn(
+                        'group border-border bg-muted focus-visible:ring-ring relative aspect-square overflow-hidden rounded-md border text-left transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                        selected && 'border-primary ring-primary/30 ring-2'
+                      )}
+                    >
+                      <img
+                        src={image.src}
+                        alt={image.alt || image.name}
+                        loading="lazy"
+                        className="size-full object-cover transition-transform group-hover:scale-[1.02]"
+                      />
+                      {selected && (
+                        <span className="bg-primary text-primary-foreground absolute top-2 right-2 flex size-5 items-center justify-center rounded-full shadow-sm">
+                          <Check className="size-3.5" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {libraryQuery.hasNextPage && (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => libraryQuery.fetchNextPage()}
+                    disabled={libraryQuery.isFetchingNextPage}
+                  >
+                    {libraryQuery.isFetchingNextPage
+                      ? m['agent.library.loading']()
+                      : m['agent.library.load_more']()}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button
+            onClick={() => onAdd(selected)}
+            disabled={selected.length === 0}
+          >
+            {m['agent.composer.add_selected']({ count: selected.length })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LibraryPickerState({ text }: { text: string }) {
+  return (
+    <div className="text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-2 px-6 text-center text-sm">
+      <ImageIcon className="size-5" />
+      <p>{text}</p>
+    </div>
   );
 }
 

@@ -57,7 +57,10 @@ export function buildAgentMessage(
   if (uploaded.length === 0) return base;
 
   const refs = uploaded
-    .map((item, index) => `- image ${index + 1}: ${item.url}`)
+    .map((item, index) => {
+      const label = item.kind === 'annotation' ? 'annotation guide' : 'image';
+      return `- ${label} ${index + 1}: ${item.url}`;
+    })
     .join('\n');
   return `${base}\n\n${ATTACHED_IMAGES_HEADING}\n${refs}`;
 }
@@ -79,7 +82,7 @@ export function splitAttachedImages(content: string): {
   const block = content.slice(at + ATTACHED_IMAGES_HEADING.length + 3);
   const images: string[] = [];
   for (const line of block.split('\n')) {
-    const match = line.match(/^- image \d+: (\S+)$/);
+    const match = line.match(/^- (?:image|annotation guide) \d+: (\S+)$/);
     if (!match) return { text: content, images: [] };
     images.push(match[1]);
   }
@@ -229,6 +232,46 @@ export function reduceToolResult(
     return [...msgs.slice(0, i), updated, ...msgs.slice(i + 1)];
   }
   return msgs;
+}
+
+/**
+ * What a tool call that never finished gets recorded as. A stopped turn
+ * leaves its in-flight call without a result, and the transcript renders a
+ * missing result as "still running" — a spinner that would keep spinning
+ * through a reload. Marking it closes the row instead.
+ */
+export const CANCELLED_TOOL_RESULT = JSON.stringify({
+  status: 'cancelled',
+  message: 'Stopped by the user before it finished.',
+});
+
+export function isCancelledToolResult(result: string | undefined): boolean {
+  if (!result) return false;
+  try {
+    const parsed = JSON.parse(result) as { status?: unknown };
+    return parsed?.status === 'cancelled';
+  } catch {
+    return false;
+  }
+}
+
+/** Close out every tool call still waiting on a result. */
+export function markPendingToolsCancelled(msgs: Message[]): Message[] {
+  let changed = false;
+  const next = msgs.map((msg) => {
+    if (msg.role !== 'tool-group') return msg;
+    if (!msg.tools.some((tool) => tool.result === undefined)) return msg;
+    changed = true;
+    return {
+      ...msg,
+      tools: msg.tools.map((tool) =>
+        tool.result === undefined
+          ? { ...tool, result: CANCELLED_TOOL_RESULT }
+          : tool
+      ),
+    };
+  });
+  return changed ? next : msgs;
 }
 
 export function parseToolError(result: string): string | null {

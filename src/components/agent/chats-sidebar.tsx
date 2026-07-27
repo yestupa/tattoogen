@@ -17,6 +17,7 @@ import { stopRun, useRunningSessions } from '@/lib/agent-runs';
 import { apiDelete, apiGet, apiPatch } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
 import { useChatActions } from '@/components/agent/chat-actions';
+import { ChatCover } from '@/components/agent/chat-cover';
 import { PlanCard } from '@/components/agent/plan-card';
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ interface ChatItem {
   id: string;
   title: string;
   preview: string;
+  cover: string;
   updatedAt: number;
 }
 
@@ -51,6 +53,7 @@ interface ChatListData {
     id: string;
     title: string;
     preview: string;
+    cover: string;
     updatedAt: string;
   }>;
   total?: number;
@@ -93,6 +96,7 @@ export function ChatsSidebar() {
         id: c.id,
         title: c.title,
         preview: c.preview,
+        cover: c.cover,
         updatedAt: new Date(c.updatedAt).getTime(),
       })),
     [listQuery.data]
@@ -254,6 +258,13 @@ function ChatList({
                 isActive={isActive}
                 className="pr-8"
               >
+                {item.cover && (
+                  <ChatCover
+                    src={item.cover}
+                    alt=""
+                    className="size-7 rounded-sm"
+                  />
+                )}
                 <span className="truncate">{item.title}</span>
               </SidebarMenuButton>
             </Link>
