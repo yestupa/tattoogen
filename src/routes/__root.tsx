@@ -92,7 +92,7 @@ export const Route = createRootRoute({
         { name: 'twitter:image', content: ogImage },
       ],
       links: [
-        { rel: 'icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'apple-touch-icon', href: '/logo.png' },
         ...locales.map((loc) => ({
           rel: 'alternate',

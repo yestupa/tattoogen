@@ -1,5 +1,5 @@
 {
-  "name": "shipany-image-agent",
+  "name": "tattoo-generator",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,10 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "start": "node .output/server/index.mjs",
-    "precf:build": "node scripts/db-setup.mjs",
-    "cf:build": "NITRO_PRESET=cloudflare_module vite build",
-    "cf:deploy": "sh -c 'set -a && [ -f .env.production ] && . ./.env.production; set +a && pnpm cf:build && exec wrangler deploy'",
-    "postinstall": "mkdir -p data && (test -f src/config/db/schema.ts || node scripts/db-setup.mjs)",
+    "cf:build": "node scripts/cf-build.mjs",
+    "cf:deploy": "node scripts/cf-deploy.mjs",
+    "postinstall": "node scripts/db-setup.mjs",
     "db:setup": "node scripts/db-setup.mjs",
     "db:push": "tsx scripts/with-env.ts drizzle-kit push --config=drizzle.config.ts",
     "db:generate": "tsx scripts/with-env.ts drizzle-kit generate --config=drizzle.config.ts",
@@ -106,14 +105,5 @@
     "vite": "^8.0.16",
     "vitest": "^3.2.7",
     "wrangler": "^4.98.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "@swc/core",
-      "esbuild",
-      "msw",
-      "sharp"
-    ]
   }
 }

@@ -154,6 +154,12 @@ export function getSettingGroups(): SettingGroup[] {
 
     // AI
     {
+      name: 'fastclaw',
+      title: 'FastClaw',
+      description: 'Primary Tattoo Generator agent runtime',
+      tab: 'ai',
+    },
+    {
       name: 'agent_llm',
       title: 'Chat Model',
       description: 'The LLM that drives the agent conversation',
@@ -232,6 +238,37 @@ export function getSettingGroups(): SettingGroup[] {
 
 export function getSettings(): Setting[] {
   return [
+    // ─── AI / FastClaw ───────────────────────────────────────────────
+    {
+      name: 'fastclaw_base_url',
+      title: 'Base URL',
+      type: 'text',
+      placeholder: 'https://cloud.fastclaw.ai',
+      tip: 'FastClaw host only; the server appends /v1/chat/completions.',
+      group: 'fastclaw',
+      tab: 'ai',
+      defaultValue: 'https://cloud.fastclaw.ai',
+    },
+    {
+      name: 'fastclaw_agent_id',
+      title: 'Agent ID',
+      type: 'text',
+      placeholder: 'agt_...',
+      tip: 'The FastClaw agent dedicated to tattoo design.',
+      group: 'fastclaw',
+      tab: 'ai',
+      defaultValue: 'agt_1d82e3db42549e69c6ff',
+    },
+    {
+      name: 'fastclaw_api_key',
+      title: 'API Key',
+      type: 'password',
+      placeholder: 'fc_...',
+      tip: 'Stored server-side and encrypted when CONFIG_ENCRYPTION_KEY is set.',
+      group: 'fastclaw',
+      tab: 'ai',
+    },
+
     // ─── General / App Info ──────────────────────────────────────────
     {
       name: 'app_name',

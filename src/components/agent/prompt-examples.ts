@@ -1,10 +1,4 @@
-import {
-  LayoutTemplate,
-  Palette,
-  PenTool,
-  Sparkles,
-  type LucideIcon,
-} from 'lucide-react';
+import { Feather, Flame, Flower2, Type, type LucideIcon } from 'lucide-react';
 
 import { tDynamic } from '@/core/i18n/dynamic';
 
@@ -29,13 +23,13 @@ export interface PromptCategory {
   examples: PromptExample[];
 }
 
-// Gradient placeholders stand in until real sample thumbnails are dropped in
-// (set `image` on an example to use a picture instead).
+// Warm ink-and-paper swatches keep prompt cards useful before every style has
+// a finished showcase image.
 const SWATCHES = [
-  'from-violet-200 via-indigo-200 to-sky-200',
-  'from-rose-200 via-pink-200 to-orange-200',
-  'from-amber-200 via-yellow-200 to-lime-200',
-  'from-emerald-200 via-teal-200 to-cyan-200',
+  'from-stone-200 via-orange-100 to-amber-100',
+  'from-red-200 via-rose-100 to-stone-100',
+  'from-amber-200 via-stone-100 to-neutral-200',
+  'from-neutral-300 via-stone-100 to-orange-100',
 ];
 
 /**
@@ -47,68 +41,27 @@ const SAMPLES: Record<
   string,
   { image: string; sourceImage?: string; sourceImages?: string[] }
 > = {
-  // Logo and cover design are text-to-image, so most have no "before"; only
-  // the moodboard case works from a reference picture.
-  'logo-1': { image: '/imgs/examples/logo-1.webp' },
-  'logo-2': { image: '/imgs/examples/logo-2.webp' },
-  'logo-3': {
-    image: '/imgs/examples/logo-3.webp',
-    sourceImage: '/imgs/examples/logo-3-before.webp',
+  'fine_line-1': {
+    image: '/imgs/generated/tattoo-fine-line-phoenix-1790920629842.png',
   },
-  'logo-4': { image: '/imgs/examples/logo-4.webp' },
-  'cover-1': { image: '/imgs/examples/cover-1.webp' },
-  'cover-2': { image: '/imgs/examples/cover-2.webp' },
-  'cover-3': { image: '/imgs/examples/cover-3.webp' },
-  'cover-4': { image: '/imgs/examples/cover-4.webp' },
-  'makeup-1': {
-    image: '/imgs/examples/makeup-1-after.webp',
-    // Two sources: the person and the garment — the composer attaches both.
-    sourceImages: [
-      '/imgs/examples/makeup-1-before.webp',
-      '/imgs/examples/makeup-1-before-2.webp',
-    ],
-  },
-  'makeup-2': {
-    image: '/imgs/examples/makeup-2-after.webp',
-    sourceImage: '/imgs/examples/makeup-2-before.webp',
-  },
-  'makeup-3': {
-    image: '/imgs/examples/makeup-3-after.webp',
-    sourceImage: '/imgs/examples/makeup-3-before.webp',
-  },
-  'makeup-4': {
-    image: '/imgs/examples/makeup-4-after.webp',
-    sourceImage: '/imgs/examples/makeup-4-before.webp',
-  },
-  // The style samples share two source portraits, both generated rather than
-  // photographed: a template ships to other people's sites, so a recognisable
-  // face in the demo becomes their problem too.
-  'style-1': {
-    image: '/imgs/examples/style-1-after.webp',
-    sourceImage: '/imgs/examples/style-source-a.webp',
-  },
-  'style-2': {
-    image: '/imgs/examples/style-2-after.webp',
-    sourceImage: '/imgs/examples/style-source-b.webp',
-  },
-  'style-3': {
-    image: '/imgs/examples/style-3-after.webp',
-    sourceImage: '/imgs/examples/style-source-a.webp',
-  },
-  'style-4': {
-    image: '/imgs/examples/style-4-after.webp',
-    sourceImage: '/imgs/examples/style-source-b.webp',
+  'botanical-1': {
+    image: '/imgs/generated/tattoo-peony-snake-1790920650819.png',
   },
 };
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  style: Palette,
-  makeup: Sparkles,
-  cover: LayoutTemplate,
-  logo: PenTool,
+  fine_line: Feather,
+  botanical: Flower2,
+  traditional: Flame,
+  lettering: Type,
 };
 
-const CATEGORY_KEYS = ['style', 'makeup', 'cover', 'logo'] as const;
+const CATEGORY_KEYS = [
+  'fine_line',
+  'botanical',
+  'traditional',
+  'lettering',
+] as const;
 
 // Upper bound for the scan below, not a required count — a category ends at
 // its first missing translation.

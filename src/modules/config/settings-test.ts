@@ -41,6 +41,8 @@ export async function runTest(
 ): Promise<TestResult> {
   try {
     switch (group) {
+      case 'fastclaw':
+        return await testFastClaw(configs);
       case 'resend':
         return await testResend(inputs, configs);
       case 'stripe':
@@ -371,6 +373,54 @@ async function testR2(
 }
 
 // --- AI -------------------------------------------------------------------
+
+async function testFastClaw(
+  configs: Record<string, string>
+): Promise<TestResult> {
+  const missing = need(configs, ['fastclaw_api_key', 'fastclaw_agent_id']);
+  if (missing) return { success: false, message: missing };
+
+  const baseUrl = (
+    configs.fastclaw_base_url || 'https://cloud.fastclaw.ai'
+  ).replace(/\/+$/, '');
+  const resp = await fetch(`${baseUrl}/v1/agents`, {
+    headers: { Authorization: `Bearer ${configs.fastclaw_api_key}` },
+  });
+  const data: any = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    return {
+      success: false,
+      message: `FastClaw request failed (${resp.status})`,
+    };
+  }
+
+  const agents = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.agents)
+        ? data.agents
+        : [];
+  const agent = agents.find(
+    (item: any) => item?.id === configs.fastclaw_agent_id
+  );
+  if (!agent) {
+    return {
+      success: false,
+      message: 'The configured API key cannot access this FastClaw agent.',
+    };
+  }
+
+  return {
+    success: true,
+    message: 'FastClaw agent is accessible',
+    details: {
+      'Agent ID': String(agent.id),
+      Name: String(agent.name || agent.id),
+      Model: String(agent.model || '(managed by FastClaw)'),
+    },
+  };
+}
 
 async function testOpenAI(
   inputs: Record<string, string>,

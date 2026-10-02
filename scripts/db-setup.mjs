@@ -10,7 +10,7 @@
 // Env-file loading mirrors scripts/with-env.ts so this script picks up
 // DATABASE_PROVIDER from .env.<NODE_ENV> / .env.local / .env when run from
 // `pnpm install` postinstall (which doesn't go through with-env.ts).
-import { copyFileSync, existsSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 function loadEnvFile(filePath) {
@@ -61,6 +61,8 @@ if (!templateName) {
 
 const src = resolve(`src/config/db/schema.${templateName}.ts`);
 const dst = resolve('src/config/db/schema.ts');
+
+mkdirSync(resolve('data'), { recursive: true });
 
 if (!existsSync(src)) {
   console.error(`db-setup: template not found at ${src}`);

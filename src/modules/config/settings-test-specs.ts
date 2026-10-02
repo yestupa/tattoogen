@@ -26,6 +26,10 @@ export interface TestResult {
 }
 
 export const testSpecs: Record<string, TestSpec> = {
+  fastclaw: {
+    group: 'fastclaw',
+    fields: [],
+  },
   resend: {
     group: 'resend',
     fields: [

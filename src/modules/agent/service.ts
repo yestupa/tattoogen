@@ -1,5 +1,10 @@
 import { createAgent } from '@codeany/open-agent-sdk';
 
+import {
+  AITaskStatus,
+  createTask,
+  updateTask,
+} from '@/modules/ai-tasks/service';
 import { getAllConfigs } from '@/modules/config/service';
 import { splitAttachedImages } from '@/lib/agent-chat';
 import {
@@ -11,13 +16,18 @@ import {
   normalizeOpenAIBaseUrl,
 } from '@/lib/llm-base-url';
 
+import {
+  createFastClawBillingTask,
+  createFastClawRequest,
+  readFastClawEvents,
+  resolveFastClawConfig,
+} from './fastclaw';
 import { collectConversationImages, loadAgentHistory } from './history';
 import { createAgentTools } from './tools';
 
-// In-process agent runtime for the ImgAny chat, replacing the remote
-// FastClaw runtime the Next.js version proxied to. Each request creates a
-// fresh Agent seeded with the conversation replayed from the database, runs
-// one turn, and emits the same event shapes the old runtime streamed:
+// FastClaw is the primary runtime for Tattoo Generator. The template's
+// in-process image agent remains as a configuration fallback for local work.
+// Both paths emit the same event shapes consumed by the existing chat UI:
 // content / tool_call / tool_result / error / done.
 //
 // Nothing here touches a filesystem: history comes from `chat_message` and
@@ -29,11 +39,14 @@ export interface AgentStreamEvent {
   data?: Record<string, unknown>;
 }
 
-const SYSTEM_PROMPT = `You are ImgAny, an image-generation agent. You help users create and edit images through conversation.
+const SYSTEM_PROMPT = `You are Tattoo Generator, an AI tattoo-design specialist. You help users turn ideas, references, and placement photos into original tattoo concepts through conversation.
 
 Rules:
-- Images are the whole job. Anything a user asks that isn't about making, editing or discussing images — the weather, the news, stock prices, coding help, translation, general trivia, life advice — is out of scope: don't answer it, even when you know the answer. Say in one friendly line that you only do images, and offer a concrete image idea they could ask for instead. No lecturing, no partial answer first.
+- Tattoo design is the whole job. Anything unrelated to planning, generating, editing, or discussing tattoo artwork is out of scope. Say in one friendly line that you focus on tattoo concepts, then offer a concrete tattoo idea they could ask for.
 - The exception is talk that surrounds the work: what you can do, what a model or aspect ratio means, why a generation failed, how credits are spent, what's in an image the conversation already has. Answer those normally — they're part of using the product.
+- Ask one concise follow-up only when placement, style, subject, or color choice is essential. Otherwise make a strong first concept immediately.
+- Treat skin photos as placement references. Preserve anatomy and avoid presenting a generated mockup as medical advice or a guaranteed result on real skin.
+- Prefer tattoo-ready compositions: clean silhouette, intentional line weight, readable negative space, and detail scaled to the requested placement.
 - Understand the user's intent, then call generate_image (text-to-image) or edit_image (when the user refers to an existing image or provides one).
 - When the user message includes "Attached images", use those URLs as source images for edit_image if the request asks to transform, restyle, repair, remove, replace, extend, or otherwise modify an image.
 - An attachment labelled "annotation guide" is a marked-up copy of another attached image. Use the unmarked source as the primary image and include the guide as another input to edit_image. State in the edit prompt that arrows, circles and strokes are instructions only and must never appear in the output; preserve areas outside the markings unless the user says otherwise.
@@ -111,7 +124,10 @@ function resolveLlm(configs: Record<string, string>): LlmSetup | null {
 
 /** Whether an LLM provider is configured in Admin Settings. */
 export async function isAgentConfigured(): Promise<boolean> {
-  return resolveLlm(await getAllConfigs()) !== null;
+  const configs = await getAllConfigs();
+  return (
+    resolveFastClawConfig(configs) !== null || resolveLlm(configs) !== null
+  );
 }
 
 /**
@@ -124,6 +140,96 @@ export async function* runAgentTurn(
   const { sessionId, userId, message, settings, signal } = params;
 
   const configs = await getAllConfigs();
+  const fastClaw = resolveFastClawConfig(configs);
+
+  if (fastClaw) {
+    let billingTaskId: string | undefined;
+    try {
+      const history = await loadAgentHistory(sessionId, userId);
+      const current = splitAttachedImages(message);
+      const prompt =
+        current.text.trim() ||
+        'Create a tattoo design from the attached reference.';
+      const images = Array.from(
+        new Set([...collectConversationImages(history), ...current.images])
+      );
+      const billingTask = await createTask(
+        createFastClawBillingTask({
+          agentId: fastClaw.agentId,
+          userId,
+          sessionId,
+          message: prompt,
+          settings,
+        })
+      );
+      const taskId = String(billingTask?.id ?? '');
+      if (!taskId) throw new Error('FastClaw billing task was not created.');
+      billingTaskId = taskId;
+      await updateTask({
+        taskId,
+        status: AITaskStatus.PROCESSING,
+      });
+
+      const response = await fetch(
+        createFastClawRequest({
+          config: fastClaw,
+          userId,
+          sessionId,
+          message: prompt,
+          images,
+          settings,
+          signal,
+        })
+      );
+
+      let responseText = '';
+      for await (const event of readFastClawEvents(response)) {
+        if (signal?.aborted) break;
+        if (event.type === 'content') {
+          responseText += String(event.data?.content ?? '');
+        }
+        yield event;
+      }
+      if (signal?.aborted) {
+        throw new DOMException(
+          'The FastClaw request was cancelled.',
+          'AbortError'
+        );
+      }
+      await updateTask({
+        taskId,
+        status: AITaskStatus.SUCCESS,
+        taskResult: { response: responseText.slice(0, 20_000) },
+      }).catch((err) => {
+        console.error(
+          `[fastclaw] failed to finalize billing task ${billingTaskId}`,
+          err
+        );
+      });
+    } catch (err: any) {
+      if (billingTaskId) {
+        await updateTask({
+          taskId: billingTaskId,
+          status: AITaskStatus.FAILED,
+          taskResult: { error: String(err?.message ?? err).slice(0, 2_000) },
+        }).catch((refundErr) => {
+          console.error(
+            `[fastclaw] failed to refund billing task ${billingTaskId}`,
+            refundErr
+          );
+        });
+      }
+      if (err?.name !== 'AbortError' && !signal?.aborted) {
+        yield {
+          type: 'error',
+          data: { message: String(err?.message ?? err) },
+        };
+        yield { type: 'done' };
+      }
+    }
+    return;
+  }
+
   const llm = resolveLlm(configs);
 
   if (!llm) {

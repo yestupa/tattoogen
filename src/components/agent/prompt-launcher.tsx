@@ -23,7 +23,7 @@ import {
 } from '@/components/agent/prompt-examples';
 
 const VISIBLE_CATEGORIES = 5;
-const DEFAULT_CATEGORY = 'style';
+const DEFAULT_CATEGORY = 'fine_line';
 // Attachments added by an example carry this id prefix so switching examples
 // can swap them out without touching the user's own uploads.
 const EXAMPLE_PREFIX = 'example:';
@@ -195,8 +195,12 @@ export function PromptLauncher({ className }: { className?: string }) {
         {m['landing.hero.headline_1']()}
       </h1>
 
+      <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed sm:text-base">
+        {m['landing.hero.subheadline']()}
+      </p>
+
       <ChatComposer
-        className="mt-10"
+        className="mt-8"
         textareaRef={textareaRef}
         value={value}
         onValueChange={setValue}

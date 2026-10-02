@@ -16,9 +16,11 @@ const publicEnv = (key: string) => metaEnv[key] ?? procEnv[key];
 export const envConfigs: Record<string, string> = {
   // App (public)
   app_url: publicEnv('VITE_APP_URL') ?? 'http://localhost:3000',
-  app_name: publicEnv('VITE_APP_NAME') ?? 'ShipAny',
-  app_description: publicEnv('VITE_APP_DESCRIPTION') ?? 'Ship your SaaS faster',
-  app_logo: publicEnv('VITE_APP_LOGO') ?? '/logo.png',
+  app_name: publicEnv('VITE_APP_NAME') ?? 'Tattoo Generator',
+  app_description:
+    publicEnv('VITE_APP_DESCRIPTION') ??
+    'Turn an idea or reference image into an original tattoo concept with an AI tattoo artist.',
+  app_logo: publicEnv('VITE_APP_LOGO') ?? '/logo.svg',
 
   // Database
   database_url: procEnv.DATABASE_URL ?? '',
@@ -73,6 +75,12 @@ export const envConfigs: Record<string, string> = {
   inline_image_max_kb: procEnv.INLINE_IMAGE_MAX_KB ?? '2048',
 
   // AI
+  // FastClaw values can be supplied as server-only deployment secrets or
+  // saved through Admin Settings. Database values win in getAllConfigs().
+  fastclaw_base_url: procEnv.FASTCLAW_BASE_URL ?? 'https://cloud.fastclaw.ai',
+  fastclaw_agent_id: procEnv.FASTCLAW_AGENT_ID ?? 'agt_1d82e3db42549e69c6ff',
+  fastclaw_api_key: procEnv.FASTCLAW_API_KEY ?? '',
+
   // OpenAI / Anthropic are admin-panel-only (like Gemini/Fal). No env fallback:
   // OPENAI_API_KEY / ANTHROPIC_API_KEY are common ambient vars, and falling back
   // to them would let the admin "Test" silently pass on the machine's own key.

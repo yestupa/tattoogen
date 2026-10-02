@@ -19,8 +19,8 @@ export function Footer() {
     {
       title: m['landing.footer.products'](),
       links: [
+        { label: 'Tattoo Generator', href: '/' },
         { label: 'ShipAny', href: 'https://shipany.ai' },
-        { label: 'ImgAny', href: 'https://imgany.ai' },
       ],
     },
     {

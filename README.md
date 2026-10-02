@@ -1,244 +1,166 @@
-# ShipAny Image Agent
+# Tattoo Generator
 
-A complete AI image product, ready to rebrand and ship. Users describe an edit
-in plain language; an agent decides which tool to call, generates or edits the
-image, and charges credits for it. Payments, subscriptions, credits, auth,
-admin panel and i18n are already wired — you change the branding, the examples
-and the prices.
+Tattoo Generator 是一款以对话方式工作的 AI 纹身设计应用。用户可以描述寓意、风格、位置和细节，也可以上传参考图。FastClaw 智能体负责理解需求、生成纹身概念，并根据后续消息持续修改。
 
-Built on [ShipAny](https://shipany.ai) (TanStack Start + Drizzle + better-auth).
-It deploys to Cloudflare Workers with no filesystem and no background workers.
+生产域名为 https://bestaitattoogenerator.com
 
-## What it does
+项目基于 ShipAny Image Agent 模板，保留了账号、积分、订阅、后台设置、图片库、多语言和 Cloudflare Workers 部署能力。
 
-The chat is an agent loop, not a prompt box. A message goes to an LLM that has
-two tools — `generate_image` and `edit_image` — and it picks one, writes the
-prompt, and calls it. That's why a user can say "make the background white and
-keep her hair" and get one image back instead of a form to fill in.
+## 当前版本包含什么
 
-Around that loop:
+- 纹身专属首页、示例提示词、暖纸色视觉和品牌图标
+- 细线、植物、美式传统和文字四类快速灵感
+- FastClaw 对话接口，支持流式回复、连续会话和参考图
+- 固定智能体 ID，默认连接 FastClaw Cloud
+- FastClaw 未配置时继续使用模板原有的本地智能体流程
+- 后台 FastClaw 配置与连接测试
+- FastClaw 每个生成回合按所选模型扣除积分，请求失败时自动退回
+- 英文和中文界面
 
-- **Credits** — priced per model from a catalog, deducted atomically, refunded
-  when generation fails. The turn is refused up front when the balance is
-  short, so nobody pays for an LLM turn that ends in a paywall.
-- **Paywall that fits** — someone without a plan is shown plans; someone on a
-  plan who ran dry is shown top-ups. The server decides which.
-- **Providers** — Replicate and Fal, both configured in the admin panel. The
-  composer's model list maps each model to the id every provider knows it by,
-  so switching provider doesn't change what the user picked.
-- **Stateless** — conversation history replays from the database each turn, and
-  generated images go straight to object storage. No session files, no disk.
+## 本地启动
 
-## Quick start
+下面的命令都在 Windows PowerShell 中执行。
 
-```bash
-pnpm install
-cp .env.example .env.development     # set AUTH_SECRET at minimum
-pnpm db:push                         # creates data/local.db
-pnpm rbac:init --admin-email=you@example.com --admin-password=<pick-one>
-pnpm dev                             # http://localhost:3000
+### 第一步：安装依赖
+
+```powershell
+pnpm.cmd install
 ```
 
-Then sign in and open `/admin/settings` — **the app cannot generate anything
-until you configure it there.** Nothing is baked into env.
+### 第二步：准备本地配置
 
-## Configure
-
-Admin → Settings → **AI**:
-
-| Group                | What to set                                                                              |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| **Chat Model**       | Default provider (`auto` prefers OpenAI, falls back to Anthropic), and the model id      |
-| **OpenAI**           | Base URL + API key. Any OpenAI-compatible gateway works — OpenRouter, Together, your own |
-| **Anthropic**        | Base URL + API key, if you'd rather drive the agent with Claude                          |
-| **Image Generation** | Default provider, then the **Replicate** token or **Fal** key in the groups below        |
-
-Admin → Settings → **Storage** (Cloudflare R2 / S3). Generated images are uploaded there,
-and **on Cloudflare Workers this is not optional** — there is no disk to fall
-back to.
-
-Every group has a **Test** button that makes one real request, so you find out
-a key is wrong before a user does.
-
-Also worth setting: Payment (Stripe/Creem/PayPal), Email (Resend or Cloudflare
-Email) for verification mail, and Google OAuth.
-
-## Make it yours
-
-| What                | Where                                                                      |
-| ------------------- | -------------------------------------------------------------------------- |
-| Name, logo, favicon | `VITE_APP_NAME` / `VITE_APP_LOGO`, and `public/logo.*`, `public/favicon.*` |
-| Theme colour        | `src/styles/globals.css` — one `oklch` hue drives accent and neutrals      |
-| Landing copy        | `messages/en.json` + `messages/zh.json`, keys under `landing.*`            |
-| Example gallery     | `src/components/agent/prompt-examples.ts` + `landing.examples.*`           |
-| Models and prices   | `AGENT_MODEL_OPTIONS` in `src/lib/agent-settings.ts`                       |
-| Plans and top-ups   | `src/config/pricing.ts`                                                    |
-
-A category's examples end at the first missing translation, so removing one is
-an edit to `messages/*.json` — no code change.
-
-**Set your credit prices against real cost.** `AGENT_MODEL_OPTIONS` carries a
-`credits` figure per model; the comment above it records what each model costs
-upstream and the ruler used (200 credits per dollar at the top-up rate). Change
-the models and you must redo that arithmetic, or you will sell images below
-cost. Note that plans hand out credits more cheaply than the top-up rate, so
-check the cheapest tier, not the standard one.
-
-## Deploy to Cloudflare Workers
-
-The build target is `cloudflare_module`; nitro merges your `wrangler.jsonc`
-into the generated config. Database is D1.
-
-### 1. Config file
-
-```bash
-cp wrangler.example.jsonc wrangler.jsonc     # gitignored — holds real ids
+```powershell
+Copy-Item .env.example .env.development
 ```
 
-Set `name` to your worker name and `vars.VITE_APP_NAME`. Note that
-`wrangler d1 create` suggests a binding named after the database — ignore it
-and keep `"binding": "DB"`, which is the name the code looks for.
+打开 `.env.development`，至少检查这些项目：
 
-### 2. Create the database
-
-```bash
-npx wrangler login
-npx wrangler d1 create <your-db-name>
+```dotenv
+VITE_APP_URL=http://localhost:3000
+VITE_APP_NAME=Tattoo Generator
+DATABASE_PROVIDER=sqlite
+DATABASE_URL=file:data/local.db
+AUTH_SECRET=请换成一段足够长的随机字符串
+CONFIG_ENCRYPTION_KEY=请换成另一段足够长的随机字符串
+FASTCLAW_BASE_URL=https://cloud.fastclaw.ai
+FASTCLAW_AGENT_ID=agt_1d82e3db42549e69c6ff
+FASTCLAW_API_KEY=
 ```
 
-Paste the returned `database_id` into `wrangler.jsonc`, and set
-`database_name` to match.
+API Key 建议通过后台保存。后台会把它作为服务端配置处理，浏览器页面无法读取明文。开发阶段也可以把它填入 `.env.development`，该文件已经被 Git 忽略。
 
-### 3. Push the schema
+### 第三步：创建本地数据库
 
-Migrations are generated locally and applied remotely:
-
-```bash
-pnpm db:generate                                        # writes drizzle/
-npx wrangler d1 migrations apply <your-db-name> --remote
+```powershell
+pnpm.cmd db:push
+pnpm.cmd rbac:init
 ```
 
-### 4. Seed roles and permissions
+### 第四步：启动网站
 
-`rbac:init` talks to a database over libsql, which can't reach remote D1. Run
-it against wrangler's **local** D1 — a plain SQLite file — and copy the rows
-up:
-
-```bash
-npx wrangler d1 migrations apply <your-db-name> --local
-
-# miniflare keeps its own metadata.sqlite next to the database — skip it or
-# you will seed the wrong file and the copy below comes out empty.
-LOCAL_D1=$(find .wrangler/state -path '*d1*' -name '*.sqlite' ! -name 'metadata.sqlite' | head -1)
-DATABASE_PROVIDER=sqlite DATABASE_URL="file:$LOCAL_D1" pnpm rbac:init
-
-sqlite3 "$LOCAL_D1" ".dump role permission role_permission" \
-  | grep '^INSERT INTO' | sed 's/^INSERT INTO/INSERT OR IGNORE INTO/' > /tmp/rbac.sql
-npx wrangler d1 execute <your-db-name> --remote --file=/tmp/rbac.sql
+```powershell
+pnpm.cmd dev
 ```
 
-### 5. Secrets
+浏览器打开 http://localhost:3000
 
-Never put these in `vars` — that block is public.
+### 第五步：创建管理员
 
-```bash
-openssl rand -base64 32 | npx wrangler secret put AUTH_SECRET
-openssl rand -base64 32 | npx wrangler secret put CONFIG_ENCRYPTION_KEY
+在网站注册一个账号，然后回到 PowerShell 执行：
+
+```powershell
+pnpm.cmd rbac:assign --email=你的邮箱 --role=super_admin
 ```
 
-### 6. Production URL — in two places
+重新登录后打开 http://localhost:3000/admin/settings
 
-```bash
-cat > .env.production <<'EOF'
-VITE_APP_URL=https://your-domain.com
-VITE_APP_NAME=Your App
-DATABASE_PROVIDER=d1
-EOF
+进入 AI 设置中的 FastClaw，填写：
+
+- Base URL：`https://cloud.fastclaw.ai`
+- Agent ID：`agt_1d82e3db42549e69c6ff`
+- API Key：填写你的 FastClaw 密钥
+
+点击测试。测试过程会读取可访问的智能体列表，并确认指定智能体存在，不会发起图片生成任务。
+
+## FastClaw 请求流程
+
+1. 用户在首页输入纹身需求，也可以附带参考图。
+2. 服务端读取历史对话，并为用户和当前对话生成稳定的会话标识。
+3. 服务端根据模型目录扣除本次生成所需积分，不采用浏览器提交的积分数值。
+4. 服务端向 `/v1/chat/completions` 发送请求。
+5. 请求中包含智能体 ID、消息历史、参考图和纹身设置。
+6. FastClaw 通过 SSE 返回流式内容，前端逐段显示。
+7. API Key 只在服务端加入 Authorization 请求头。
+8. 接口失败或用户取消请求时，系统退回本次扣除的积分。
+
+如果 FastClaw 返回错误，界面会显示经过清理的错误信息，密钥不会进入浏览器响应或日志。
+
+## 验证命令
+
+```powershell
+pnpm.cmd test
+pnpm.cmd build
 ```
 
-Then set the **same** `VITE_APP_URL` in `wrangler.jsonc` `vars`. Both are
-needed and for different reasons: `.env.production` is read at build time and
-baked into the bundle, while `vars` is what the server reads at runtime.
-Miss the second and better-auth rejects every sign-in with `Invalid origin`.
+## 部署到 Cloudflare Workers
 
-For a custom domain, add it to `wrangler.jsonc` — the zone must already be in
-your Cloudflare account:
+### 第一步：复制部署配置
 
-```jsonc
-"routes": [{ "pattern": "your-domain.com", "custom_domain": true }]
+```powershell
+Copy-Item wrangler.example.jsonc wrangler.jsonc
 ```
 
-### 7. Deploy
+在 `wrangler.jsonc` 中填入真实的 D1 数据库 ID。模板已经设置了 Worker 名称、生产域名、FastClaw 地址和智能体 ID。
 
-```bash
-pnpm cf:deploy
+### 第二步：创建并迁移 D1 数据库
+
+```powershell
+npx.cmd wrangler login
+npx.cmd wrangler d1 create tattoo-generator
+pnpm.cmd db:generate
+npx.cmd wrangler d1 migrations apply tattoo-generator --remote
 ```
 
-That sources `.env.production`, builds with the Cloudflare preset, and runs
-`wrangler deploy`.
+### 第三步：保存服务端密钥
 
-### 8. Admin account
+逐条执行以下命令。Wrangler 会提示你粘贴值，输入内容不会写进仓库。
 
-Sign up through the site, then grant yourself the role:
-
-```bash
-npx wrangler d1 execute <your-db-name> --remote --command="
-  INSERT INTO user_role (id, user_id, role_id)
-  SELECT lower(hex(randomblob(16))),
-         (SELECT id FROM user WHERE email='you@example.com'),
-         (SELECT id FROM role WHERE name='super_admin')"
+```powershell
+npx.cmd wrangler secret put AUTH_SECRET
+npx.cmd wrangler secret put CONFIG_ENCRYPTION_KEY
+npx.cmd wrangler secret put FASTCLAW_API_KEY
 ```
 
-Now open `/admin/settings` on the live site and fill in the providers — the
-production database starts empty, and none of your local configuration
-travels with the deploy.
+### 第四步：部署
 
-### Redeploying
-
-`pnpm cf:deploy` again. Secrets, database and settings persist; only the code
-and the baked env change.
-
-## Deploy elsewhere
-
-`pnpm build && pnpm start` runs the Node build on any host. A `Dockerfile` is
-included. Postgres and MySQL are supported via `DATABASE_PROVIDER` — run
-`pnpm db:setup` after changing it to swap the schema template. Object storage
-is still required for generated images.
-
-## Commands
-
-| Command            | What it does                               |
-| ------------------ | ------------------------------------------ |
-| `pnpm dev`         | Dev server on port 3000                    |
-| `pnpm build`       | Production build                           |
-| `pnpm start`       | Run the production build                   |
-| `pnpm test`        | Unit tests (vitest)                        |
-| `pnpm db:push`     | Sync schema to the database — dev only     |
-| `pnpm db:generate` | Write a migration to `drizzle/`            |
-| `pnpm db:migrate`  | Apply pending migrations                   |
-| `pnpm db:studio`   | Drizzle Studio                             |
-| `pnpm rbac:init`   | Seed roles and permissions, optional admin |
-| `pnpm cf:deploy`   | Build and deploy to Cloudflare Workers     |
-
-## Structure
-
+```powershell
+pnpm.cmd run cf:deploy
 ```
-src/
-├── modules/agent/      # The agent: runtime, tools, history replay, paywall
-├── modules/            # credits, payment, subscriptions, chats, rbac, config
-├── core/               # db, auth, payment, email, storage, ai providers
-├── routes/(agent)/     # Chat, library, chat list
-├── routes/api/agent/   # Chat SSE endpoint, library, chat CRUD
-├── routes/admin/       # Admin panel
-├── components/agent/   # Composer, transcript, preview pane, sidebar
-├── lib/agent-settings.ts   # Model catalog, credit prices, provider mapping
-└── config/pricing.ts       # Plans and top-up packs
 
-messages/{en,zh}.json   # All copy, flat dot-keyed
+部署完成后，在 Cloudflare 中把 `bestaitattoogenerator.com` 绑定到这个 Worker，并在生产站点注册账号、授予 `super_admin` 角色，再检查后台 FastClaw 测试。
+
+## 关键目录
+
+```text
+src/modules/agent/fastclaw.ts       FastClaw 请求与流式响应解析
+src/modules/agent/service.ts        FastClaw 和模板智能体的流程切换
+src/modules/config/settings.ts      后台 FastClaw 设置项
+src/components/agent               对话输入、示例和结果界面
+messages/en.json                    英文文案
+messages/zh.json                    中文文案
+public/imgs/generated               首页纹身示例图
+wrangler.example.jsonc              Cloudflare 部署配置示例
 ```
+
+## 安全说明
+
+- 不要把 API Key 写入以 `VITE_` 开头的变量。
+- 不要把 `.env.development`、`.env.production` 或 `wrangler.jsonc` 提交到 Git。
+- 生产环境使用 Wrangler secret 保存 FastClaw、认证和加密密钥。
+- 每次修改 FastClaw 地址或智能体 ID 后，都在后台重新运行连接测试。
 
 ## License
 
-Proprietary. See [LICENSE](./LICENSE).
+Proprietary. See LICENSE.
 
-**ShipAny** — [shipany.ai](https://shipany.ai)
+Built on ShipAny: https://shipany.ai

@@ -5,7 +5,7 @@
 // the generated .output/server/wrangler.json; deploy with `pnpm cf:deploy`.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "shipany-tanstack",
+  "name": "tattoo-generator",
   // Pinned rather than left to the build, which stamps today's date — the
   // API rejects a date it considers to be in the future, so a machine
   // running ahead of Cloudflare's clock fails to deploy.
@@ -14,17 +14,25 @@
   "observability": {
     "enabled": true,
   },
+  "routes": [
+    {
+      "pattern": "bestaitattoogenerator.com",
+      "custom_domain": true,
+    },
+  ],
   "vars": {
     "DATABASE_PROVIDER": "d1",
     // Server-side runtime fallbacks for the build-time VITE_* values — keep in
     // sync with .env.production (better-auth trustedOrigins, payment callbacks).
-    "VITE_APP_URL": "https://<worker>.<your-subdomain>.workers.dev",
-    "VITE_APP_NAME": "My App",
+    "VITE_APP_URL": "https://bestaitattoogenerator.com",
+    "VITE_APP_NAME": "Tattoo Generator",
+    "FASTCLAW_BASE_URL": "https://cloud.fastclaw.ai",
+    "FASTCLAW_AGENT_ID": "agt_1d82e3db42549e69c6ff",
   },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "shipany-db",
+      "database_name": "tattoo-generator",
       "database_id": "REPLACE_WITH_OUTPUT_OF_WRANGLER_D1_CREATE",
       "migrations_dir": "drizzle",
     },

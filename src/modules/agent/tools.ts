@@ -26,7 +26,7 @@ import {
   type ImageProviderName,
 } from '@/lib/agent-settings';
 
-// Tools the ImgAny agent can call. They are the ONLY tools the agent gets —
+// Tools the built-in fallback agent can call. They are the ONLY tools it gets —
 // no filesystem/bash base tools — so the agent loop can't touch anything
 // outside image generation.
 
