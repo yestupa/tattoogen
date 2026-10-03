@@ -279,6 +279,8 @@ export function PromptLauncher({ className }: { className?: string }) {
                     <img
                       src={example.image}
                       alt={example.title}
+                      width={512}
+                      height={512}
                       loading="lazy"
                       className="size-full object-cover"
                     />

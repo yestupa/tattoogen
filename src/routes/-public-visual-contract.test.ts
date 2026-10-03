@@ -112,6 +112,7 @@ describe('public visual contracts', () => {
   it('gives public images dimensions and lazy loading without reference-site assets', () => {
     for (const path of [
       '../components/blog-card.tsx',
+      '../components/agent/prompt-launcher.tsx',
       './blog/$slug.tsx',
       ...blocks.map((block) => `../blocks/${block}.tsx`),
     ]) {
@@ -124,20 +125,39 @@ describe('public visual contracts', () => {
         true,
         ts.ScriptKind.TSX
       );
+      let imageCount = 0;
       const visit = (node: ts.Node) => {
         if (
           ts.isJsxSelfClosingElement(node) &&
           node.tagName.getText(file) === 'img'
         ) {
+          imageCount += 1;
           const attributes = node.attributes.properties.map((attribute) =>
             attribute.name?.getText(file)
           );
           for (const attribute of ['alt', 'width', 'height', 'loading'])
             expect(attributes, path).toContain(attribute);
+          const imageAttributes = node.attributes.properties.filter(
+            ts.isJsxAttribute
+          );
+          const loading = imageAttributes.find(
+            (attribute) => attribute.name.getText(file) === 'loading'
+          );
+          expect(loading?.initializer?.getText(file), path).toBe('"lazy"');
+          for (const dimension of ['width', 'height']) {
+            const attribute = imageAttributes.find(
+              (attribute) => attribute.name.getText(file) === dimension
+            );
+            expect(attribute?.initializer?.getText(file), path).toMatch(
+              /^\{[1-9]\d*\}$/
+            );
+          }
         }
         ts.forEachChild(node, visit);
       };
       visit(file);
+      if (path.endsWith('/prompt-launcher.tsx'))
+        expect(imageCount).toBeGreaterThan(0);
     }
   });
 
