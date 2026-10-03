@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
 import { TextField } from '@/components/form-field';
+import { PageHeading } from '@/components/page-heading';
 import { RichTextEditor } from '@/components/rich-text-editor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -368,50 +369,51 @@ function PostsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{m['admin.posts.title']()}</h1>
-          <p className="text-muted-foreground">
-            {m['admin.posts.description']()}
-          </p>
-        </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
-            <Plus className="size-4" />
-            {m['admin.posts.create']()}
-          </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>{m['admin.posts.create_title']()}</DialogTitle>
-              <DialogDescription>
-                {m['admin.posts.create_description']()}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                createForm.handleSubmit();
-              }}
-            >
-              {renderFields(createForm)}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCreateOpen(false)}
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.posts.title']()}
+        description={m['admin.posts.description']()}
+        action={
+          <>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
+                <Plus className="size-4" />
+                {m['admin.posts.create']()}
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-3xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+                <DialogHeader>
+                  <DialogTitle>{m['admin.posts.create_title']()}</DialogTitle>
+                  <DialogDescription>
+                    {m['admin.posts.create_description']()}
+                  </DialogDescription>
+                </DialogHeader>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    createForm.handleSubmit();
+                  }}
                 >
-                  {m['admin.posts.cancel']()}
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {m['admin.posts.save']()}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  {renderFields(createForm)}
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreateOpen(false)}
+                    >
+                      {m['admin.posts.cancel']()}
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending}>
+                      {m['admin.posts.save']()}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+      />
 
       <div className="border-border flex gap-1 overflow-x-auto overflow-y-hidden border-b">
         {TABS.map((tb) => (
@@ -445,6 +447,7 @@ function PostsPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
@@ -453,7 +456,7 @@ function PostsPage() {
         open={!!editingPost}
         onOpenChange={(v) => !v && setEditingPost(null)}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-3xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.posts.edit_title']()}</DialogTitle>
             <DialogDescription>
@@ -488,7 +491,7 @@ function PostsPage() {
         open={!!deletingPost}
         onOpenChange={(v) => !v && setDeletingPost(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.posts.delete_title']()}</DialogTitle>
             <DialogDescription>

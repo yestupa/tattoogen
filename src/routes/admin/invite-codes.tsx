@@ -17,6 +17,7 @@ import { formatDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -224,21 +225,20 @@ function InviteCodesPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {m['admin.invite_codes.title']()}
-          </h1>
-          <p className="text-muted-foreground">
-            {m['admin.invite_codes.description']()}
-          </p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="size-4" />
-          {m['admin.invite_codes.create_button']()}
-        </Button>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.invite_codes.title']()}
+        description={m['admin.invite_codes.description']()}
+        action={
+          <>
+            <Button onClick={() => setCreateOpen(true)} className="gap-2">
+              <Plus className="size-4" />
+              {m['admin.invite_codes.create_button']()}
+            </Button>
+          </>
+        }
+      />
 
       <div className="border-border flex gap-1 overflow-x-auto overflow-y-hidden border-b">
         {TABS.map((tb) => (
@@ -272,6 +272,7 @@ function InviteCodesPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
@@ -284,7 +285,7 @@ function InviteCodesPage() {
           if (!v) createForm.reset();
         }}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.invite_codes.create_title']()}</DialogTitle>
             <DialogDescription>
@@ -394,7 +395,7 @@ function InviteCodesPage() {
         open={!!deletingId}
         onOpenChange={(v) => !v && setDeletingId(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.invite_codes.delete_title']()}</DialogTitle>
             <DialogDescription>

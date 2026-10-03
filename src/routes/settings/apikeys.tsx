@@ -18,6 +18,7 @@ import {
 } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -181,63 +182,63 @@ function ApiKeysPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {m['settings.apikeys.title']()}
-          </h1>
-          <p className="text-muted-foreground">
-            {m['settings.apikeys.description']()}
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
-            <Plus className="size-4" />
-            {m['settings.apikeys.create_key']()}
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{m['settings.apikeys.create_title']()}</DialogTitle>
-              <DialogDescription>
-                {m['settings.apikeys.create_description']()}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCreate();
-              }}
-            >
-              <div className="space-y-2 py-4">
-                <Label htmlFor="key-name">
-                  {m['settings.apikeys.key_name']()}
-                </Label>
-                <Input
-                  id="key-name"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder={m['settings.apikeys.key_name_placeholder']()}
-                />
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        title={m['settings.apikeys.title']()}
+        description={m['settings.apikeys.description']()}
+        action={
+          <>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
+                <Plus className="size-4" />
+                {m['settings.apikeys.create_key']()}
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+                <DialogHeader>
+                  <DialogTitle>
+                    {m['settings.apikeys.create_title']()}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {m['settings.apikeys.create_description']()}
+                  </DialogDescription>
+                </DialogHeader>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleCreate();
+                  }}
                 >
-                  {m['settings.apikeys.cancel']()}
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending
-                    ? m['settings.apikeys.creating']()
-                    : m['settings.apikeys.create']()}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  <div className="space-y-2 py-4">
+                    <Label htmlFor="key-name">
+                      {m['settings.apikeys.key_name']()}
+                    </Label>
+                    <Input
+                      id="key-name"
+                      value={newKeyName}
+                      onChange={(e) => setNewKeyName(e.target.value)}
+                      placeholder={m['settings.apikeys.key_name_placeholder']()}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                    >
+                      {m['settings.apikeys.cancel']()}
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending}>
+                      {createMutation.isPending
+                        ? m['settings.apikeys.creating']()
+                        : m['settings.apikeys.create']()}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+      />
 
       <Dialog
         open={!!createdKey}
@@ -245,7 +246,7 @@ function ApiKeysPage() {
           if (!v) setCreatedKey('');
         }}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['settings.apikeys.created_title']()}</DialogTitle>
             <DialogDescription>
@@ -286,7 +287,7 @@ function ApiKeysPage() {
           if (!isOpen && !deleteMutation.isPending) setKeyToDelete(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['settings.apikeys.delete_title']()}</DialogTitle>
             <DialogDescription>
@@ -335,6 +336,7 @@ function ApiKeysPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>

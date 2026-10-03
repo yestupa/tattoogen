@@ -71,11 +71,14 @@ export function UserMenu({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger className="ring-sidebar-ring w-full rounded-lg outline-none focus-visible:ring-2 [&>div]:w-full">
+          <DropdownMenuTrigger
+            aria-label={name}
+            className="ring-primary min-h-11 w-full rounded-xl outline-none focus-visible:ring-2 [&>div]:w-full"
+          >
             <SidebarMenuButton
               size="lg"
               render={<div />}
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-primary/10 data-[state=open]:text-primary min-h-11 rounded-xl"
             >
               <Avatar className="size-8 rounded-lg">
                 <AvatarImage src={image || undefined} alt={name} />
@@ -93,7 +96,7 @@ export function UserMenu({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-56"
+            className="[&_[role=menuitem]]:focus:bg-primary/10 [&_[role=menuitem]]:focus:text-primary min-w-56 rounded-xl [&_[role=menuitem]]:min-h-11 [&_[role=menuitem]]:rounded-lg"
             side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
@@ -128,11 +131,11 @@ export function UserMenu({
               </DropdownMenuItem>
             )}
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="gap-2 px-2 py-2">
+              <DropdownMenuSubTrigger className="min-h-11 gap-2 px-2 py-2">
                 <LanguagesIcon className="size-4" />
                 <span className="flex-1">{localeNames[locale] || locale}</span>
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              <DropdownMenuSubContent className="rounded-xl [&_[role=menuitem]]:min-h-11">
                 {locales.map((loc) => (
                   <DropdownMenuItem
                     key={loc}
@@ -145,7 +148,7 @@ export function UserMenu({
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="gap-2 px-2 py-2">
+              <DropdownMenuSubTrigger className="min-h-11 gap-2 px-2 py-2">
                 <PaletteIcon className="size-4" />
                 <span className="flex-1">
                   {theme === 'dark'
@@ -155,7 +158,7 @@ export function UserMenu({
                       : m['common.nav.theme_system']()}
                 </span>
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              <DropdownMenuSubContent className="rounded-xl [&_[role=menuitem]]:min-h-11">
                 <DropdownMenuItem onClick={() => setTheme('light')}>
                   <SunIcon className="size-4" />
                   <span className="flex-1">

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { localizeHref } from '@/paraglide/runtime.js';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -126,13 +127,12 @@ function ChatsPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">{m['admin.chats.title']()}</h1>
-        <p className="text-muted-foreground">
-          {m['admin.chats.description']()}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.chats.title']()}
+        description={m['admin.chats.description']()}
+      />
 
       <Card>
         <CardContent>
@@ -152,12 +152,13 @@ function ChatsPage() {
             rowKey={(row) => row.id}
             onRefresh={() => query.refetch()}
             loading={query.isFetching}
+            error={query.error?.message}
           />
         </CardContent>
       </Card>
 
       <Dialog open={!!zoom} onOpenChange={(open) => !open && setZoom(null)}>
-        <DialogContent className="max-h-[90dvh] overflow-auto p-2 sm:max-w-3xl">
+        <DialogContent className="max-h-[90dvh] overflow-auto rounded-2xl p-2 sm:max-w-3xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogTitle className="sr-only">
             {m['agent.preview.image']()}
           </DialogTitle>

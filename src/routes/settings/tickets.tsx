@@ -17,6 +17,7 @@ import {
   ImageUploader,
   type ImageUploaderValue,
 } from '@/components/image-uploader';
+import { PageHeading } from '@/components/page-heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -277,21 +278,19 @@ function TicketsPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {m['settings.tickets.title']()}
-          </h1>
-          <p className="text-muted-foreground">
-            {m['settings.tickets.description']()}
-          </p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="size-4" />
-          {m['settings.tickets.create_button']()}
-        </Button>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        title={m['settings.tickets.title']()}
+        description={m['settings.tickets.description']()}
+        action={
+          <>
+            <Button onClick={() => setCreateOpen(true)} className="gap-2">
+              <Plus className="size-4" />
+              {m['settings.tickets.create_button']()}
+            </Button>
+          </>
+        }
+      />
 
       <Card>
         <CardContent>
@@ -308,13 +307,14 @@ function TicketsPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['settings.tickets.create_title']()}</DialogTitle>
             <DialogDescription>
@@ -390,7 +390,7 @@ function TicketsPage() {
         open={!!activeTicket}
         onOpenChange={(v) => !v && setActiveTicket(null)}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="rounded-2xl sm:max-w-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {activeTicket?.title}

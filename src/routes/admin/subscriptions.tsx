@@ -8,6 +8,7 @@ import { formatDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -137,15 +138,12 @@ function SubscriptionsPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">
-          {m['admin.subscriptions.title']()}
-        </h1>
-        <p className="text-muted-foreground">
-          {m['admin.subscriptions.description']()}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.subscriptions.title']()}
+        description={m['admin.subscriptions.description']()}
+      />
 
       <div className="border-border flex gap-1 overflow-x-auto overflow-y-hidden border-b">
         {TABS.map((tb) => (
@@ -179,6 +177,7 @@ function SubscriptionsPage() {
             onSearchChange={setSearch}
             onRefresh={() => query.refetch()}
             loading={query.isFetching}
+            error={query.error?.message}
           />
         </CardContent>
       </Card>

@@ -19,6 +19,7 @@ import {
 } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -248,52 +249,53 @@ function PermissionsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {m['admin.permissions.title']()}
-          </h1>
-          <p className="text-muted-foreground">
-            {m['admin.permissions.description']()}
-          </p>
-        </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
-            <Plus className="size-4" />
-            {m['admin.permissions.create_permission']()}
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{m['admin.permissions.create_title']()}</DialogTitle>
-              <DialogDescription>
-                {m['admin.permissions.create_description']()}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              className="grid gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCreate();
-              }}
-            >
-              {renderFormFields(form, setForm)}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCreateOpen(false)}
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.permissions.title']()}
+        description={m['admin.permissions.description']()}
+        action={
+          <>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
+                <Plus className="size-4" />
+                {m['admin.permissions.create_permission']()}
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+                <DialogHeader>
+                  <DialogTitle>
+                    {m['admin.permissions.create_title']()}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {m['admin.permissions.create_description']()}
+                  </DialogDescription>
+                </DialogHeader>
+                <form
+                  className="grid gap-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleCreate();
+                  }}
                 >
-                  {m['admin.permissions.cancel']()}
-                </Button>
-                <Button type="submit" disabled={saving}>
-                  {m['admin.permissions.save']()}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  {renderFormFields(form, setForm)}
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreateOpen(false)}
+                    >
+                      {m['admin.permissions.cancel']()}
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                      {m['admin.permissions.save']()}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+      />
 
       <Card>
         <CardContent>
@@ -310,6 +312,7 @@ function PermissionsPage() {
             onSearchChange={setSearch}
             onRefresh={() => query.refetch()}
             loading={query.isFetching}
+            error={query.error?.message}
           />
         </CardContent>
       </Card>
@@ -319,7 +322,7 @@ function PermissionsPage() {
         open={!!editingPerm}
         onOpenChange={(v) => !v && setEditingPerm(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.permissions.edit_title']()}</DialogTitle>
             <DialogDescription>
@@ -355,7 +358,7 @@ function PermissionsPage() {
         open={!!deletingPerm}
         onOpenChange={(v) => !v && setDeletingPerm(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.permissions.delete_title']()}</DialogTitle>
             <DialogDescription>

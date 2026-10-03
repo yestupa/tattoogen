@@ -15,6 +15,7 @@ import { ApiError, apiGet, apiPost, type PageResult } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -255,13 +256,11 @@ function BillingPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">{m['settings.billing.title']()}</h1>
-        <p className="text-muted-foreground">
-          {m['settings.billing.description']()}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        title={m['settings.billing.title']()}
+        description={m['settings.billing.description']()}
+      />
 
       <Card className="max-w-md">
         <CardHeader>
@@ -359,12 +358,13 @@ function BillingPage() {
               await listQuery.refetch();
             }}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
 
       <Dialog open={!!viewing} onOpenChange={(v) => !v && setViewing(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>
               {m['settings.billing.subscription_details']()}
@@ -429,7 +429,7 @@ function BillingPage() {
       </Dialog>
 
       <Dialog open={!!canceling} onOpenChange={(v) => !v && setCanceling(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['settings.billing.cancel_title']()}</DialogTitle>
             <DialogDescription>

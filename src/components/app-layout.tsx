@@ -1,19 +1,15 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { useSession } from '@/core/auth/client';
 import { usePathname, useRouter } from '@/core/i18n/navigation';
 import { apiGet } from '@/lib/api-client';
+import { m } from '@/paraglide/messages.js';
 import { useUserPermissions } from '@/hooks/use-user-permissions';
 import { AppSidebar, type NavItem } from '@/components/app-sidebar';
-import { Separator } from '@/components/ui/separator';
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
+import { BrandArtwork } from '@/components/brand-artwork';
+import { PageState } from '@/components/page-state';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { UserMenu } from '@/components/user-menu';
 
 export function AppLayout({
@@ -125,17 +121,19 @@ export function AppLayout({
 
   if (isPending || !authorized || !session?.user) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="border-primary size-6 animate-spin rounded-full border-2 border-t-transparent" />
-          <span className="text-muted-foreground text-sm">Loading...</span>
-        </div>
+      <div className="bg-background flex min-h-svh items-center justify-center p-4">
+        <PageState
+          variant="loading"
+          title={m['common.state.loading_title']()}
+          description={brand}
+          artwork={<BrandArtwork className="text-primary mx-auto max-w-24" />}
+        />
       </div>
     );
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="bg-background h-svh min-h-0 overflow-hidden">
       <AppSidebar
         brand={brand}
         brandHref={brandHref}
@@ -154,18 +152,26 @@ export function AppLayout({
       {/* min-w-0: let the inset shrink below its content's min-content width —
           otherwise wide tables stretch the page and force horizontal scroll
           instead of scrolling inside their own overflow-x-auto wrappers */}
-      <SidebarInset className="min-w-0">
-        <header className="flex h-14 shrink-0 items-center gap-2">
+      <main className="bg-background relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:m-2 md:ml-0 md:rounded-3xl md:border">
+        <header className="bg-background flex min-h-16 shrink-0 items-center gap-2 border-b">
           <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarTrigger
+              aria-label={m['common.nav.open_menu']()}
+              className="text-primary size-11 rounded-xl focus-visible:ring-2"
+            />
           </div>
+          <span className="min-w-0 truncate font-serif text-lg md:hidden">
+            {mobileBrand || brand}
+          </span>
           <div className="flex-1" />
           {headerExtra && (
             <div className="flex items-center gap-1 px-4">{headerExtra}</div>
           )}
         </header>
-        <main className="flex-1 overflow-auto">{children}</main>
-      </SidebarInset>
+        <div className="[&_input]:focus-visible:ring-primary/40 [&_textarea]:focus-visible:ring-primary/40 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [&_[data-slot=card]]:min-w-0 [&_[data-slot=card]]:rounded-2xl [&_[data-slot=card]]:shadow-none [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+          {children}
+        </div>
+      </main>
     </SidebarProvider>
   );
 }

@@ -23,6 +23,7 @@ import { formatDateTime } from '@/lib/time';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
 import { TextField } from '@/components/form-field';
+import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -207,82 +208,85 @@ function CategoriesPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {m['admin.categories.title']()}
-          </h1>
-          <p className="text-muted-foreground">
-            {m['admin.categories.description']()}
-          </p>
-        </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
-            <Plus className="size-4" />
-            {m['admin.categories.create']()}
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{m['admin.categories.create_title']()}</DialogTitle>
-              <DialogDescription>
-                {m['admin.categories.create_description']()}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                createForm.handleSubmit();
-              }}
-            >
-              <div className="space-y-4 py-4">
-                <createForm.Field name="slug">
-                  {(field) => (
-                    <TextField
-                      field={field}
-                      label={m['admin.categories.slug_field']()}
-                      placeholder={m['admin.categories.slug_placeholder']()}
-                    />
-                  )}
-                </createForm.Field>
-                <createForm.Field name="title">
-                  {(field) => (
-                    <TextField
-                      field={field}
-                      label={m['admin.categories.title_field']()}
-                      placeholder={m['admin.categories.title_placeholder']()}
-                    />
-                  )}
-                </createForm.Field>
-                <createForm.Field name="description">
-                  {(field) => (
-                    <TextField
-                      field={field}
-                      label={m['admin.categories.description_field']()}
-                      placeholder={m[
-                        'admin.categories.description_placeholder'
-                      ]()}
-                    />
-                  )}
-                </createForm.Field>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCreateOpen(false)}
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.categories.title']()}
+        description={m['admin.categories.description']()}
+        action={
+          <>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
+                <Plus className="size-4" />
+                {m['admin.categories.create']()}
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+                <DialogHeader>
+                  <DialogTitle>
+                    {m['admin.categories.create_title']()}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {m['admin.categories.create_description']()}
+                  </DialogDescription>
+                </DialogHeader>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    createForm.handleSubmit();
+                  }}
                 >
-                  {m['admin.categories.cancel']()}
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {m['admin.categories.save']()}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  <div className="space-y-4 py-4">
+                    <createForm.Field name="slug">
+                      {(field) => (
+                        <TextField
+                          field={field}
+                          label={m['admin.categories.slug_field']()}
+                          placeholder={m['admin.categories.slug_placeholder']()}
+                        />
+                      )}
+                    </createForm.Field>
+                    <createForm.Field name="title">
+                      {(field) => (
+                        <TextField
+                          field={field}
+                          label={m['admin.categories.title_field']()}
+                          placeholder={m[
+                            'admin.categories.title_placeholder'
+                          ]()}
+                        />
+                      )}
+                    </createForm.Field>
+                    <createForm.Field name="description">
+                      {(field) => (
+                        <TextField
+                          field={field}
+                          label={m['admin.categories.description_field']()}
+                          placeholder={m[
+                            'admin.categories.description_placeholder'
+                          ]()}
+                        />
+                      )}
+                    </createForm.Field>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreateOpen(false)}
+                    >
+                      {m['admin.categories.cancel']()}
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending}>
+                      {m['admin.categories.save']()}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+      />
 
       <Card>
         <CardContent>
@@ -299,6 +303,7 @@ function CategoriesPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
@@ -307,7 +312,7 @@ function CategoriesPage() {
         open={!!editingCat}
         onOpenChange={(v) => !v && setEditingCat(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.categories.edit_title']()}</DialogTitle>
             <DialogDescription>
@@ -372,7 +377,7 @@ function CategoriesPage() {
         open={!!deletingCat}
         onOpenChange={(v) => !v && setDeletingCat(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.categories.delete_title']()}</DialogTitle>
             <DialogDescription>

@@ -22,6 +22,7 @@ import {
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
 import { TextField } from '@/components/form-field';
+import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -250,78 +251,81 @@ function RolesPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{m['admin.roles.title']()}</h1>
-          <p className="text-muted-foreground">
-            {m['admin.roles.description']()}
-          </p>
-        </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
-            <Plus className="size-4" />
-            {m['admin.roles.create_role']()}
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{m['admin.roles.create_title']()}</DialogTitle>
-              <DialogDescription>
-                {m['admin.roles.create_description']()}
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                createForm.handleSubmit();
-              }}
-            >
-              <div className="space-y-4 py-4">
-                <createForm.Field name="name">
-                  {(field) => (
-                    <TextField
-                      field={field}
-                      label={m['admin.roles.name_field']()}
-                      placeholder={m['admin.roles.name_placeholder']()}
-                    />
-                  )}
-                </createForm.Field>
-                <createForm.Field name="title">
-                  {(field) => (
-                    <TextField
-                      field={field}
-                      label={m['admin.roles.title_field']()}
-                      placeholder={m['admin.roles.title_placeholder']()}
-                    />
-                  )}
-                </createForm.Field>
-                <createForm.Field name="description">
-                  {(field) => (
-                    <TextField
-                      field={field}
-                      label={m['admin.roles.description_field']()}
-                      placeholder={m['admin.roles.description_placeholder']()}
-                    />
-                  )}
-                </createForm.Field>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCreateOpen(false)}
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.roles.title']()}
+        description={m['admin.roles.description']()}
+        action={
+          <>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
+                <Plus className="size-4" />
+                {m['admin.roles.create_role']()}
+              </DialogTrigger>
+              <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+                <DialogHeader>
+                  <DialogTitle>{m['admin.roles.create_title']()}</DialogTitle>
+                  <DialogDescription>
+                    {m['admin.roles.create_description']()}
+                  </DialogDescription>
+                </DialogHeader>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    createForm.handleSubmit();
+                  }}
                 >
-                  {m['admin.roles.cancel']()}
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending}>
-                  {m['admin.roles.save']()}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  <div className="space-y-4 py-4">
+                    <createForm.Field name="name">
+                      {(field) => (
+                        <TextField
+                          field={field}
+                          label={m['admin.roles.name_field']()}
+                          placeholder={m['admin.roles.name_placeholder']()}
+                        />
+                      )}
+                    </createForm.Field>
+                    <createForm.Field name="title">
+                      {(field) => (
+                        <TextField
+                          field={field}
+                          label={m['admin.roles.title_field']()}
+                          placeholder={m['admin.roles.title_placeholder']()}
+                        />
+                      )}
+                    </createForm.Field>
+                    <createForm.Field name="description">
+                      {(field) => (
+                        <TextField
+                          field={field}
+                          label={m['admin.roles.description_field']()}
+                          placeholder={m[
+                            'admin.roles.description_placeholder'
+                          ]()}
+                        />
+                      )}
+                    </createForm.Field>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreateOpen(false)}
+                    >
+                      {m['admin.roles.cancel']()}
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending}>
+                      {m['admin.roles.save']()}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+      />
 
       <Card>
         <CardContent>
@@ -338,6 +342,7 @@ function RolesPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
@@ -347,7 +352,7 @@ function RolesPage() {
         open={!!editingRole}
         onOpenChange={(v) => !v && setEditingRole(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.roles.edit_title']()}</DialogTitle>
             <DialogDescription>
@@ -411,7 +416,7 @@ function RolesPage() {
         open={!!deletingRole}
         onOpenChange={(v) => !v && setDeletingRole(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.roles.delete_title']()}</DialogTitle>
             <DialogDescription>
@@ -437,7 +442,7 @@ function RolesPage() {
 
       {/* Permissions Dialog */}
       <Dialog open={!!permRole} onOpenChange={(v) => !v && setPermRole(null)}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>
               {m['admin.roles.manage_permissions_title']()}

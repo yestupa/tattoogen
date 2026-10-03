@@ -19,6 +19,7 @@ import {
 import { formatDateTime } from '@/lib/time';
 import { m } from '@/paraglide/messages.js';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -292,13 +293,12 @@ function UsersPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">{m['admin.users.title']()}</h1>
-        <p className="text-muted-foreground">
-          {m['admin.users.description']()}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.users.title']()}
+        description={m['admin.users.description']()}
+      />
 
       <Card>
         <CardContent>
@@ -315,6 +315,7 @@ function UsersPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
@@ -324,7 +325,7 @@ function UsersPage() {
         open={!!managingUser}
         onOpenChange={(v) => !v && setManagingUser(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.users.manage_roles_title']()}</DialogTitle>
             <DialogDescription>
@@ -369,7 +370,7 @@ function UsersPage() {
         open={!!creditsUser}
         onOpenChange={(v) => !v && setCreditsUser(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.users.manage_credits_title']()}</DialogTitle>
             <DialogDescription>

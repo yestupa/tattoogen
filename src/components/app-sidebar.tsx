@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 
@@ -131,18 +129,18 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar variant="inset">
-      <SidebarHeader>
+    <Sidebar variant="inset" className="bg-sidebar">
+      <SidebarHeader className="px-3 py-5">
         <SidebarMenu>
           <SidebarMenuItem>
             <Link
               href={brandHref}
-              className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm"
+              className="hover:bg-sidebar-accent focus-visible:ring-primary flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm outline-none focus-visible:ring-2"
             >
               <img
                 src={envConfigs.app_logo}
                 alt={envConfigs.app_name}
-                className="size-6 shrink-0"
+                className="size-8 shrink-0"
               />
               <span className="flex-1 font-serif text-lg leading-none italic">
                 {brand}
@@ -152,7 +150,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="[&_[data-sidebar=menu-button]]:focus-visible:ring-primary [&_[data-sidebar=menu-button]]:data-[active=true]:bg-primary [&_[data-sidebar=menu-button]]:data-[active=true]:text-primary-foreground [&_[data-sidebar=menu-sub-button]]:data-[active=true]:bg-primary/10 [&_[data-sidebar=menu-sub-button]]:data-[active=true]:text-primary px-2 [&_[data-sidebar=menu-button]]:min-h-11 [&_[data-sidebar=menu-button]]:rounded-xl [&_[data-sidebar=menu-sub-button]]:min-h-11 [&_[data-sidebar=menu-sub-button]]:rounded-lg">
         {backNav && (
           <SidebarGroup>
             <SidebarGroupContent>
@@ -240,7 +238,7 @@ export function AppSidebar({
         ))}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-sidebar-border [&_[data-sidebar=menu-button]]:data-[active=true]:bg-primary [&_[data-sidebar=menu-button]]:data-[active=true]:text-primary-foreground gap-3 border-t p-3 [&_[data-sidebar=menu-button]]:min-h-11 [&_[data-sidebar=menu-button]]:rounded-xl">
         {footerNavItems && footerNavItems.length > 0 && (
           <SidebarMenu>
             {footerNavItems.map((item) => {

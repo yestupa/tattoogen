@@ -4,6 +4,7 @@ import { Shield, Users } from 'lucide-react';
 
 import { apiGet } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
+import { PageHeading } from '@/components/page-heading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function AdminPage() {
@@ -22,11 +23,12 @@ function AdminPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">{m['admin.title']()}</h1>
-        <p className="text-muted-foreground">{m['admin.description']()}</p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.title']()}
+        description={m['admin.description']()}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

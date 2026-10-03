@@ -14,6 +14,7 @@ import { Link } from '@/core/i18n/navigation';
 import { apiGet } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { PageHeading } from '@/components/page-heading';
 import {
   Card,
   CardContent,
@@ -79,17 +80,13 @@ function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {m['settings.title']()}
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          {m['settings.welcome']({
-            name: session?.user?.name || session?.user?.email || '',
-          })}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        title={m['settings.title']()}
+        description={m['settings.welcome']({
+          name: session?.user?.name || session?.user?.email || '',
+        })}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

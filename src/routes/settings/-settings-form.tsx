@@ -8,6 +8,7 @@ import { apiPatch } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
 import { TextField } from '@/components/form-field';
 import { ImageUploader, ImageUploaderValue } from '@/components/image-uploader';
+import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -70,14 +71,12 @@ export function SettingsForm({
         e.preventDefault();
         form.handleSubmit();
       }}
-      className="space-y-6 p-6"
+      className="mx-auto max-w-4xl min-w-0 space-y-8 p-4 sm:p-6 lg:p-8"
     >
-      <div>
-        <h1 className="text-2xl font-bold">{m['settings.profile.title']()}</h1>
-        <p className="text-muted-foreground">
-          {m['settings.profile.description']()}
-        </p>
-      </div>
+      <PageHeading
+        title={m['settings.profile.title']()}
+        description={m['settings.profile.description']()}
+      />
 
       <Card>
         <CardHeader>

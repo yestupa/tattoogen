@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { CreditTopUpDialog } from '@/components/credit-topup-dialog';
 import { DataTable, type Column } from '@/components/data-table';
+import { PageHeading } from '@/components/page-heading';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -146,13 +147,11 @@ function CreditsPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">{m['settings.credits.title']()}</h1>
-        <p className="text-muted-foreground">
-          {m['settings.credits.description']()}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        title={m['settings.credits.title']()}
+        description={m['settings.credits.description']()}
+      />
 
       <Card className="max-w-md">
         <CardHeader>
@@ -228,6 +227,7 @@ function CreditsPage() {
             onSearchChange={setSearch}
             onRefresh={() => query.refetch()}
             loading={query.isFetching}
+            error={query.error?.message}
           />
         </CardContent>
       </Card>

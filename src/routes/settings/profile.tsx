@@ -3,11 +3,16 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { apiGet } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
+import { PageState } from '@/components/page-state';
 
 import { SettingsForm } from './-settings-form';
 
 function SettingsPage() {
-  const { data: user } = useQuery({
+  const {
+    data: user,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ['user-info'],
     queryFn: async () => {
       const data = await apiGet<{
@@ -25,8 +30,14 @@ function SettingsPage() {
 
   if (!user) {
     return (
-      <div className="text-muted-foreground p-6">
-        {m['settings.profile.loading']()}
+      <div className="p-4 sm:p-6 lg:p-8">
+        <PageState
+          variant={isError ? 'error' : 'loading'}
+          title={m['settings.profile.title']()}
+          description={
+            isError ? error.message : m['settings.profile.loading']()
+          }
+        />
       </div>
     );
   }

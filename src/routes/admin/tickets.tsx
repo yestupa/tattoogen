@@ -18,6 +18,7 @@ import {
   ImageUploader,
   type ImageUploaderValue,
 } from '@/components/image-uploader';
+import { PageHeading } from '@/components/page-heading';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -268,13 +269,12 @@ function AdminTicketsPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">{m['admin.tickets.title']()}</h1>
-        <p className="text-muted-foreground">
-          {m['admin.tickets.description']()}
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.tickets.title']()}
+        description={m['admin.tickets.description']()}
+      />
 
       <div className="border-border flex gap-1 overflow-x-auto overflow-y-hidden border-b">
         {TABS.map((tb) => (
@@ -308,6 +308,7 @@ function AdminTicketsPage() {
             onSearchChange={setSearch}
             onRefresh={() => listQuery.refetch()}
             loading={listQuery.isFetching}
+            error={listQuery.error?.message}
           />
         </CardContent>
       </Card>
@@ -317,7 +318,7 @@ function AdminTicketsPage() {
         open={!!activeTicket}
         onOpenChange={(v) => !v && setActiveTicket(null)}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="rounded-2xl sm:max-w-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {activeTicket?.title}

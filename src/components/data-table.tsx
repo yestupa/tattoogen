@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, RefreshCw, Search } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { PageState } from '@/components/page-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -41,6 +42,7 @@ interface DataTableProps<T> {
   rowKey: (row: T) => string;
   onRefresh?: () => void | Promise<unknown>;
   loading?: boolean;
+  error?: string;
 }
 
 export function DataTable<T>({
@@ -58,6 +60,7 @@ export function DataTable<T>({
   rowKey,
   onRefresh,
   loading,
+  error,
 }: DataTableProps<T>) {
   const [refreshing, setRefreshing] = useState(false);
 
@@ -99,19 +102,28 @@ export function DataTable<T>({
   const busy = refreshing || loading;
 
   return (
-    <div className="space-y-4">
+    <div
+      className="bg-card min-w-0 space-y-4 rounded-2xl border p-3 sm:p-4"
+      aria-busy={busy || undefined}
+    >
       {showHeader && (
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           {onSearchChange && (
-            <div className="relative max-w-sm">
-              <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
+            <div className="relative min-w-0 flex-1 sm:max-w-sm">
+              <Search
+                className="text-muted-foreground absolute top-3.5 left-3 size-4"
+                aria-hidden="true"
+              />
               <Input
                 value={search || ''}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={
                   searchPlaceholder || m['common.search.placeholder']()
                 }
-                className="h-9 pl-8"
+                aria-label={
+                  searchPlaceholder || m['common.search.placeholder']()
+                }
+                className="focus-visible:ring-primary/40 min-h-11 pl-9"
               />
             </div>
           )}
@@ -120,7 +132,7 @@ export function DataTable<T>({
             <Button
               variant="outline"
               size="icon"
-              className="ml-auto size-9"
+              className="focus-visible:ring-primary/40 ml-auto size-11 rounded-xl"
               onClick={handleRefresh}
               disabled={busy}
               aria-label={m['common.table.refresh']()}
@@ -131,9 +143,9 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="min-w-0 overflow-x-auto rounded-xl border">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/40">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -154,18 +166,39 @@ export function DataTable<T>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
+            {loading && table.getRowModel().rows.length === 0 ? (
+              Array.from({ length: Math.min(pageSize, 5) }, (_, index) => (
+                <TableRow key={index} data-table-skeleton aria-hidden="true">
+                  {columns.map((_, column) => (
+                    <TableCell key={column}>
+                      <div className="bg-primary/10 h-4 min-w-20 rounded-full motion-safe:animate-pulse" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-muted-foreground py-8 text-center"
+                  className="p-0 whitespace-normal"
                 >
-                  {emptyText || m['common.table.no_data']()}
+                  <PageState
+                    variant={error ? 'error' : 'empty'}
+                    title={emptyText || m['common.table.no_data']()}
+                    description={
+                      error || m['common.table.total']({ count: total })
+                    }
+                    headingLevel={2}
+                    className="max-w-none rounded-none border-0 py-10 sm:py-12 [&_h2]:text-xl"
+                  />
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  className="focus-within:bg-primary/5 data-[state=selected]:bg-primary/10"
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
@@ -187,7 +220,7 @@ export function DataTable<T>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between px-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <p className="text-muted-foreground text-sm">
           {m['common.table.total']({ count: total })}
         </p>
@@ -196,6 +229,7 @@ export function DataTable<T>({
             <Button
               variant="outline"
               size="sm"
+              className="focus-visible:ring-primary/40 min-h-11"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
             >
@@ -205,6 +239,7 @@ export function DataTable<T>({
             <Button
               variant="outline"
               size="sm"
+              className="focus-visible:ring-primary/40 min-h-11"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
             >

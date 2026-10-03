@@ -16,6 +16,7 @@ import { apiGet, apiPost } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { SettingsTestDialog } from '@/components/admin/settings-test-dialog';
+import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -149,19 +150,22 @@ function AdminSettingsPage() {
   const tabSettings = settings.filter((s) => s.tab === activeTab);
 
   return (
-    <div className="space-y-6 p-6 md:max-w-3xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{m['admin.settings.title']()}</h1>
-          <p className="text-muted-foreground">
-            {m['admin.settings.description']()}
-          </p>
-        </div>
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
-          <Save className="size-4" />
-          {saving ? m['admin.settings.saving']() : m['admin.settings.save']()}
-        </Button>
-      </div>
+    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeading
+        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
+        title={m['admin.settings.title']()}
+        description={m['admin.settings.description']()}
+        action={
+          <>
+            <Button onClick={handleSave} disabled={saving} className="gap-2">
+              <Save className="size-4" />
+              {saving
+                ? m['admin.settings.saving']()
+                : m['admin.settings.save']()}
+            </Button>
+          </>
+        }
+      />
 
       {/* Tabs */}
       <div className="border-border flex gap-1 overflow-x-auto overflow-y-hidden border-b">
