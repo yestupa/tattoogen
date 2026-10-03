@@ -143,6 +143,19 @@ export function DataTable<T>({
         </div>
       )}
 
+      {error && data.length > 0 && !busy && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-xl border p-3 text-sm wrap-anywhere"
+        >
+          <p className="font-medium">
+            {m['common.table.refresh']()} · {m['common.error.message']()}
+          </p>
+          <p>{error}</p>
+        </div>
+      )}
+
       <div className="min-w-0 overflow-x-auto rounded-xl border">
         <Table>
           <TableHeader className="bg-muted/40">

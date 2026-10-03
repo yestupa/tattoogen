@@ -477,7 +477,24 @@ describe('dashboard visual and behavior contracts', () => {
       />
     );
     expect(html).toContain('Retained fixture row');
-    expect(html).toContain('<button');
+    expect(html).toContain('<button>Retained fixture row</button>');
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('Fixture refresh failed');
+    expect(html.indexOf('Fixture refresh failed')).toBeLessThan(
+      html.indexOf('<table')
+    );
+    expect(html).not.toContain('aria-busy="true"');
+    expect(html).not.toContain('data-table-skeleton');
+    expect(html).not.toContain('<h1');
+  });
+
+  it('bounds invite dialogs and keeps growing content locally scrollable', () => {
+    const invite = source('src/routes/admin/invite-codes.tsx');
+    for (const dialog of invite.matchAll(/<DialogContent\b[^>]*>/g)) {
+      expect(dialog[0]).toContain('max-h-[calc(100dvh-2rem)]');
+      expect(dialog[0]).toContain('overflow-y-auto');
+    }
   });
 
   it('renders an error state when the initial table request fails', () => {

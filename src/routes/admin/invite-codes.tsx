@@ -285,7 +285,7 @@ function InviteCodesPage() {
           if (!v) createForm.reset();
         }}
       >
-        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.invite_codes.create_title']()}</DialogTitle>
             <DialogDescription>
@@ -395,7 +395,7 @@ function InviteCodesPage() {
         open={!!deletingId}
         onOpenChange={(v) => !v && setDeletingId(null)}
       >
-        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.invite_codes.delete_title']()}</DialogTitle>
             <DialogDescription>
