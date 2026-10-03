@@ -357,7 +357,8 @@ function ChatSessionPage() {
                   ? {
                       ...att,
                       status: 'error',
-                      error: (err as Error).message || 'Upload failed',
+                      error:
+                        (err as Error).message || m['common.upload.failed'](),
                     }
                   : att
               )

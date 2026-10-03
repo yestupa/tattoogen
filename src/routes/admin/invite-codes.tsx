@@ -151,7 +151,7 @@ function InviteCodesPage() {
   function copyCode(code: string) {
     navigator.clipboard.writeText(code).then(
       () => toast.success(m['admin.invite_codes.copied']()),
-      () => toast.error('Failed')
+      () => toast.error(m['common.action.copy_failed']())
     );
   }
 

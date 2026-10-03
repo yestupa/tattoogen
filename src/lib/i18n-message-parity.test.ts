@@ -63,6 +63,15 @@ describe('locale message parity', () => {
   );
 });
 
+function legalMeta(slug: string, locale: 'en' | 'zh') {
+  const text = source(`../content/pages/${slug}.${locale}.mdx`);
+  const expression = text.match(/export const meta = (\{[\s\S]*?\n\});/)![1];
+  return new Function(`return (${expression});`)() as {
+    title: string;
+    description: string;
+  };
+}
+
 function routeHead(
   path: string,
   locale: 'en' | 'zh',
@@ -120,7 +129,7 @@ function routeHead(
       post,
       title: dictionaries[locale]['landing.pricing.title'],
       description: dictionaries[locale]['landing.pricing.description'],
-      meta: { title: slug, description: `Details for ${slug}` },
+      meta: slug ? legalMeta(slug, locale) : undefined,
     },
     slug
   );
@@ -203,6 +212,7 @@ describe('legal page metadata', () => {
     'owns legal page language and social metadata in %s',
     (locale) => {
       for (const slug of ['privacy-policy', 'terms-of-service']) {
+        const expected = legalMeta(slug, locale);
         const head = routeHead(
           '../routes/(pages)/-static-page.tsx',
           locale,
@@ -233,17 +243,27 @@ describe('legal page metadata', () => {
           head.meta.find(
             (meta: { property?: string }) => meta.property === 'og:title'
           )?.content
-        ).toBe(slug);
+        ).toBe(expected.title);
         expect(
           head.meta.find(
             (meta: { property?: string }) => meta.property === 'og:description'
           )?.content
-        ).toBe(`Details for ${slug}`);
+        ).toBe(expected.description);
         expect(
           head.meta.find(
             (meta: { property?: string }) => meta.property === 'og:url'
           )?.content
         ).toBe(head.links[0].href);
+        expect(
+          head.meta.find(
+            (meta: { name?: string }) => meta.name === 'twitter:title'
+          )?.content
+        ).toBe(expected.title);
+        expect(
+          head.meta.find(
+            (meta: { name?: string }) => meta.name === 'twitter:description'
+          )?.content
+        ).toBe(expected.description);
       }
     }
   );
@@ -428,22 +448,84 @@ describe('form field accessible validation', () => {
 
   it('connects a visible error to the input while preserving its hint', () => {
     const html = render([{ message: 'Enter a valid email' }]);
+    const id = html.match(/<input[^>]*\sid="([^"]+)"/)![1];
     expect(html).toContain('aria-invalid="true"');
-    expect(html).toContain('aria-describedby="email-hint email-error"');
-    expect(html).toMatch(
-      /<p[^>]*id="email-error"[^>]*>Enter a valid email<\/p>/
-    );
+    expect(html).toContain(`aria-describedby="email-hint ${id}-error"`);
+    expect(html).toContain(`id="${id}-error"`);
   });
 
   it.each([false, true])(
     'never references an absent error when touched is %s',
     (touched) => {
       const html = render(touched ? [] : ['Enter a valid email'], touched);
+      const id = html.match(/<input[^>]*\sid="([^"]+)"/)![1];
       expect(html).toContain('aria-describedby="email-hint"');
-      expect(html).not.toContain('email-error');
+      expect(html).not.toContain(`${id}-error`);
       expect(html).not.toContain('aria-invalid="true"');
     }
   );
+
+  const fieldElement = (props: Record<string, unknown> = {}) =>
+    createElement(TextField, {
+      field: {
+        name: 'email',
+        state: {
+          value: '',
+          meta: { isTouched: true, errors: ['Invalid email'] },
+        },
+        handleChange() {},
+        handleBlur() {},
+      } as any,
+      label: 'Email',
+      ...props,
+    } as any);
+
+  it('gives same-name instances distinct SSR-stable ids while preserving names', () => {
+    const element = createElement('form', null, fieldElement(), fieldElement());
+    const html = renderToStaticMarkup(element);
+    const ids = [...html.matchAll(/<input[^>]*\sid="([^"]+)"/g)].map(
+      (match) => match[1]
+    );
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    expect(renderToStaticMarkup(element)).toBe(html);
+    expect([...html.matchAll(/name="email"/g)]).toHaveLength(2);
+    for (const id of ids) {
+      expect(html).toContain(`for="${id}"`);
+      expect(html).toContain(`aria-describedby="${id}-error"`);
+      expect(html).toContain(`id="${id}-error"`);
+    }
+  });
+
+  it('honors explicit ids and deduplicates existing hint and error references', () => {
+    const html = renderToStaticMarkup(
+      fieldElement({
+        id: 'billing-email',
+        'aria-describedby':
+          'email-hint email-hint billing-email-error billing-email-error',
+      })
+    );
+    expect(html).toContain('id="billing-email"');
+    expect(html).toContain('for="billing-email"');
+    expect(html).toContain('name="email"');
+    expect(html).toContain('id="billing-email-error"');
+    expect(html).toContain('aria-describedby="email-hint billing-email-error"');
+  });
+
+  it('omits describedby when there is no visible error or caller hint', () => {
+    const html = renderToStaticMarkup(
+      fieldElement({
+        field: {
+          name: 'email',
+          state: { value: '', meta: { isTouched: true, errors: [] } },
+          handleChange() {},
+          handleBlur() {},
+        },
+      })
+    );
+    expect(html).not.toContain('aria-describedby');
+    expect(html).not.toContain('aria-invalid=');
+  });
 
   it('associates the sign-in password error with its custom password input', () => {
     const signin = source('../routes/(auth)/sign-in.tsx');
@@ -451,6 +533,151 @@ describe('form field accessible validation', () => {
       /aria-describedby=\{\s*errMsg\s*\?\s*`\$\{field\.name\}-error`\s*:\s*undefined\s*\}/
     );
     expect(signin).toContain('id={`${field.name}-error`}');
+  });
+});
+
+describe('reviewed fallback branches', () => {
+  const cases = [
+    [
+      '../routes/(agent)/chat/$sessionId.tsx',
+      'common.upload.failed',
+      '上传失败',
+      1,
+    ],
+    [
+      '../components/rich-text-editor.tsx',
+      'common.upload.failed',
+      '上传失败',
+      2,
+    ],
+    ['../blocks/pricing.tsx', 'landing.pricing.checkout_failed', '结账失败', 2],
+    ['../routes/settings/tickets.tsx', 'common.action.failed', '操作失败', 4],
+    ['../routes/admin/tickets.tsx', 'common.action.failed', '操作失败', 3],
+    ['../routes/admin/permissions.tsx', 'common.action.failed', '操作失败', 3],
+    [
+      '../routes/admin/invite-codes.tsx',
+      'common.action.copy_failed',
+      '复制失败',
+      1,
+    ],
+    ['../routes/admin/settings.tsx', 'common.select.placeholder', '请选择…', 1],
+  ] as const;
+
+  // Execute the actual fallback expressions with an empty error/response, not
+  // just a spelling check. AST selection also pins each affected branch count.
+  it.each(cases)(
+    'localizes every empty-error branch in %s',
+    (path, key, chinese, count) => {
+      const ast = ts.createSourceFile(
+        path,
+        source(path),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TSX
+      );
+      const expressions: ts.Expression[] = [];
+      const visit = (node: ts.Node) => {
+        if (
+          ts.isCallExpression(node) &&
+          node.expression.getText(ast) === 'toast.error'
+        ) {
+          const argument = node.arguments[0];
+          if (
+            argument &&
+            (/Upload failed|Checkout failed|'Failed'/.test(
+              argument.getText(ast)
+            ) ||
+              argument.getText(ast).includes(key) ||
+              argument.getText(ast).includes('uploadFailedLabel'))
+          )
+            expressions.push(argument);
+        }
+        if (
+          path.includes('/chat/') &&
+          ts.isPropertyAssignment(node) &&
+          node.name.getText(ast) === 'error'
+        )
+          expressions.push(node.initializer);
+        if (
+          key === 'common.select.placeholder' &&
+          ts.isJsxAttribute(node) &&
+          node.name.getText(ast) === 'placeholder' &&
+          node.initializer &&
+          ts.isJsxExpression(node.initializer) &&
+          node.initializer.expression?.getText(ast).startsWith('placeholder ||')
+        )
+          expressions.push(node.initializer.expression);
+        ts.forEachChild(node, visit);
+      };
+      visit(ast);
+      expect(expressions).toHaveLength(count);
+      for (const locale of ['en', 'zh'] as const) {
+        const expected = locale === 'zh' ? chinese : dictionaries.en[key];
+        expect(dictionaries[locale][key]).toBe(expected);
+        const m = Object.fromEntries(
+          Object.entries(dictionaries[locale]).map(([name, text]) => [
+            name,
+            () => text,
+          ])
+        );
+        for (const expression of expressions) {
+          const js = ts.transpile(
+            `const result = ${expression.getText(ast)};`,
+            { target: ts.ScriptTarget.ES2022 }
+          );
+          const evaluate = new Function(
+            'm',
+            'e',
+            'err',
+            'data',
+            'ApiError',
+            'placeholder',
+            'uploadFailedLabel',
+            `${js}\nreturn result;`
+          );
+          expect(
+            evaluate(
+              m,
+              { message: '' },
+              { message: '' },
+              { message: '' },
+              class ApiError {},
+              '',
+              dictionaries[locale]['common.upload.failed']
+            )
+          ).toBe(expected);
+          if (ts.isBinaryExpression(expression)) {
+            expect(
+              evaluate(
+                m,
+                { message: 'Server detail' },
+                { message: 'Server detail' },
+                { message: 'Server detail' },
+                class ApiError {},
+                'Custom placeholder',
+                dictionaries[locale]['common.upload.failed']
+              )
+            ).toBe(
+              key === 'common.select.placeholder'
+                ? 'Custom placeholder'
+                : 'Server detail'
+            );
+          }
+        }
+      }
+    }
+  );
+
+  it('supplies the durable rich editor with a required localized upload label', () => {
+    expect(source('../components/rich-text-editor.tsx')).toMatch(
+      /uploadFailedLabel:\s*string/
+    );
+    expect(source('../components/rich-text-editor.tsx')).not.toContain(
+      '@/paraglide/messages.js'
+    );
+    expect(source('../routes/admin/posts.tsx')).toContain(
+      "uploadFailedLabel={m['common.upload.failed']()}"
+    );
   });
 });
 

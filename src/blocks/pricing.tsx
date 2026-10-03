@@ -240,14 +240,14 @@ export function Pricing({
       }),
     onSuccess: (data) => {
       if (!data?.checkout_url) {
-        toast.error('Checkout failed');
+        toast.error(m['landing.pricing.checkout_failed']());
         setLoadingProvider(null);
         return;
       }
       window.location.href = data.checkout_url;
     },
     onError: (err: any) => {
-      toast.error(err?.message || 'Checkout failed');
+      toast.error(err?.message || m['landing.pricing.checkout_failed']());
       setLoadingProvider(null);
     },
   });

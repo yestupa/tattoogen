@@ -101,7 +101,9 @@ function PermissionsPage() {
       invalidate();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Failed');
+      toast.error(
+        err instanceof ApiError ? err.message : m['common.action.failed']()
+      );
     },
   });
 
@@ -114,7 +116,9 @@ function PermissionsPage() {
       invalidate();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Failed');
+      toast.error(
+        err instanceof ApiError ? err.message : m['common.action.failed']()
+      );
     },
   });
 
@@ -126,7 +130,9 @@ function PermissionsPage() {
       invalidate();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Failed');
+      toast.error(
+        err instanceof ApiError ? err.message : m['common.action.failed']()
+      );
     },
   });
 

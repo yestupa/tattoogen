@@ -357,6 +357,7 @@ function PostsPage() {
             <div className="space-y-2">
               <Label>{m['admin.posts.content_field']()}</Label>
               <RichTextEditor
+                uploadFailedLabel={m['common.upload.failed']()}
                 value={field.state.value}
                 onChange={(content) => field.handleChange(content)}
                 placeholder={m['admin.posts.content_placeholder']()}

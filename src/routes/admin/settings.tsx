@@ -376,7 +376,9 @@ function SettingField({
           onValueChange={(v) => onChange(v || '')}
         >
           <SelectTrigger>
-            <SelectValue placeholder={placeholder || 'Select...'} />
+            <SelectValue
+              placeholder={placeholder || m['common.select.placeholder']()}
+            />
           </SelectTrigger>
           <SelectContent>
             {setting.options.map((opt) => (

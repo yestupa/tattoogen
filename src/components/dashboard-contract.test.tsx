@@ -33,7 +33,7 @@ const baseline: Record<string, string> = {
   'src/routes/admin/roles.tsx':
     '4d2a9ab2fd968eb9bc5a5b56a08af9de1586658a93bd5b4f4af290d61229d711',
   'src/routes/admin/permissions.tsx':
-    '4635c851277fa3c2d09594602532e9bab998265d00c57ae620cf550a85b3ec76',
+    '32e0bd5ad6099bfcb5b28ebd7456648e3475ca298ab2f3982dd42e71493b24e4',
   'src/routes/admin/payments.tsx':
     'c609dd1cb42d5ded293de8b4e340356d323e13f9929f9005b32860526923de97',
   'src/routes/admin/subscriptions.tsx':
@@ -66,6 +66,17 @@ const baseline: Record<string, string> = {
 };
 const fingerprint = (value: string) =>
   createHash('sha256').update(value).digest('hex');
+
+it('changes only the three permissions toast fallback labels in the frozen behavior', () => {
+  const text = readFileSync('src/routes/admin/permissions.tsx', 'utf8');
+  const label = /m\[['"]common\.action\.failed['"]\]\(\)/g;
+  expect(text.match(label)).toHaveLength(3);
+  // Restoring only approved copy yields the original complete query/mutation,
+  // payload, callbacks and action-wiring fingerprint. No validator is relaxed.
+  expect(
+    fingerprint(JSON.stringify(behavior(text.replace(label, "'Failed'"))))
+  ).toBe('4635c851277fa3c2d09594602532e9bab998265d00c57ae620cf550a85b3ec76');
+});
 const settings = [
   'index',
   '-settings-form',

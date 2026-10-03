@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { AnyFieldApi } from '@tanstack/react-form';
 
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -19,6 +20,7 @@ function fieldError(field: AnyFieldApi): string | null {
 // blur/change handlers and first-error display in one component.
 export function TextField({
   field,
+  id,
   label,
   type = 'text',
   placeholder,
@@ -28,6 +30,7 @@ export function TextField({
   'aria-describedby': ariaDescribedBy,
 }: {
   field: AnyFieldApi;
+  id?: string;
   label: string;
   type?: string;
   placeholder?: string;
@@ -36,17 +39,25 @@ export function TextField({
   disabled?: boolean;
   'aria-describedby'?: string;
 }) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
   const error = fieldError(field);
-  const errorId = `${field.name}-error`;
+  const errorId = `${inputId}-error`;
   const describedBy =
-    [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ') ||
-    undefined;
+    [
+      ...new Set(
+        [
+          ...(ariaDescribedBy?.split(/\s+/) ?? []),
+          ...(error ? [errorId] : []),
+        ].filter(Boolean)
+      ),
+    ].join(' ') || undefined;
 
   return (
     <Field>
-      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
       <Input
-        id={field.name}
+        id={inputId}
         name={field.name}
         type={type}
         value={(field.state.value as string) ?? ''}

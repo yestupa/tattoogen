@@ -237,6 +237,7 @@ function Toolbar({
 export function RichTextEditor({
   value,
   onChange,
+  uploadFailedLabel,
   placeholder,
   className,
 }: {
@@ -244,6 +245,7 @@ export function RichTextEditor({
   value: string;
   /** markdown out */
   onChange: (markdown: string) => void;
+  uploadFailedLabel: string;
   placeholder?: string;
   className?: string;
 }) {
@@ -301,10 +303,10 @@ export function RichTextEditor({
       if (data.code === 0 && url) {
         editor.chain().focus().setImage({ src: url }).run();
       } else {
-        toast.error(data.message || 'Upload failed');
+        toast.error(data.message || uploadFailedLabel);
       }
     } catch {
-      toast.error('Upload failed');
+      toast.error(uploadFailedLabel);
     } finally {
       uploadingRef.current = false;
       if (fileInputRef.current) fileInputRef.current.value = '';
