@@ -1,12 +1,22 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { defaultComposerSettings } from '@/lib/agent-settings';
 
 import { ChatComposer } from './chat-composer';
 import { ChatTranscript } from './chat-transcript';
 import { PreviewPane } from './preview-pane';
+
+// SSR does not run effects. Capture the real component's mount callbacks so
+// its responsive decision can be exercised without adding a DOM dependency.
+const mountEffects = vi.hoisted(() => [] as (() => unknown)[]);
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react')>()),
+  useEffect: (effect: () => unknown) => {
+    mountEffects.push(effect);
+  },
+}));
 
 const preview = vi.hoisted(() => ({
   open: true,
@@ -25,6 +35,33 @@ vi.mock('@/components/ui/sidebar', () => ({
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 
 describe('workspace rendered semantics', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    { width: 390, hasExplicitPreview: false, expected: false },
+    { width: 390, hasExplicitPreview: true, expected: true },
+    { width: 768, hasExplicitPreview: false, expected: true },
+    { width: 768, hasExplicitPreview: true, expected: true },
+    { width: 1440, hasExplicitPreview: false, expected: true },
+    { width: 1440, hasExplicitPreview: true, expected: true },
+  ])(
+    'mounts preview at $width with explicit intent $hasExplicitPreview as $expected',
+    ({ width, hasExplicitPreview, expected }) => {
+      mountEffects.length = 0;
+      preview.setOpen.mockClear();
+      renderToStaticMarkup(<PreviewPane {...{ hasExplicitPreview }} />);
+      vi.stubGlobal('window', {
+        matchMedia: () => ({
+          matches: width >= 768,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }),
+      });
+      mountEffects[0]();
+      expect(preview.setOpen).toHaveBeenLastCalledWith(expected);
+    }
+  );
+
   it('renders a named complementary gallery with a secondary empty heading', () => {
     const html = renderToStaticMarkup(<PreviewPane />);
     expect(html).toMatch(/<aside aria-label="[^"]+"/);

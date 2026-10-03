@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearch } from '@tanstack/react-router';
 import { Images, Pencil } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
@@ -25,6 +26,11 @@ export function AgentLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  // Consume the route's validated search state, rather than reading browser URLs.
+  const hasExplicitPreview = useSearch({
+    strict: false,
+    select: (search) => Boolean('preview' in search && search.preview),
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const showPreview =
     pathname.includes('/chat/') ||
@@ -112,7 +118,9 @@ export function AgentLayout({ children }: { children: React.ReactNode }) {
               {children}
             </div>
           </SidebarInset>
-          {showPreview && <PreviewPane />}
+          {showPreview && (
+            <PreviewPane hasExplicitPreview={hasExplicitPreview} />
+          )}
         </AgentHeaderProvider>
       </PreviewPaneProvider>
     </SidebarProvider>

@@ -55,7 +55,11 @@ function clampPaneWidth(next: number) {
   return Math.min(max, Math.max(MIN_PANE_WIDTH, next));
 }
 
-export function PreviewPane() {
+export function PreviewPane({
+  hasExplicitPreview = false,
+}: {
+  hasExplicitPreview?: boolean;
+}) {
   const { open, setOpen, image, images, openImage, annotationHandler } =
     usePreviewPane();
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
@@ -67,11 +71,13 @@ export function PreviewPane() {
 
   useEffect(() => {
     const desktop = window.matchMedia('(min-width: 768px)');
-    const syncPreview = () => setOpen(desktop.matches);
+    // Explicit route intent wins over the mobile default. This effect does not
+    // depend on `open`, so manually closing the sheet remains a user choice.
+    const syncPreview = () => setOpen(desktop.matches || hasExplicitPreview);
     syncPreview();
     desktop.addEventListener('change', syncPreview);
     return () => desktop.removeEventListener('change', syncPreview);
-  }, [setOpen]);
+  }, [setOpen, hasExplicitPreview]);
 
   useEffect(() => {
     if (!open) return;
