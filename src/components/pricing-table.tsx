@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, type ComponentType, type SVGProps } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
@@ -117,21 +115,30 @@ export function PricingTable({
       {/* Group tabs — pill toggle */}
       {groups.length > 1 && (
         <div className="flex justify-center">
-          <div className="border-border bg-muted/40 inline-flex items-center rounded-full border p-1">
+          <div className="border-border bg-card inline-flex max-w-full flex-wrap items-center justify-center rounded-full border p-1">
             {groups.map((group) => (
               <button
                 key={group.key}
+                type="button"
+                aria-pressed={activeGroup === group.key}
                 onClick={() => setActiveGroup(group.key)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-full px-5 py-1.5 text-sm font-medium transition-colors',
+                  'touch-target flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors',
                   activeGroup === group.key
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-soft'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {group.label}
                 {group.badge && (
-                  <span className="bg-primary/10 text-primary rounded-full px-1.5 py-0.5 text-xs font-medium">
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-xs font-medium',
+                      activeGroup === group.key
+                        ? 'bg-primary-foreground/15 text-primary-foreground'
+                        : 'bg-secondary text-primary'
+                    )}
+                  >
                     {group.badge}
                   </span>
                 )}
@@ -156,10 +163,10 @@ export function PricingTable({
           <div
             key={plan.id}
             className={cn(
-              'border-border relative flex flex-col rounded-lg border p-8 transition-all',
+              'border-border bg-card rounded-card relative flex min-w-0 flex-col border p-6 pt-14 sm:p-8 sm:pt-14',
               plan.featured
-                ? 'bg-card border-primary ring-primary/20 shadow-md ring-1'
-                : 'bg-background hover:border-foreground/30',
+                ? 'border-primary ring-primary/20 shadow-panel ring-1'
+                : 'shadow-soft',
               isCurrent(plan) && 'bg-card border-primary ring-primary/20 ring-1'
             )}
           >
@@ -180,7 +187,7 @@ export function PricingTable({
             )}
 
             {/* Price */}
-            <div className="mb-2 flex items-baseline gap-1">
+            <div className="mb-2 flex flex-wrap items-baseline gap-1">
               <span className="font-serif text-5xl tracking-tight">
                 {plan.price}
               </span>
@@ -190,7 +197,7 @@ export function PricingTable({
                 </span>
               )}
             </div>
-            <div className="mb-1 flex items-baseline gap-2">
+            <div className="mb-1 flex flex-wrap items-baseline gap-2">
               {plan.originalPrice && (
                 <span className="text-muted-foreground text-sm line-through">
                   {plan.originalPrice}
@@ -215,7 +222,7 @@ export function PricingTable({
               variant={
                 plan.featured && !isCurrent(plan) ? 'default' : 'outline'
               }
-              className="h-10 w-full rounded-full text-sm font-medium"
+              className="touch-target w-full rounded-full text-sm font-medium"
               onClick={() => handleCheckout(plan)}
               disabled={loadingId === plan.id || isCurrent(plan)}
             >
@@ -234,7 +241,10 @@ export function PricingTable({
                 const label = isObj ? feature.label : feature;
                 return (
                   <li key={i} className="flex items-center gap-2.5 text-sm">
-                    <Icon className="text-muted-foreground size-4 shrink-0" />
+                    <Icon
+                      aria-hidden
+                      className="text-primary size-4 shrink-0"
+                    />
                     <span className="text-foreground/90">{label}</span>
                   </li>
                 );

@@ -1,6 +1,7 @@
 import { Calendar } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
+import { BrandArtwork } from '@/components/brand-artwork';
 
 export type BlogCardProps = {
   href: string;
@@ -24,7 +25,7 @@ export function BlogCard({
   return (
     <Link
       href={href}
-      className="group border-border bg-card hover:border-foreground/20 relative flex flex-col overflow-hidden rounded-lg border transition-all hover:shadow-sm"
+      className="group border-border bg-card hover:border-primary/40 shadow-soft rounded-card relative flex min-w-0 flex-col overflow-hidden border transition-colors"
     >
       {image && (
         <img
@@ -36,8 +37,13 @@ export function BlogCard({
           className="aspect-video w-full object-cover object-center"
         />
       )}
+      {!image && (
+        <div className="bg-secondary/40 paper-texture flex aspect-video items-center justify-center">
+          <BrandArtwork className="text-foreground/70 h-36 w-auto p-3" />
+        </div>
+      )}
       <div className="flex flex-1 flex-col gap-3 p-6">
-        <h3 className="leading-snug font-medium group-hover:underline group-hover:underline-offset-4">
+        <h3 className="text-lg leading-snug font-semibold group-hover:underline group-hover:underline-offset-4">
           {title}
         </h3>
         {description && (
@@ -45,10 +51,10 @@ export function BlogCard({
             {description}
           </p>
         )}
-        <div className="text-muted-foreground mt-auto flex items-center gap-2 pt-2 text-xs">
+        <div className="text-muted-foreground mt-auto flex flex-wrap items-center gap-2 pt-2 text-xs">
           {date && (
             <span className="inline-flex items-center gap-1.5">
-              <Calendar className="size-3.5" />
+              <Calendar aria-hidden className="size-3.5" />
               {date}
             </span>
           )}

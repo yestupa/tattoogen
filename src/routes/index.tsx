@@ -5,9 +5,17 @@ import { useRouter } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+import { Blog } from '@/blocks/blog';
+import { CTA } from '@/blocks/cta';
+import { FAQ } from '@/blocks/faq';
+import { Features } from '@/blocks/features';
 import { Footer } from '@/blocks/footer';
+import { Gallery } from '@/blocks/gallery';
 import { Header } from '@/blocks/header';
 import { Hero } from '@/blocks/hero';
+import { ModelsStrip } from '@/blocks/models-strip';
+import { Pricing } from '@/blocks/pricing';
+import { Stats } from '@/blocks/stats';
 import { SupportWidget } from '@/blocks/support-widget';
 
 /**
@@ -43,6 +51,14 @@ function HomePage() {
       <Header />
       <main className="flex flex-1 flex-col">
         <Hero />
+        <ModelsStrip />
+        <Features />
+        <Gallery />
+        <Stats />
+        <Pricing />
+        <FAQ />
+        <Blog />
+        <CTA />
       </main>
       <Footer />
       <SupportWidget />

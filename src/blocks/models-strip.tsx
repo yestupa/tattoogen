@@ -10,8 +10,8 @@ export function ModelsStrip() {
   ];
 
   return (
-    <section className="border-border/60 bg-secondary/30 border-y px-4 py-10">
-      <div className="mx-auto max-w-5xl">
+    <section className="border-border bg-card/60 border-y px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl">
         <p className="text-muted-foreground text-center text-xs font-medium tracking-[0.18em] uppercase">
           {m['landing.models.title']()}
         </p>

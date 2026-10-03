@@ -36,10 +36,23 @@ export function SiteFooter({
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-neutral-950 text-neutral-100">
+    <footer className="border-border bg-card text-foreground border-t">
       <div className="mx-auto max-w-6xl px-4 pt-14 pb-6 sm:px-6 sm:pt-16">
+        <Link
+          href="/"
+          className="touch-target mb-5 inline-flex items-center gap-2.5 font-serif text-lg"
+        >
+          <img
+            src={envConfigs.app_logo}
+            alt=""
+            width={28}
+            height={28}
+            className="size-7"
+          />
+          {envConfigs.app_name}
+        </Link>
         {tagline && (
-          <p className="mb-12 max-w-2xl font-serif text-3xl leading-[1.15] tracking-tight text-neutral-100 italic sm:text-4xl">
+          <p className="mb-12 max-w-2xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
             {tagline}
           </p>
         )}
@@ -57,7 +70,7 @@ export function SiteFooter({
           >
             {columns.map((col) => (
               <div key={col.title} className="space-y-5">
-                <p className="text-[13px] font-semibold tracking-wide text-neutral-100">
+                <p className="text-foreground text-sm font-semibold tracking-wide">
                   {col.title}
                 </p>
                 <ul className="space-y-2">
@@ -68,7 +81,7 @@ export function SiteFooter({
                           href={withUtmSource(link.href)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-neutral-400 transition-colors hover:text-neutral-100"
+                          className="touch-target text-muted-foreground hover:text-primary inline-flex items-center text-sm transition-colors"
                         >
                           {link.label}
                         </a>
@@ -76,7 +89,7 @@ export function SiteFooter({
                         <Link
                           href={link.href}
                           target={link.external ? '_blank' : undefined}
-                          className="text-sm text-neutral-400 transition-colors hover:text-neutral-100"
+                          className="touch-target text-muted-foreground hover:text-primary inline-flex items-center text-sm transition-colors"
                         >
                           {link.label}
                         </Link>
@@ -101,18 +114,18 @@ export function SiteFooter({
                     aria-label={s.label}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-neutral-300 transition-colors hover:text-neutral-100"
+                    className="touch-target text-muted-foreground hover:text-primary flex items-center justify-center rounded-full transition-colors"
                   >
-                    <s.icon className="size-[18px]" />
+                    <s.icon aria-hidden className="size-[18px]" />
                   </a>
                 ) : (
                   <Link
                     key={s.label}
                     href={s.href}
                     aria-label={s.label}
-                    className="text-neutral-300 transition-colors hover:text-neutral-100"
+                    className="touch-target text-muted-foreground hover:text-primary flex items-center justify-center rounded-full transition-colors"
                   >
-                    <s.icon className="size-[18px]" />
+                    <s.icon aria-hidden className="size-[18px]" />
                   </Link>
                 )
               )}
@@ -122,14 +135,14 @@ export function SiteFooter({
           )}
           <LocaleSelector
             variant="pill"
-            className="border-neutral-700 text-neutral-200 hover:bg-white/5 hover:text-neutral-50"
+            className="touch-target border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
           />
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-6 flex flex-col gap-3 border-t border-neutral-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="border-border mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
           <BuiltWithShipAny />
-          <span className="text-sm text-neutral-400">
+          <span className="text-muted-foreground text-sm">
             {copyright ?? (
               <>
                 © {year}{' '}

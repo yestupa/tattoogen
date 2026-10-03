@@ -20,18 +20,21 @@ export function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="border-border border-t px-4 py-20 sm:py-24">
-      <div className="mx-auto max-w-3xl">
+    <section
+      id="faq"
+      className="border-border border-t px-4 py-16 sm:px-6 sm:py-24"
+    >
+      <div className="mx-auto max-w-6xl">
         <div className="text-center">
           <p className="text-primary text-xs font-medium tracking-[0.18em] uppercase">
             {m['landing.faq.eyebrow']()}
           </p>
-          <h2 className="mt-4 text-3xl font-bold tracking-[-0.02em] sm:text-4xl">
+          <h2 className="mt-4 font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
             {m['landing.faq.title']()}
           </h2>
         </div>
 
-        <ul className="divide-border border-border bg-card/40 mt-12 divide-y rounded-lg border">
+        <ul className="divide-border border-border bg-card rounded-card mx-auto mt-10 max-w-3xl divide-y border">
           {items.map((item, i) => {
             const isOpen = open === i;
             return (
@@ -40,20 +43,23 @@ export function FAQ() {
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
                   aria-expanded={isOpen}
-                  className="hover:bg-accent/40 flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors"
+                  aria-controls={`public-faq-${i}`}
+                  className="touch-target hover:bg-accent/40 flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition-colors"
                 >
                   <span className="text-foreground text-sm font-medium sm:text-base">
                     {item.q}
                   </span>
                   <span className="border-border text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full border">
                     {isOpen ? (
-                      <Minus className="size-3.5" />
+                      <Minus aria-hidden className="size-3.5" />
                     ) : (
-                      <Plus className="size-3.5" />
+                      <Plus aria-hidden className="size-3.5" />
                     )}
                   </span>
                 </button>
                 <div
+                  id={`public-faq-${i}`}
+                  aria-hidden={!isOpen}
                   className={cn(
                     'text-muted-foreground grid overflow-hidden text-sm leading-relaxed transition-[grid-template-rows] duration-300 ease-out',
                     isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'

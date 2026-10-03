@@ -1,20 +1,17 @@
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { BrandArtwork } from '@/components/brand-artwork';
 import { buttonVariants } from '@/components/ui/button';
 
-// Subtle gradient palettes used as image placeholders for the first version
+// Original artwork studies, explicitly labelled as illustrative prompts.
 const swatches = [
-  'from-rose-200 via-pink-200 to-orange-200',
-  'from-amber-200 via-yellow-200 to-lime-200',
-  'from-sky-200 via-indigo-200 to-violet-200',
-  'from-emerald-200 via-teal-200 to-cyan-200',
-  'from-fuchsia-200 via-purple-200 to-indigo-200',
-  'from-orange-200 via-rose-200 to-red-200',
-  'from-stone-200 via-amber-100 to-yellow-100',
-  'from-cyan-200 via-sky-200 to-blue-200',
+  'bg-background',
+  'bg-secondary/40',
+  'bg-muted',
+  'bg-secondary/70',
 ];
 
 export function Gallery() {
@@ -30,13 +27,13 @@ export function Gallery() {
   ];
 
   return (
-    <section id="gallery" className="px-4 py-20 sm:py-24">
+    <section id="gallery" className="px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
           <p className="text-primary text-xs font-medium tracking-[0.18em] uppercase">
             {m['landing.gallery.eyebrow']()}
           </p>
-          <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-bold tracking-[-0.02em] sm:text-4xl lg:text-5xl">
+          <h2 className="mx-auto mt-4 max-w-2xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
             {m['landing.gallery.title']()}
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-base">
@@ -48,21 +45,23 @@ export function Gallery() {
           {items.map((prompt, i) => (
             <article
               key={i}
-              className="group border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
+              className="border-border bg-card shadow-soft rounded-card overflow-hidden border"
             >
               <div
                 className={cn(
-                  'relative aspect-[4/5] w-full bg-gradient-to-br',
+                  'paper-texture relative flex aspect-[4/5] w-full items-center justify-center',
                   swatches[i % swatches.length]
                 )}
               >
-                <span className="bg-background/80 text-foreground absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium backdrop-blur">
-                  <Sparkles className="text-primary size-3" />
-                  AI
-                </span>
+                <BrandArtwork
+                  className={cn(
+                    'text-foreground h-full w-auto max-w-full p-5',
+                    i % 2 === 1 && 'rotate-6'
+                  )}
+                />
               </div>
               <div className="p-4">
-                <p className="text-muted-foreground line-clamp-3 text-xs leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   &ldquo;{prompt}&rdquo;
                 </p>
               </div>
@@ -70,16 +69,19 @@ export function Gallery() {
           ))}
         </div>
 
+        <p className="text-muted-foreground mt-5 text-center text-xs leading-relaxed">
+          {m['landing.gallery.sample_note']()}
+        </p>
         <div className="mt-10 flex justify-center">
           <Link
             href="/chat"
             className={cn(
               buttonVariants({ variant: 'outline', size: 'lg' }),
-              'gap-2 rounded-full px-6'
+              'touch-target gap-2 rounded-full px-6'
             )}
           >
             {m['landing.gallery.view_all']()}
-            <ArrowRight className="size-4" />
+            <ArrowRight aria-hidden className="size-4" />
           </Link>
         </div>
       </div>

@@ -329,10 +329,10 @@ export function Pricing({
   }
 
   return (
-    <section id="pricing" className="px-4 py-20 sm:py-24">
+    <section id="pricing" className="px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-[-0.02em] sm:text-4xl lg:text-5xl">
+          <h2 className="font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
             {title ?? m['landing.pricing.title']()}
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-base">

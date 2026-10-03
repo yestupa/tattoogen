@@ -48,8 +48,18 @@ function PricingPage() {
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1">
-        <Pricing />
+      <main className="paper-texture flex-1 px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <h1 className="font-serif text-4xl leading-tight sm:text-5xl">
+              {m['landing.pricing.title']()}
+            </h1>
+            <p className="text-muted-foreground mx-auto mt-5 max-w-xl leading-7">
+              {m['landing.pricing.description']()}
+            </p>
+          </div>
+          <Pricing compact />
+        </div>
       </main>
       <Footer />
     </div>

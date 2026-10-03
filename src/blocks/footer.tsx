@@ -1,5 +1,6 @@
 import { LifeBuoy } from 'lucide-react';
 
+import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import {
   SiteFooter,
@@ -19,8 +20,10 @@ export function Footer() {
     {
       title: m['landing.footer.products'](),
       links: [
-        { label: 'Tattoo Generator', href: '/' },
+        { label: envConfigs.app_name, href: '/' },
         { label: 'ShipAny', href: 'https://shipany.ai' },
+        { label: m['landing.nav.pricing'](), href: '/pricing' },
+        { label: m['blog.title'](), href: '/blog' },
       ],
     },
     {
