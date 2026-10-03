@@ -6,8 +6,8 @@ import { useRouter } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { localizeHref } from '@/paraglide/runtime.js';
+import { AuthShell } from '@/components/auth-shell';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Field,
   FieldDescription,
@@ -102,60 +102,60 @@ function RedeemInvitePage() {
   }
 
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <span className="self-center font-serif text-lg italic">
-          {envConfigs.app_name}
-        </span>
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl">
-              {m['common.sign.redeem_title']()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <FieldGroup>
-                {error && (
-                  <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-                    {error}
-                  </div>
-                )}
-                <p className="text-muted-foreground text-sm">
-                  {m['common.sign.redeem_description']()}
-                </p>
-                <Field>
-                  <FieldLabel htmlFor="invite-code">
-                    {m['common.sign.invite_code_title']()}
-                  </FieldLabel>
-                  <Input
-                    id="invite-code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder={m['common.sign.invite_code_placeholder']()}
-                    required
-                  />
-                </Field>
-                <Field>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? '...' : m['common.sign.redeem_submit']()}
-                  </Button>
-                  <FieldDescription className="text-center">
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="underline underline-offset-4"
-                    >
-                      {m['common.sign.sign_out_title']()}
-                    </button>
-                  </FieldDescription>
-                </Field>
-              </FieldGroup>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <AuthShell
+      eyebrow={m['common.auth.eyebrow']()}
+      title={m['common.sign.redeem_title']()}
+      benefits={[
+        m['common.auth.benefit_explore'](),
+        m['common.auth.benefit_refine'](),
+        m['common.auth.benefit_save'](),
+      ]}
+      brand={
+        <span className="font-serif text-lg italic">{envConfigs.app_name}</span>
+      }
+    >
+      <form onSubmit={handleSubmit}>
+        <FieldGroup>
+          {error && (
+            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+              {error}
+            </div>
+          )}
+          <p className="text-muted-foreground text-sm">
+            {m['common.sign.redeem_description']()}
+          </p>
+          <Field>
+            <FieldLabel htmlFor="invite-code">
+              {m['common.sign.invite_code_title']()}
+            </FieldLabel>
+            <Input
+              id="invite-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder={m['common.sign.invite_code_placeholder']()}
+              required
+            />
+          </Field>
+          <Field>
+            <Button type="submit" disabled={loading}>
+              {loading ? '...' : m['common.sign.redeem_submit']()}
+            </Button>
+            <FieldDescription className="text-center">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="underline underline-offset-4"
+              >
+                {m['common.sign.sign_out_title']()}
+              </button>
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
+      </form>
+      <p className="text-muted-foreground mt-6 text-xs leading-relaxed">
+        {m['common.auth.security_note']()}
+      </p>
+    </AuthShell>
   );
 }
 

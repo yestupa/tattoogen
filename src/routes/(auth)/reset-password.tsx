@@ -7,15 +7,9 @@ import { resetPassword } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
+import { AuthShell } from '@/components/auth-shell';
 import { TextField } from '@/components/form-field';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Field, FieldDescription, FieldGroup } from '@/components/ui/field';
 
 const resetSchema = z
@@ -70,116 +64,114 @@ function ResetPasswordPage() {
   });
 
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <Link href="/" className="self-center font-serif text-lg italic">
+    <AuthShell
+      eyebrow={m['common.auth.eyebrow']()}
+      title={m['common.sign.reset_password_title']()}
+      description={
+        !success &&
+        tokenChecked &&
+        token &&
+        m['common.sign.reset_password_description']()
+      }
+      benefits={[
+        m['common.auth.benefit_explore'](),
+        m['common.auth.benefit_refine'](),
+        m['common.auth.benefit_save'](),
+      ]}
+      brand={
+        <Link href="/" className="font-serif text-lg italic">
           {envConfigs.app_name}
         </Link>
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl">
-              {m['common.sign.reset_password_title']()}
-            </CardTitle>
-            {!success && tokenChecked && token && (
-              <CardDescription>
-                {m['common.sign.reset_password_description']()}
-              </CardDescription>
+      }
+    >
+      {!tokenChecked ? null : !token ? (
+        <FieldGroup>
+          <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-center text-sm">
+            {m['common.sign.reset_password_invalid_token']()}
+          </div>
+          <Field>
+            <Link
+              href="/forgot-password"
+              className="text-center text-sm underline underline-offset-4"
+            >
+              {m['common.sign.forgot_password_title']()}
+            </Link>
+          </Field>
+        </FieldGroup>
+      ) : success ? (
+        <FieldGroup>
+          <p className="text-center text-sm">
+            {m['common.sign.reset_password_success']()}
+          </p>
+          <Field>
+            <Link
+              href="/sign-in"
+              className="text-center text-sm underline underline-offset-4"
+            >
+              {m['common.sign.back_to_sign_in']()}
+            </Link>
+          </Field>
+        </FieldGroup>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <FieldGroup>
+            {error && (
+              <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+                {error}
+              </div>
             )}
-          </CardHeader>
-          <CardContent>
-            {!tokenChecked ? null : !token ? (
-              <FieldGroup>
-                <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-center text-sm">
-                  {m['common.sign.reset_password_invalid_token']()}
-                </div>
-                <Field>
-                  <Link
-                    href="/forgot-password"
-                    className="text-center text-sm underline underline-offset-4"
-                  >
-                    {m['common.sign.forgot_password_title']()}
-                  </Link>
-                </Field>
-              </FieldGroup>
-            ) : success ? (
-              <FieldGroup>
-                <p className="text-center text-sm">
-                  {m['common.sign.reset_password_success']()}
-                </p>
-                <Field>
-                  <Link
-                    href="/sign-in"
-                    className="text-center text-sm underline underline-offset-4"
-                  >
-                    {m['common.sign.back_to_sign_in']()}
-                  </Link>
-                </Field>
-              </FieldGroup>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  form.handleSubmit();
-                }}
-              >
-                <FieldGroup>
-                  {error && (
-                    <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-                      {error}
-                    </div>
-                  )}
-                  <form.Field name="password">
-                    {(field) => (
-                      <TextField
-                        field={field}
-                        label={m['common.sign.new_password_title']()}
-                        type="password"
-                        required
-                        placeholder={m[
-                          'common.sign.new_password_placeholder'
-                        ]()}
-                      />
-                    )}
-                  </form.Field>
-                  <form.Field name="confirmPassword">
-                    {(field) => (
-                      <TextField
-                        field={field}
-                        label={m['common.sign.confirm_password_title']()}
-                        type="password"
-                        required
-                        placeholder={m[
-                          'common.sign.confirm_new_password_placeholder'
-                        ]()}
-                      />
-                    )}
-                  </form.Field>
-                  <Field>
-                    <form.Subscribe selector={(s) => s.isSubmitting}>
-                      {(isSubmitting) => (
-                        <Button type="submit" disabled={isSubmitting}>
-                          {isSubmitting
-                            ? '...'
-                            : m['common.sign.reset_password_submit']()}
-                        </Button>
-                      )}
-                    </form.Subscribe>
-                    <FieldDescription className="text-center">
-                      <Link
-                        href="/sign-in"
-                        className="underline underline-offset-4"
-                      >
-                        {m['common.sign.back_to_sign_in']()}
-                      </Link>
-                    </FieldDescription>
-                  </Field>
-                </FieldGroup>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            <form.Field name="password">
+              {(field) => (
+                <TextField
+                  field={field}
+                  label={m['common.sign.new_password_title']()}
+                  type="password"
+                  required
+                  placeholder={m['common.sign.new_password_placeholder']()}
+                />
+              )}
+            </form.Field>
+            <form.Field name="confirmPassword">
+              {(field) => (
+                <TextField
+                  field={field}
+                  label={m['common.sign.confirm_password_title']()}
+                  type="password"
+                  required
+                  placeholder={m[
+                    'common.sign.confirm_new_password_placeholder'
+                  ]()}
+                />
+              )}
+            </form.Field>
+            <Field>
+              <form.Subscribe selector={(s) => s.isSubmitting}>
+                {(isSubmitting) => (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting
+                      ? '...'
+                      : m['common.sign.reset_password_submit']()}
+                  </Button>
+                )}
+              </form.Subscribe>
+              <FieldDescription className="text-center">
+                <Link href="/sign-in" className="underline underline-offset-4">
+                  {m['common.sign.back_to_sign_in']()}
+                </Link>
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
+        </form>
+      )}
+      <p className="text-muted-foreground mt-6 text-xs leading-relaxed">
+        {m['common.auth.security_note']()}
+      </p>
+    </AuthShell>
   );
 }
 

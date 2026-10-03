@@ -12,8 +12,10 @@ import {
 import { createServerFn } from '@tanstack/react-start';
 import { ThemeProvider } from 'next-themes';
 
+import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { getQueryClient } from '@/lib/query-client';
+import { m } from '@/paraglide/messages.js';
 import {
   baseLocale,
   getLocale,
@@ -23,9 +25,12 @@ import {
 import { Ads } from '@/components/analytics/ads';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 import { Plausible } from '@/components/analytics/plausible';
+import { BrandArtwork } from '@/components/brand-artwork';
 import { CustomerService } from '@/components/customer-service';
 import { GoogleOneTap } from '@/components/google-one-tap';
+import { PageState } from '@/components/page-state';
 import { SandboxPreviewBridge } from '@/components/sandbox-preview-bridge';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 
 import '@fontsource-variable/inter';
@@ -184,35 +189,66 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 function NotFound() {
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-6xl font-bold">404</h1>
-      <p className="text-muted-foreground">Page not found</p>
-      <a href="/" className="text-sm underline underline-offset-4">
-        Back to home
-      </a>
-    </div>
+    <main className="bg-background text-foreground flex min-h-svh items-center justify-center px-4 py-8 sm:px-6">
+      <PageState
+        variant="not-found"
+        code="404"
+        artwork={<BrandArtwork />}
+        title={m['common.not_found.message']()}
+        description={m['common.not_found.description']()}
+        primaryAction={
+          <Link href="/chat" className={buttonVariants()}>
+            {m['common.not_found.start_creating']()}
+          </Link>
+        }
+        secondaryAction={
+          <Link href="/" className={buttonVariants({ variant: 'outline' })}>
+            {m['common.not_found.back_home']()}
+          </Link>
+        }
+      />
+    </main>
   );
 }
 
 function RootError({ error, reset }: ErrorComponentProps) {
+  const requestError = error as Error & {
+    status?: number;
+    statusCode?: number;
+    retryable?: boolean;
+  };
+  const status = requestError.status ?? requestError.statusCode;
+  const retryable =
+    requestError.retryable !== false &&
+    (status === undefined || status === 408 || status === 429 || status >= 500);
+
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-4xl font-bold">Oops</h1>
-      <p className="text-muted-foreground">
-        Something went wrong. Please try again.
-      </p>
-      {import.meta.env.DEV && error instanceof Error && (
-        <pre className="bg-muted mt-2 max-w-lg overflow-auto rounded p-4 text-xs">
-          {error.message}
-        </pre>
-      )}
-      <button
-        type="button"
-        onClick={reset}
-        className="text-sm underline underline-offset-4"
-      >
-        Try again
-      </button>
-    </div>
+    <main className="bg-background text-foreground flex min-h-svh items-center justify-center px-4 py-8 sm:px-6">
+      <PageState
+        variant="error"
+        artwork={<BrandArtwork />}
+        title={m['common.error.title']()}
+        description={m['common.state.request_failed']()}
+        detail={
+          import.meta.env.DEV && error instanceof Error ? (
+            <pre className="bg-muted max-w-full overflow-auto rounded p-4 text-xs">
+              {error.message}
+            </pre>
+          ) : undefined
+        }
+        primaryAction={
+          retryable ? (
+            <Button type="button" onClick={reset}>
+              {m['common.error.retry']()}
+            </Button>
+          ) : undefined
+        }
+        secondaryAction={
+          <Link href="/" className={buttonVariants({ variant: 'outline' })}>
+            {m['common.not_found.back_home']()}
+          </Link>
+        }
+      />
+    </main>
   );
 }

@@ -8,15 +8,8 @@ import { Link, useRouter } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { deLocalizeHref, localizeHref } from '@/paraglide/runtime.js';
+import { AuthShell } from '@/components/auth-shell';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -229,72 +222,74 @@ function VerifyEmailPage() {
   };
 
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <Link href="/" className="self-center font-serif text-lg italic">
+    <AuthShell
+      eyebrow={m['common.auth.eyebrow']()}
+      title={m['common.sign.verify_email_page_title']()}
+      description={
+        <>
+          {m['common.sign.verify_email_page_description']()}
+          {email ? ` ${email}` : ''}
+        </>
+      }
+      benefits={[
+        m['common.auth.benefit_explore'](),
+        m['common.auth.benefit_refine'](),
+        m['common.auth.benefit_save'](),
+      ]}
+      brand={
+        <Link href="/" className="font-serif text-lg italic">
           {envConfigs.app_name}
         </Link>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg md:text-xl">
-              {m['common.sign.verify_email_page_title']()}
-            </CardTitle>
-            <CardDescription className="text-xs md:text-sm">
-              {m['common.sign.verify_email_page_description']()}
-              {email ? ` ${email}` : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={loading || cooldownSeconds > 0}
-                onClick={handleResend}
-              >
-                {loading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : cooldownSeconds > 0 ? (
-                  m['common.sign.resend_verification_countdown']({
-                    seconds: cooldownSeconds,
-                  })
-                ) : (
-                  m['common.sign.resend_verification']()
-                )}
-              </Button>
+      }
+    >
+      <div className="grid gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={loading || cooldownSeconds > 0}
+          onClick={handleResend}
+        >
+          {loading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : cooldownSeconds > 0 ? (
+            m['common.sign.resend_verification_countdown']({
+              seconds: cooldownSeconds,
+            })
+          ) : (
+            m['common.sign.resend_verification']()
+          )}
+        </Button>
 
-              <Button
-                type="button"
-                className="w-full"
-                disabled={isPending}
-                onClick={handleContinue}
-              >
-                {isPending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  m['common.sign.verify_email_continue']()
-                )}
-              </Button>
+        <Button
+          type="button"
+          className="w-full"
+          disabled={isPending}
+          onClick={handleContinue}
+        >
+          {isPending ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            m['common.sign.verify_email_continue']()
+          )}
+        </Button>
 
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => router.push(signInPath)}
-              >
-                {m['common.sign.back_to_sign_in']()}
-              </Button>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <p className="text-muted-foreground w-full text-center text-xs">
-              {m['common.sign.verify_email_tip']()}
-            </p>
-          </CardFooter>
-        </Card>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={() => router.push(signInPath)}
+        >
+          {m['common.sign.back_to_sign_in']()}
+        </Button>
       </div>
-    </div>
+      <p className="text-muted-foreground mt-4 text-center text-xs">
+        {m['common.sign.verify_email_tip']()}
+      </p>
+      <p className="text-muted-foreground mt-6 text-xs leading-relaxed">
+        {m['common.auth.security_note']()}
+      </p>
+    </AuthShell>
   );
 }
 
