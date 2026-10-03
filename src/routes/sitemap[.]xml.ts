@@ -20,23 +20,39 @@ type Entry = {
 };
 
 function urlFor(path: string, locale: string): string {
-  return localizeUrl(`${envConfigs.app_url}${path || '/'}`, {
+  return localizeUrl(new URL(path || '/', envConfigs.app_url), {
     locale: locale as (typeof locales)[number],
   }).href;
 }
 
-function entryXml(e: Entry): string {
-  const alternates = locales
+function escapeXml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&apos;',
+      })[character]!
+  );
+}
+
+function entryXml(e: Entry, locale: (typeof locales)[number]): string {
+  const alternates = [...locales, 'x-default']
     .map(
       (loc) =>
-        `    <xhtml:link rel="alternate" hreflang="${loc}" href="${urlFor(e.path, loc)}"/>`
+        `    <xhtml:link rel="alternate" hreflang="${loc}" href="${escapeXml(urlFor(e.path, loc === 'x-default' ? baseLocale : loc))}"/>`
     )
     .join('\n');
   return [
     '  <url>',
-    `    <loc>${urlFor(e.path, baseLocale)}</loc>`,
+    `    <loc>${escapeXml(urlFor(e.path, locale))}</loc>`,
     alternates,
-    e.lastModified ? `    <lastmod>${e.lastModified}</lastmod>` : null,
+    e.lastModified
+      ? `    <lastmod>${escapeXml(e.lastModified)}</lastmod>`
+      : null,
     `    <changefreq>${e.changeFrequency}</changefreq>`,
     `    <priority>${e.priority}</priority>`,
     '  </url>',
@@ -61,7 +77,7 @@ export const Route = createFileRoute('/sitemap.xml')({
             await import('@/modules/posts/service');
           const rows = await listPublishedArticles().catch(() => []);
           const dbPosts = rows.map((row) => ({
-            slug: row.slug,
+            slug: row.slug.trim(),
             title: row.title || row.slug,
             description: row.description || '',
             createdAt: new Date(row.createdAt).toISOString(),
@@ -91,7 +107,15 @@ export const Route = createFileRoute('/sitemap.xml')({
         const xml = [
           '<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
-          ...entries.map(entryXml),
+          ...Array.from(
+            new Map(
+              entries
+                .filter((entry) => entry.path !== '/blog/')
+                .map((entry) => [entry.path, entry])
+            ).values()
+          ).flatMap((entry) =>
+            locales.map((locale) => entryXml(entry, locale))
+          ),
           '</urlset>',
           '',
         ].join('\n');

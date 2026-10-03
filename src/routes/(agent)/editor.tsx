@@ -51,7 +51,9 @@ function EditorPage() {
         {/* Canvas */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Canvas</CardTitle>
+            <CardTitle className="text-base">
+              {m['agent.editor.canvas']()}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <label
@@ -91,7 +93,7 @@ function EditorPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="text-primary size-4" />
+              <Sparkles aria-hidden className="text-primary size-4" />
               {m['agent.editor.prompt_label']()}
             </CardTitle>
             <CardDescription>{m['agent.editor.model_label']()}</CardDescription>
@@ -126,7 +128,7 @@ function EditorPage() {
             />
 
             <Button className="w-full gap-2" disabled={!prompt.trim()}>
-              <Wand2 className="size-4" />
+              <Wand2 aria-hidden className="size-4" />
               {m['agent.editor.submit']()}
             </Button>
           </CardContent>

@@ -529,10 +529,10 @@ function ChatSessionPage() {
             <button
               type="button"
               onClick={scrollToBottom}
-              aria-label="Scroll to bottom"
+              aria-label={m['agent.chat.scroll_to_bottom']()}
               className="border-border bg-background text-muted-foreground hover:text-foreground pointer-events-auto flex size-11 items-center justify-center rounded-full border shadow-sm"
             >
-              <ArrowDown className="size-4" />
+              <ArrowDown aria-hidden className="size-4" />
             </button>
           </div>
         )}

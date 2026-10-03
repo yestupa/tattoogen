@@ -27,11 +27,17 @@ export function SiteFooter({
   columns,
   socials,
   copyright,
+  languageLabel,
+  builtWithLabel,
+  rightsReservedLabel,
 }: {
   tagline?: string;
   columns?: FooterColumn[];
   socials?: FooterSocial[];
   copyright?: string;
+  languageLabel: string;
+  builtWithLabel: string;
+  rightsReservedLabel: string;
 }) {
   const year = new Date().getFullYear();
 
@@ -134,6 +140,7 @@ export function SiteFooter({
             <div />
           )}
           <LocaleSelector
+            label={languageLabel}
             variant="pill"
             className="touch-target border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
           />
@@ -141,7 +148,7 @@ export function SiteFooter({
 
         {/* Bottom bar */}
         <div className="border-border mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <BuiltWithShipAny />
+          <BuiltWithShipAny label={builtWithLabel} />
           <span className="text-muted-foreground text-sm">
             {copyright ?? (
               <>
@@ -153,7 +160,7 @@ export function SiteFooter({
                 >
                   {envConfigs.app_name}
                 </Link>
-                . All rights reserved.
+                . {rightsReservedLabel}
               </>
             )}
           </span>

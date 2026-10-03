@@ -9,7 +9,13 @@ function getHostname(url: string): string {
   }
 }
 
-export function BuiltWithShipAny({ className }: { className?: string }) {
+export function BuiltWithShipAny({
+  className,
+  label,
+}: {
+  className?: string;
+  label: string;
+}) {
   const utm = encodeURIComponent(getHostname(envConfigs.app_url));
   const href = `https://shipany.ai/?utm_source=${utm}`;
 
@@ -23,7 +29,7 @@ export function BuiltWithShipAny({ className }: { className?: string }) {
         className
       )}
     >
-      <span>Built with</span>
+      <span>{label}</span>
       <span aria-hidden className="text-red-500">
         ❤️
       </span>

@@ -52,13 +52,13 @@ function ResetPasswordPage() {
           token,
         });
         if (result.error) {
-          setError(result.error.message || 'Reset failed');
+          setError(result.error.message || m['common.sign.reset_failed']());
         } else {
           setSuccess(true);
           setTimeout(() => router.push('/sign-in'), 1500);
         }
       } catch (err: any) {
-        setError(err.message || 'Reset failed');
+        setError(err.message || m['common.sign.reset_failed']());
       }
     },
   });

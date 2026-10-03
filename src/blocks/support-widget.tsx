@@ -11,6 +11,7 @@ import { ImageUploader } from '@/components/image-uploader';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -52,7 +53,7 @@ export function SupportWidget() {
       setAttachments([]);
       setUploaderKey((k) => k + 1);
     } catch (e: any) {
-      toast.error(e?.message || 'Failed');
+      toast.error(e?.message || m['common.state.request_failed']());
     } finally {
       setSubmitting(false);
     }
@@ -70,11 +71,27 @@ export function SupportWidget() {
           'transition-all hover:scale-105 hover:shadow-xl'
         )}
       >
-        {open ? <X className="size-5" /> : <LifeBuoy className="size-5" />}
+        {open ? (
+          <X aria-hidden className="size-5" />
+        ) : (
+          <LifeBuoy aria-hidden className="size-5" />
+        )}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
+          <DialogClose
+            aria-label={m['common.action.close']()}
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="touch-target absolute top-2 right-2"
+              />
+            }
+          >
+            <X aria-hidden className="size-4" />
+          </DialogClose>
           <DialogHeader>
             <DialogTitle>{m['common.support.title']()}</DialogTitle>
             <DialogDescription>

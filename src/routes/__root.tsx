@@ -16,12 +16,7 @@ import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { getQueryClient } from '@/lib/query-client';
 import { m } from '@/paraglide/messages.js';
-import {
-  baseLocale,
-  getLocale,
-  locales,
-  localizeUrl,
-} from '@/paraglide/runtime.js';
+import { getLocale } from '@/paraglide/runtime.js';
 import { Ads } from '@/components/analytics/ads';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 import { Plausible } from '@/components/analytics/plausible';
@@ -67,15 +62,13 @@ const getAnalyticsConfigs = createServerFn().handler(async () => {
 export const Route = createRootRoute({
   loader: () => getAnalyticsConfigs(),
   head: () => {
-    // head() runs on the SSR server AND again on the client during hydration.
-    // On the client, app_url falls back to the localhost dev default when
-    // VITE_APP_URL wasn't inlined into the client bundle at build — which would
-    // emit a second, localhost set of hreflang links. Prefer the live origin
-    // on the client so it always matches; the server uses the configured URL.
-    const appUrl =
-      (typeof window !== 'undefined' && window.location?.origin) ||
-      envConfigs.app_url ||
-      '';
+    // Use the configured public origin on both SSR and hydration. Page routes
+    // own their canonical and language links, including the current path.
+    const appUrl = new URL(envConfigs.app_url).origin;
+    const description = m['common.metadata.description'](
+      {},
+      { locale: getLocale() }
+    );
     // Social-card defaults. A route's own head() overrides the ones it repeats
     // (title/description), so pages only restate what differs.
     const ogImage = `${appUrl}/logo.png`;
@@ -84,31 +77,20 @@ export const Route = createRootRoute({
         { charSet: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { title: envConfigs.app_name },
-        { name: 'description', content: envConfigs.app_description },
+        { name: 'description', content: description },
         { property: 'og:site_name', content: envConfigs.app_name },
         { property: 'og:type', content: 'website' },
         { property: 'og:title', content: envConfigs.app_name },
-        { property: 'og:description', content: envConfigs.app_description },
-        { property: 'og:url', content: appUrl },
+        { property: 'og:description', content: description },
         { property: 'og:image', content: ogImage },
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: envConfigs.app_name },
-        { name: 'twitter:description', content: envConfigs.app_description },
+        { name: 'twitter:description', content: description },
         { name: 'twitter:image', content: ogImage },
       ],
       links: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'apple-touch-icon', href: '/logo.png' },
-        ...locales.map((loc) => ({
-          rel: 'alternate',
-          hrefLang: loc,
-          href: localizeUrl(`${appUrl}/`, { locale: loc }).href,
-        })),
-        {
-          rel: 'alternate',
-          hrefLang: 'x-default',
-          href: localizeUrl(`${appUrl}/`, { locale: baseLocale }).href,
-        },
       ],
       scripts: [
         {
@@ -117,14 +99,14 @@ export const Route = createRootRoute({
             '@context': 'https://schema.org',
             '@type': 'WebSite',
             name: envConfigs.app_name,
-            description: envConfigs.app_description,
+            description,
             url: appUrl,
             publisher: {
               '@type': 'Organization',
               name: envConfigs.app_name,
               logo: ogImage,
             },
-          }),
+          }).replace(/</g, '\\u003c'),
         },
       ],
     };

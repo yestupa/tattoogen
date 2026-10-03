@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useSession } from '@/core/auth/client';
 import { usePathname, useRouter } from '@/core/i18n/navigation';
 import { apiGet } from '@/lib/api-client';
-import { m } from '@/paraglide/messages.js';
 import { useUserPermissions } from '@/hooks/use-user-permissions';
 import { AppSidebar, type NavItem } from '@/components/app-sidebar';
 import { BrandArtwork } from '@/components/brand-artwork';
@@ -20,6 +19,9 @@ export function AppLayout({
   brand,
   brandHref = '/',
   mobileBrand,
+  loadingTitle,
+  mobileNavLabel,
+  fallbackUserName,
   headerExtra,
   profileHref,
   requirePermission,
@@ -32,6 +34,9 @@ export function AppLayout({
   brand: React.ReactNode;
   brandHref?: string;
   mobileBrand?: React.ReactNode;
+  loadingTitle: string;
+  mobileNavLabel: string;
+  fallbackUserName: string;
   headerExtra?: React.ReactNode;
   profileHref?: string;
   requirePermission?: string;
@@ -124,7 +129,7 @@ export function AppLayout({
       <div className="bg-background flex min-h-svh items-center justify-center p-4">
         <PageState
           variant="loading"
-          title={m['common.state.loading_title']()}
+          title={loadingTitle}
           description={brand}
           artwork={<BrandArtwork className="text-primary mx-auto max-w-24" />}
         />
@@ -164,7 +169,7 @@ export function AppLayout({
         backNav={backNav}
         footer={
           <UserMenu
-            name={session.user.name || 'User'}
+            name={session.user.name || fallbackUserName}
             email={session.user.email}
             image={session.user.image}
             profileHref={profileHref}
@@ -178,7 +183,7 @@ export function AppLayout({
         <header className="bg-background flex min-h-16 shrink-0 items-center gap-2 border-b">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger
-              aria-label={m['common.nav.open_menu']()}
+              aria-label={mobileNavLabel}
               className="text-primary size-11 rounded-xl focus-visible:ring-2"
             />
           </div>

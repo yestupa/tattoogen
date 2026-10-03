@@ -125,7 +125,7 @@ export function PromptLauncher({ className }: { className?: string }) {
             )
           );
         } catch (err) {
-          const error = (err as Error).message || 'Upload failed';
+          const error = (err as Error).message || m['common.upload.failed']();
           toast.error(error);
           setAttachments((prev) =>
             prev.map((att) =>
@@ -217,7 +217,7 @@ export function PromptLauncher({ className }: { className?: string }) {
         toolbarExtra={
           category && (
             <span className="border-primary/30 bg-primary/10 text-primary inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs">
-              <category.icon className="size-3.5" />
+              <category.icon aria-hidden className="size-3.5" />
               <span className="max-w-[10rem] truncate">{category.title}</span>
               <button
                 type="button"
@@ -225,7 +225,7 @@ export function PromptLauncher({ className }: { className?: string }) {
                 aria-label={m['landing.examples.clear']()}
                 className="hover:text-primary/70"
               >
-                <X className="size-3" />
+                <X aria-hidden className="size-3" />
               </button>
             </span>
           )
@@ -248,7 +248,7 @@ export function PromptLauncher({ className }: { className?: string }) {
                   : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'
               )}
             >
-              <item.icon className="size-3.5" />
+              <item.icon aria-hidden className="size-3.5" />
               {item.title}
             </button>
           );

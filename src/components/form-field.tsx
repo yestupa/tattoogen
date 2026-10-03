@@ -25,6 +25,7 @@ export function TextField({
   autoComplete,
   required,
   disabled,
+  'aria-describedby': ariaDescribedBy,
 }: {
   field: AnyFieldApi;
   label: string;
@@ -33,8 +34,13 @@ export function TextField({
   autoComplete?: string;
   required?: boolean;
   disabled?: boolean;
+  'aria-describedby'?: string;
 }) {
   const error = fieldError(field);
+  const errorId = `${field.name}-error`;
+  const describedBy =
+    [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ') ||
+    undefined;
 
   return (
     <Field>
@@ -51,8 +57,13 @@ export function TextField({
         required={required}
         disabled={disabled}
         aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
       />
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
     </Field>
   );
 }

@@ -13,9 +13,11 @@ import {
 export function LocaleSelector({
   variant = 'icon',
   className,
+  label,
 }: {
   variant?: 'icon' | 'pill';
   className?: string;
+  label: string;
 }) {
   const locale = getLocale();
 
@@ -27,6 +29,7 @@ export function LocaleSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        aria-label={label}
         className={cn(
           'inline-flex items-center transition-colors outline-none',
           variant === 'icon'
@@ -37,14 +40,14 @@ export function LocaleSelector({
       >
         {variant === 'icon' ? (
           <>
-            <Languages className="size-4" />
-            <span className="sr-only">Switch language</span>
+            <Languages aria-hidden className="size-4" />
+            <span className="sr-only">{label}</span>
           </>
         ) : (
           <>
-            <Globe className="size-4" />
+            <Globe aria-hidden className="size-4" />
             <span>{localeNames[locale] || locale}</span>
-            <ChevronDown className="size-4 opacity-70" />
+            <ChevronDown aria-hidden className="size-4 opacity-70" />
           </>
         )}
       </DropdownMenuTrigger>
@@ -56,7 +59,7 @@ export function LocaleSelector({
             className="flex items-center justify-between gap-2"
           >
             {localeNames[loc] || loc}
-            {loc === locale && <Check className="size-3.5" />}
+            {loc === locale && <Check aria-hidden className="size-3.5" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

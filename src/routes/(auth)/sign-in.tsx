@@ -110,7 +110,7 @@ function SignInPage() {
             router.push(verifyPath);
             return;
           }
-          setError(msg || 'Sign in failed');
+          setError(msg || m['common.sign.sign_in_failed']());
         } else {
           // Hard navigation so the destination reloads with a fresh session
           // cookie — a client push would let the guard read a stale (logged-out)
@@ -119,7 +119,7 @@ function SignInPage() {
           window.location.assign(localizeHref(afterLoginUrl));
         }
       } catch (err: any) {
-        setError(err.message || 'Sign in failed');
+        setError(err.message || m['common.sign.sign_in_failed']());
       }
     },
   });
@@ -267,9 +267,17 @@ function SignInPage() {
                           required
                           placeholder={m['common.sign.password_placeholder']()}
                           aria-invalid={errMsg ? true : undefined}
+                          aria-describedby={
+                            errMsg ? `${field.name}-error` : undefined
+                          }
                         />
                         {errMsg && (
-                          <p className="text-destructive text-sm">{errMsg}</p>
+                          <p
+                            id={`${field.name}-error`}
+                            className="text-destructive text-sm"
+                          >
+                            {errMsg}
+                          </p>
                         )}
                       </Field>
                     );

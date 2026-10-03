@@ -97,11 +97,14 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
         </nav>
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 justify-self-end lg:flex [&>button]:min-h-11 [&>button]:min-w-11">
-          <LocaleSelector className="touch-target" />
-          <ThemeToggle />
+          <LocaleSelector
+            label={m['common.nav.switch_language']()}
+            className="touch-target"
+          />
+          <ThemeToggle label={m['common.nav.toggle_theme']()} />
           {user ? (
             <SiteUserMenu
-              name={user.name || 'User'}
+              name={user.name || m['common.user.fallback_name']()}
               email={user.email}
               image={user.image}
             />
@@ -177,12 +180,15 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
             )}
           </nav>
           <div className="border-border mt-3 flex items-center gap-2 border-t pt-3 [&>button]:min-h-11 [&>button]:min-w-11">
-            <LocaleSelector className="touch-target" />
-            <ThemeToggle />
+            <LocaleSelector
+              label={m['common.nav.switch_language']()}
+              className="touch-target"
+            />
+            <ThemeToggle label={m['common.nav.toggle_theme']()} />
             <div className="flex-1" />
             {user ? (
               <SiteUserMenu
-                name={user.name || 'User'}
+                name={user.name || m['common.user.fallback_name']()}
                 email={user.email}
                 image={user.image}
               />

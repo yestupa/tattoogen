@@ -5,6 +5,7 @@ import { ImageIcon, RefreshCw, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/button';
 
 export type UploadStatus = 'idle' | 'uploading' | 'uploaded' | 'error';
@@ -52,12 +53,14 @@ const uploadImageFile = async (file: File) => {
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed with status ${response.status}`);
+    throw new Error(
+      m['common.upload.failed_status']({ status: response.status })
+    );
   }
 
   const result = await response.json();
   if (result.code !== 0 || !result.data?.urls?.length) {
-    throw new Error(result.message || 'Upload failed');
+    throw new Error(result.message || m['common.upload.failed']());
   }
 
   return result.data.urls[0] as string;
@@ -205,7 +208,9 @@ export function ImageUploader({
         .catch((error: any) => {
           console.error('Upload failed:', error);
           toast.error(
-            error?.message ? `Upload failed: ${error.message}` : 'Upload failed'
+            error?.message
+              ? m['common.upload.failed_detail']({ message: error.message })
+              : m['common.upload.failed']()
           );
           setItems((prev) =>
             prev.map((item) => {
@@ -228,12 +233,14 @@ export function ImageUploader({
       const file = selectedFiles[0];
       if (!file) return;
       if (!file.type?.startsWith('image/')) {
-        toast.error('Only image files are supported');
+        toast.error(m['common.upload.images_only']());
         if (inputRef.current) inputRef.current.value = '';
         return;
       }
       if (file.size > maxBytes) {
-        toast.error(`"${file.name}" exceeds the ${maxSizeMB}MB limit`);
+        toast.error(
+          m['common.upload.too_large']({ name: file.name, maxSizeMB })
+        );
         if (inputRef.current) inputRef.current.value = '';
         return;
       }
@@ -245,11 +252,13 @@ export function ImageUploader({
     const filesToAdd = selectedFiles
       .filter((file) => {
         if (!file.type?.startsWith('image/')) {
-          toast.error(`"${file.name}" is not an image`);
+          toast.error(m['common.upload.not_image']({ name: file.name }));
           return false;
         }
         if (file.size > maxBytes) {
-          toast.error(`"${file.name}" exceeds the ${maxSizeMB}MB limit`);
+          toast.error(
+            m['common.upload.too_large']({ name: file.name, maxSizeMB })
+          );
           return false;
         }
         return true;
@@ -326,7 +335,9 @@ export function ImageUploader({
         } catch (error: any) {
           console.error('Upload failed:', error);
           toast.error(
-            error?.message ? `Upload failed: ${error.message}` : 'Upload failed'
+            error?.message
+              ? m['common.upload.failed_detail']({ message: error.message })
+              : m['common.upload.failed']()
           );
           setItems((prev) =>
             prev.map((current) => {
@@ -441,7 +452,7 @@ export function ImageUploader({
       {isDragActive && (
         <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/10 backdrop-blur-sm">
           <div className="bg-background/80 text-foreground rounded-full px-4 py-2 text-sm font-medium shadow-sm">
-            Drop to upload
+            {m['common.upload.drop']()}
           </div>
         </div>
       )}
@@ -457,7 +468,7 @@ export function ImageUploader({
       {title && (
         <div className="text-foreground mb-2 flex items-center justify-between text-sm font-medium">
           <div className="flex items-center gap-2">
-            <ImageIcon className="text-primary h-4 w-4" />
+            <ImageIcon aria-hidden className="text-primary h-4 w-4" />
             <span>{title}</span>
             <span className="text-primary text-xs">({countLabel})</span>
           </div>
@@ -478,7 +489,7 @@ export function ImageUploader({
             <div className="relative overflow-hidden rounded-lg">
               <img
                 src={item.preview}
-                alt="Preview"
+                alt={m['common.upload.preview']()}
                 className="h-32 w-32 rounded-lg object-cover"
               />
               {item.size && (
@@ -494,20 +505,20 @@ export function ImageUploader({
                     variant="secondary"
                     className="bg-background/50 text-foreground hover:bg-background/50 h-10 w-10 rounded-full shadow-sm backdrop-blur focus-visible:ring-2 focus-visible:ring-white/70"
                     onClick={() => openReplacePicker(item.id)}
-                    aria-label="Replace image"
+                    aria-label={m['common.upload.replace']()}
                   >
-                    <RefreshCw className="h-5 w-5" />
+                    <RefreshCw aria-hidden className="h-5 w-5" />
                   </Button>
                 </div>
               )}
               {item.status === 'uploading' && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 text-xs font-medium text-white">
-                  Uploading...
+                  {m['common.upload.uploading']()}
                 </div>
               )}
               {item.status === 'error' && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-500/70 text-xs font-medium text-white">
-                  Failed
+                  {m['common.upload.failed']()}
                 </div>
               )}
               <Button
@@ -516,9 +527,9 @@ export function ImageUploader({
                 variant="destructive"
                 className="absolute top-2 right-2 z-20 h-7 w-7"
                 onClick={() => handleRemove(item.id)}
-                aria-label="Remove image"
+                aria-label={m['common.upload.remove']()}
               >
-                <X className="h-4 w-4" />
+                <X aria-hidden className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -533,10 +544,14 @@ export function ImageUploader({
                 onClick={openFilePicker}
               >
                 <div className="border-border flex h-10 w-10 items-center justify-center rounded-full border border-dashed">
-                  <Upload className="h-5 w-5" />
+                  <Upload aria-hidden className="h-5 w-5" />
                 </div>
-                <span className="text-xs font-medium">Upload</span>
-                <span className="text-primary text-xs">Max {maxSizeMB}MB</span>
+                <span className="text-xs font-medium">
+                  {m['common.upload.upload']()}
+                </span>
+                <span className="text-primary text-xs">
+                  {m['common.upload.limit']({ maxSizeMB })}
+                </span>
               </button>
             </div>
           </div>

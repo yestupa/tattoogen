@@ -68,6 +68,9 @@ function SettingsLayout() {
 
   return (
     <AppLayout
+      loadingTitle={m['common.state.loading_title']()}
+      mobileNavLabel={m['common.nav.open_menu']()}
+      fallbackUserName={m['common.user.fallback_name']()}
       backNav={{
         href: '/chat',
         label: m['settings.nav.back_to_create'](),

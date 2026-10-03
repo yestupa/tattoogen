@@ -4,7 +4,12 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useRouter } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
-import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+import {
+  baseLocale,
+  getLocale,
+  locales,
+  localizeUrl,
+} from '@/paraglide/runtime.js';
 import { Blog } from '@/blocks/blog';
 import { CTA } from '@/blocks/cta';
 import { FAQ } from '@/blocks/faq';
@@ -75,15 +80,23 @@ export const Route = createFileRoute('/')({
   },
   loader: () => ({ locale: getLocale() }),
   head: ({ loaderData }) => {
-    const locale = loaderData?.locale ?? 'en';
-    const urlFor = (loc: string) =>
-      localizeUrl(`${envConfigs.app_url}/`, { locale: loc as any }).href;
+    const locale = loaderData?.locale ?? baseLocale;
+    const title = m['landing.metadata.title'](
+      { appName: envConfigs.app_name },
+      { locale }
+    );
+    const description = m['landing.hero.subheadline']({}, { locale });
+    const urlFor = (loc: typeof locale) =>
+      localizeUrl(new URL('/', envConfigs.app_url), { locale: loc }).href;
     return {
       meta: [
-        {
-          name: 'description',
-          content: m['landing.hero.subheadline']({}, { locale: locale as any }),
-        },
+        { title },
+        { name: 'description', content: description },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:url', content: urlFor(locale) },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
       ],
       links: [
         { rel: 'canonical', href: urlFor(locale) },
@@ -92,7 +105,7 @@ export const Route = createFileRoute('/')({
           hrefLang: loc,
           href: urlFor(loc),
         })),
-        { rel: 'alternate', hrefLang: 'x-default', href: urlFor('en') },
+        { rel: 'alternate', hrefLang: 'x-default', href: urlFor(baseLocale) },
       ],
     };
   },

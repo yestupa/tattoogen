@@ -42,13 +42,13 @@ function ForgotPasswordPage() {
           redirectTo,
         });
         if (result.error) {
-          setError(result.error.message || 'Request failed');
+          setError(result.error.message || m['common.sign.request_failed']());
         } else {
           setSentEmail(value.email);
           setSent(true);
         }
       } catch (err: any) {
-        setError(err.message || 'Request failed');
+        setError(err.message || m['common.sign.request_failed']());
       }
     },
   });

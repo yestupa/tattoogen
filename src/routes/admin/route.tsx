@@ -76,6 +76,9 @@ function AdminLayout() {
 
   return (
     <AppLayout
+      loadingTitle={m['common.state.loading_title']()}
+      mobileNavLabel={m['common.nav.open_menu']()}
+      fallbackUserName={m['common.user.fallback_name']()}
       navItems={navItems}
       footerNavItems={footerNavItems}
       brand={envConfigs.app_name}

@@ -241,7 +241,7 @@ export function ChatsSidebar() {
         {user && <PlanCard />}
         {user && (
           <UserMenu
-            name={user.name || 'User'}
+            name={user.name || m['common.user.fallback_name']()}
             email={user.email}
             image={user.image}
             profileHref="/settings"

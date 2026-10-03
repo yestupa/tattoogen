@@ -45,6 +45,9 @@ export function Footer() {
 
   return (
     <SiteFooter
+      languageLabel={m['common.nav.switch_language']()}
+      builtWithLabel={m['common.footer.built_with']()}
+      rightsReservedLabel={m['common.footer.rights_reserved']()}
       tagline={m['landing.footer.tagline']()}
       columns={columns}
       socials={socials}

@@ -126,7 +126,7 @@ function SignUpPage() {
           password: value.password,
         });
         if (result.error) {
-          setError(result.error.message || 'Sign up failed');
+          setError(result.error.message || m['common.sign.sign_up_failed']());
           return;
         }
 
@@ -157,7 +157,7 @@ function SignUpPage() {
           window.location.assign(localizeHref(afterLoginUrl));
         }
       } catch (err: any) {
-        setError(err.message || 'Sign up failed');
+        setError(err.message || m['common.sign.sign_up_failed']());
       }
     },
   });
