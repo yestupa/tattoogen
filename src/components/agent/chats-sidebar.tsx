@@ -79,7 +79,7 @@ export function ChatsSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, setOpen } = useSidebar();
 
   const { openRename, openDelete, dialogs } = useChatActions();
 
@@ -124,18 +124,16 @@ export function ChatsSidebar() {
       className="[&_a]:min-h-11 [&_button]:min-h-11 [&_button]:min-w-11 [&_svg]:shrink-0"
     >
       <SidebarHeader className="relative px-3 pt-5 pb-3">
-        {isMobile && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={m['agent.preview.close']()}
-            onClick={() => setOpenMobile(false)}
-            className="absolute top-2 right-2 z-10 size-11 rounded-xl"
-          >
-            <X />
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={m['agent.preview.close']()}
+          onClick={() => (isMobile ? setOpenMobile(false) : setOpen(false))}
+          className="absolute top-2 right-2 z-10 size-11 rounded-xl xl:hidden"
+        >
+          <X />
+        </Button>
         <SidebarMenu>
           <SidebarMenuItem>
             <Link

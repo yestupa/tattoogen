@@ -104,7 +104,8 @@ export function PreviewPane() {
   // cramped, restore it when the pane shrinks back.
   useEffect(() => {
     if (!open) return;
-    if (window.innerWidth < DESKTOP_BREAKPOINT) return;
+    // Tablet navigation overlays the chat; opening it must remain a user choice.
+    if (window.innerWidth < 1280) return;
     if (sidebarOpen && chatWidthFor(width, true) < MIN_CHAT_WIDTH) {
       autoCollapsed.current = true;
       setSidebarOpen(false);

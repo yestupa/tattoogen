@@ -82,14 +82,19 @@ export function AgentLayout({ children }: { children: React.ReactNode }) {
       {/* Portal menus live outside the workspace wrapper. Scope their touch
           targets to this mounted workspace without changing shared primitives. */}
       <style>{`
+        @media (min-width: 768px) and (max-width: 1279px) {
+          [data-agent-workspace] [data-slot="sidebar-gap"] {
+            width: 0;
+          }
+        }
         @media (max-width: 767px) {
-          body:has([data-agent-workspace]) :is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="select-content"]) :is(button, a, [role="menuitem"], [role="option"]) {
+          body:has([data-agent-workspace]) :is([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="select-content"], [data-slot="popover-content"]) :is(button, a, [role="menuitem"], [role="option"]) {
             min-height: 44px;
             min-width: 44px;
           }
         }
         @media (prefers-reduced-motion: reduce) {
-          body:has([data-agent-workspace]) :is([data-slot="sheet-content"], [data-slot="sheet-overlay"], [data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"]) {
+          body:has([data-agent-workspace]) :is([data-slot="sheet-content"], [data-slot="sheet-overlay"], [data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="popover-content"]) {
             animation: none;
             transition: none;
           }

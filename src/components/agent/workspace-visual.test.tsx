@@ -52,6 +52,54 @@ describe('agent workspace presentation contract', () => {
     expect(preview).toContain('/api/storage/download?url=');
   });
 
+  it('resets each client session to a visible tablet preview while clearing old images', () => {
+    const route = source('../../routes/(agent)/chat/$sessionId.tsx');
+    const defaults = route.match(
+      /setPreviewOpen\(\s*window\.matchMedia\('\(min-width: 768px\)'\)\.matches\s*\)/g
+    );
+    expect(defaults).toHaveLength(2);
+    for (const width of [390, 768, 1440]) {
+      const window = {
+        matchMedia: () => ({ matches: width >= 768 }),
+      };
+      let open = true;
+      const setPreviewOpen = (next: boolean) => {
+        open = next;
+      };
+      // Exercise the exact route-reset expression for both session effects.
+      for (const reset of defaults ?? []) {
+        new Function('window', 'setPreviewOpen', reset)(window, setPreviewOpen);
+        expect(open).toBe(width >= 768);
+      }
+    }
+    expect(route).toContain('if (search.preview) return;');
+    expect(route.match(/clearPreviewImage\(\);/g)).toHaveLength(2);
+    expect(route.match(/setPreviewImages\(\[\]\);/g)).toHaveLength(2);
+  });
+
+  it('keeps user-opened tablet navigation offcanvas without desktop auto-collapse', () => {
+    const preview = source('./preview-pane.tsx');
+    expect(preview).toContain('if (window.innerWidth < 1280) return;');
+    const layout = source('./agent-layout.tsx');
+    expect(layout).toContain('(min-width: 768px) and (max-width: 1279px)');
+    expect(layout).toContain('[data-slot="sidebar-gap"]');
+    expect(layout).toContain('width: 0;');
+    expect(source('./chats-sidebar.tsx')).toContain(
+      'isMobile ? setOpenMobile(false) : setOpen(false)'
+    );
+  });
+
+  it('includes annotation popovers in Agent-only mobile touch sizing', () => {
+    const layout = source('./agent-layout.tsx');
+    expect(layout).toContain('body:has([data-agent-workspace])');
+    expect(layout).toContain('[data-slot="popover-content"]');
+    expect(layout).toContain('min-height: 44px;');
+    expect(layout).toContain('min-width: 44px;');
+    const annotation = source('./image-annotation.tsx');
+    expect(annotation).toContain('aria-label={option}');
+    expect(annotation).toContain('aria-pressed={color === option}');
+  });
+
   it('labels the prompt and retains all composer controls and callbacks', () => {
     const composer = source('./chat-composer.tsx');
     expect(composer).toContain('aria-label={placeholder}');

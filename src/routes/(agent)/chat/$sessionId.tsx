@@ -148,7 +148,7 @@ function ChatSessionPage() {
     setValue('');
     setAttachments([]);
     setAtBottom(true);
-    setPreviewOpen(false);
+    setPreviewOpen(window.matchMedia('(min-width: 768px)').matches);
     clearPreviewImage();
     setPreviewImages([]);
     initialPromptHandled.current = false;
@@ -157,11 +157,11 @@ function ChatSessionPage() {
   // The pane lives in the layout, so it survives navigation — and the effect
   // above only fires when this component stays mounted across a session
   // switch. Reset on every mount too, or a new chat opens showing the previous
-  // one's pane. `?preview=` (opening an image from the library) is the one
-  // case where the pane is meant to be open right away.
+  // one's images. Keep tablet/desktop preview visible; `?preview=` preserves
+  // the library's explicit image-opening flow, including on mobile.
   useEffect(() => {
     if (search.preview) return;
-    setPreviewOpen(false);
+    setPreviewOpen(window.matchMedia('(min-width: 768px)').matches);
     clearPreviewImage();
     setPreviewImages([]);
     // Session id included so a remount-free switch resets as well.
