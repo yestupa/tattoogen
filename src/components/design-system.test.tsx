@@ -89,4 +89,40 @@ describe('shared visual system components', () => {
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain('Loading designs');
   });
+
+  it.each([
+    { variant: 'empty', iconClass: 'lucide-inbox' },
+    { variant: 'forbidden', iconClass: 'lucide-shield' },
+    { variant: 'error', iconClass: 'lucide-circle-alert' },
+  ] as const)(
+    'renders the $variant state with its copy and decorative icon',
+    ({ variant, iconClass }) => {
+      const html = renderToStaticMarkup(
+        <PageState
+          variant={variant}
+          title={`${variant} title`}
+          description={`${variant} description`}
+        />
+      );
+      expect(html).toContain(`${variant} title`);
+      expect(html).toContain(`${variant} description`);
+      expect(html).toContain(iconClass);
+      expect(html).toContain('aria-hidden="true"');
+      expect(html).not.toContain('aria-busy="true"');
+    }
+  );
+
+  it('replaces the default icon with supplied artwork', () => {
+    const html = renderToStaticMarkup(
+      <PageState
+        variant="empty"
+        title="No saved designs"
+        description="Create your first design"
+        artwork={<svg role="img" aria-label="Custom tattoo flash" />}
+      />
+    );
+    expect(html).toContain('aria-label="Custom tattoo flash"');
+    expect(html.match(/<svg\b/g)).toHaveLength(1);
+    expect(html).not.toContain('lucide-inbox');
+  });
 });
