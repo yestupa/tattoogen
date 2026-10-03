@@ -56,7 +56,6 @@ export function PageState({
         'bg-card text-card-foreground mx-auto flex w-full max-w-3xl min-w-0 flex-col items-center rounded-3xl border px-6 py-12 text-center sm:px-10 sm:py-16',
         className
       )}
-      aria-busy={loading || undefined}
     >
       {artwork !== undefined ? (
         <div className="mb-6 w-full max-w-56">{artwork}</div>

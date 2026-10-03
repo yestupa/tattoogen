@@ -86,7 +86,7 @@ describe('shared visual system components', () => {
     );
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
-    expect(html).toContain('aria-busy="true"');
+    expect(html).not.toContain('aria-busy="true"');
     expect(html).toContain('Loading designs');
   });
 
