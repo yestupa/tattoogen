@@ -1,8 +1,18 @@
 import { readdirSync, readFileSync } from 'node:fs';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
+import { getTableConfig } from 'drizzle-orm/sqlite-core';
 import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 
+import { post } from '@/config/db/schema';
+import { findPublishedBySlug } from '@/modules/posts/service';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+
+const fixture = vi.hoisted(() => ({
+  db: undefined as unknown as ReturnType<typeof drizzle>,
+}));
+vi.mock('@/core/db', () => ({ db: () => fixture.db }));
 
 const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -56,10 +66,12 @@ function serverRoute(
 describe('localized crawling contracts', () => {
   it('lists each public static route and every published/local article once per locale', async () => {
     const route = serverRoute('../routes/sitemap[.]xml.ts', [
-      { slug: ' published-story ', createdAt: '2026-10-02' },
+      { slug: ' published-story', createdAt: '2026-10-02' },
+      { slug: 'published-story ', createdAt: '2026-10-02' },
       { slug: 'published-story', createdAt: '2026-10-02' },
       { slug: 'local-post', createdAt: '2026-10-01' },
       { slug: '', createdAt: '2026-10-01' },
+      { slug: '   ', createdAt: '2026-10-01' },
     ]);
     const response = await route.get();
     const xml = await response.text();
@@ -80,6 +92,7 @@ describe('localized crawling contracts', () => {
     ];
     const paths = [
       ...staticRoutes,
+      '/blog/%20published-story',
       '/blog/published-story',
       '/blog/local-post',
     ];
@@ -117,8 +130,86 @@ describe('localized crawling contracts', () => {
         { slug: 'ink&art', createdAt: '2026-10-01' },
       ]).get()
     ).text();
-    expect(xml).toContain('/blog/ink&amp;art');
+    expect(xml).toContain('/blog/ink%26art');
     expect(xml).not.toContain('/blog/ink&art');
+  });
+
+  it('round-trips every published loc to its exact stored slug through the real published query', async () => {
+    const client = createClient({ url: 'file::memory:' });
+    fixture.db = drizzle(client);
+    try {
+      const columns = getTableConfig(post).columns.map(
+        (column) => `"${column.name}" ${column.getSQLType()}`
+      );
+      await client.execute(`CREATE TABLE "post" (${columns.join(', ')})`);
+      const slugs = [
+        ' story',
+        'story',
+        'story ',
+        '纹身',
+        'ink&art',
+        'ink/art',
+        'ink?art',
+        'ink#art',
+        '100%ink',
+        'local-post',
+      ];
+      for (const [index, slug] of slugs.entries()) {
+        await client.execute({
+          sql: 'INSERT INTO "post" (id, slug, status) VALUES (?, ?, ?)',
+          args: [`fixture-${index}`, slug, 'published'],
+        });
+      }
+      const one = await (
+        await serverRoute('../routes/sitemap[.]xml.ts', [
+          { slug: slugs[0], createdAt: '2026-10-02' },
+        ]).get()
+      ).text();
+      const firstLoc = [...one.matchAll(/<loc>([^<]+)<\/loc>/g)]
+        .map((match) => new URL(match[1]))
+        .find((url) => /\/blog\//.test(url.pathname))!;
+      const firstParam = decodeURIComponent(
+        firstLoc.pathname.replace(/^\/(?:zh\/)?blog\//, '')
+      );
+      expect((await findPublishedBySlug(firstParam))?.id, firstLoc.href).toBe(
+        'fixture-0'
+      );
+      const route = serverRoute('../routes/sitemap[.]xml.ts', [
+        ...slugs.map((slug) => ({ slug, createdAt: '2026-10-02' })),
+        { slug: 'story', createdAt: '2026-10-02' },
+        { slug: ' \t ', createdAt: '2026-10-02' },
+      ]);
+      const xml = await (await route.get()).text();
+      const dynamic = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
+        .map((match) => new URL(match[1]))
+        .filter((url) => /\/blog\//.test(url.pathname));
+      for (const url of dynamic) {
+        const segment = url.pathname.replace(/^\/(?:zh\/)?blog\//, '');
+        expect(segment).not.toContain('/');
+        expect(url.search).toBe('');
+        expect(url.hash).toBe('');
+        const storedSlug = decodeURIComponent(segment);
+        // Production HTTP probing confirmed that the current rewrite drops
+        // trailing whitespace before lookup. Keep that normalization in this
+        // contract so a direct service call cannot mask a wrong-record URL.
+        const param = storedSlug.trimEnd();
+        const article = await findPublishedBySlug(param);
+        expect(article, url.href).toBeDefined();
+        expect(article?.slug, url.href).toBe(param);
+        expect(article?.id).toBe(`fixture-${slugs.indexOf(storedSlug)}`);
+      }
+      expect(dynamic).toHaveLength(
+        slugs.filter((slug) => slug === slug.trimEnd()).length * locales.length
+      );
+      for (const slug of slugs) {
+        const encoded = encodeURIComponent(slug);
+        expect(
+          dynamic.filter((url) => url.pathname.endsWith(`/blog/${encoded}`))
+        ).toHaveLength(slug === slug.trimEnd() ? locales.length : 0);
+      }
+    } finally {
+      client.close();
+    }
   });
 
   it('keeps the published-query fallback and local articles when the database is unavailable', async () => {

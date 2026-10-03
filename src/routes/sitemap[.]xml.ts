@@ -39,6 +39,12 @@ function escapeXml(value: string): string {
   );
 }
 
+function isAddressableSlug(slug: string): boolean {
+  // The current route rewrite drops trailing whitespace, making those URLs
+  // ambiguous. Omit them without changing persisted slugs or article queries.
+  return slug.trim().length > 0 && slug === slug.trimEnd();
+}
+
 function entryXml(e: Entry, locale: (typeof locales)[number]): string {
   const alternates = [...locales, 'x-default']
     .map(
@@ -76,17 +82,20 @@ export const Route = createFileRoute('/sitemap.xml')({
           const { listPublishedArticles } =
             await import('@/modules/posts/service');
           const rows = await listPublishedArticles().catch(() => []);
-          const dbPosts = rows.map((row) => ({
-            slug: row.slug.trim(),
-            title: row.title || row.slug,
-            description: row.description || '',
-            createdAt: new Date(row.createdAt).toISOString(),
-            source: 'db' as const,
-          }));
+          const dbPosts = rows
+            .filter((row) => isAddressableSlug(row.slug))
+            .map((row) => ({
+              slug: row.slug,
+              title: row.title || row.slug,
+              description: row.description || '',
+              createdAt: new Date(row.createdAt).toISOString(),
+              source: 'db' as const,
+            }));
           const posts = mergePosts(dbPosts, getLocalPosts(baseLocale));
           for (const post of posts) {
+            if (!isAddressableSlug(post.slug)) continue;
             entries.push({
-              path: `/blog/${post.slug}`,
+              path: `/blog/${encodeURIComponent(post.slug)}`,
               lastModified: post.createdAt,
               changeFrequency: 'monthly',
               priority: 0.6,
@@ -95,8 +104,9 @@ export const Route = createFileRoute('/sitemap.xml')({
         } catch {
           // Database unreachable — static paths + local posts still listed.
           for (const post of getLocalPosts(baseLocale)) {
+            if (!isAddressableSlug(post.slug)) continue;
             entries.push({
-              path: `/blog/${post.slug}`,
+              path: `/blog/${encodeURIComponent(post.slug)}`,
               lastModified: post.createdAt,
               changeFrequency: 'monthly',
               priority: 0.6,

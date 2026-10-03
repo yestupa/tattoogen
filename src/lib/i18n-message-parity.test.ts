@@ -99,8 +99,18 @@ function routeHead(
   const messages = Object.fromEntries(
     Object.keys(dictionaries.en).map((key) => [
       key,
-      (_: unknown, options?: { locale: 'en' | 'zh' }) =>
-        dictionaries[options?.locale ?? locale][key],
+      (
+        params: Record<string, string | number> = {},
+        options?: { locale: 'en' | 'zh' }
+      ) =>
+        dictionaries[options?.locale ?? locale][key].replace(
+          /\{([^{}]+)\}/g,
+          (_, name: string) => {
+            if (!Object.hasOwn(params, name))
+              throw new Error(`Missing message parameter ${key}:${name}`);
+            return String(params[name]);
+          }
+        ),
     ])
   );
   return new Function(
@@ -136,6 +146,17 @@ function routeHead(
 }
 
 describe('public localized metadata', () => {
+  it.each(['en', 'zh'] as const)(
+    'interpolates the real brand into the home title in %s',
+    (locale) => {
+      const head = routeHead('../routes/index.tsx', locale);
+      const title = head.meta.find(
+        (meta: { title?: string }) => meta.title
+      )?.title;
+      expect(title).not.toContain('{appName}');
+      expect(title).toContain('Tattoo Generator');
+    }
+  );
   const routes = [
     ['../routes/index.tsx', '/'],
     ['../routes/pricing.tsx', '/pricing'],
