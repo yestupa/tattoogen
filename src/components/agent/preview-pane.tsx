@@ -44,14 +44,20 @@ function chatWidthFor(paneWidth: number, sidebarShown: boolean) {
 
 function clampPaneWidth(next: number) {
   if (typeof window === 'undefined') return next;
-  // Below `lg` the pane floats above the chat, so only the pane's own bounds
-  // apply. On desktop the chat keeps MIN_CHAT_WIDTH — assuming the sidebar
-  // collapses to its icon rail, which the effect below takes care of.
+  // Mobile uses a sheet. Inline tablet/desktop width must also match the
+  // rendered 50vw limit so sidebar calculations use a reachable pane width.
   const room =
     window.innerWidth >= DESKTOP_BREAKPOINT
       ? window.innerWidth - MIN_CHAT_WIDTH - SIDEBAR_ICON_WIDTH
       : MAX_PANE_WIDTH;
-  const max = Math.max(MIN_PANE_WIDTH, Math.min(MAX_PANE_WIDTH, room));
+  const visualLimit =
+    window.innerWidth >= DESKTOP_BREAKPOINT
+      ? window.innerWidth / 2
+      : MAX_PANE_WIDTH;
+  const max = Math.max(
+    MIN_PANE_WIDTH,
+    Math.min(MAX_PANE_WIDTH, room, visualLimit)
+  );
   return Math.min(max, Math.max(MIN_PANE_WIDTH, next));
 }
 

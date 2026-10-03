@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Route as LibraryRoute } from '@/routes/(agent)/library';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,12 +12,30 @@ import { PreviewPane } from './preview-pane';
 // SSR does not run effects. Capture the real component's mount callbacks so
 // its responsive decision can be exercised without adding a DOM dependency.
 const mountEffects = vi.hoisted(() => [] as (() => unknown)[]);
-vi.mock('react', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('react')>()),
-  useEffect: (effect: () => unknown) => {
-    mountEffects.push(effect);
-  },
-}));
+const effectDependencies = vi.hoisted(
+  () => [] as (readonly unknown[] | undefined)[]
+);
+const stateUpdates = vi.hoisted(() => [] as unknown[]);
+vi.mock('react', async (importOriginal) => {
+  const react = await importOriginal<typeof import('react')>();
+  return {
+    ...react,
+    useEffect: (effect: () => unknown, dependencies?: readonly unknown[]) => {
+      mountEffects.push(effect);
+      effectDependencies.push(dependencies);
+    },
+    useState: (initial: unknown) => {
+      const [value, setValue] = react.useState(initial);
+      return [
+        value,
+        (update: unknown) => {
+          stateUpdates.push(update);
+          setValue(update);
+        },
+      ];
+    },
+  };
+});
 
 const preview = vi.hoisted(() => ({
   open: true,
@@ -24,6 +43,8 @@ const preview = vi.hoisted(() => ({
   image: null as null | { src: string; name: string; alt: string },
   images: [] as { src: string; name: string; alt: string }[],
   openImage: vi.fn(),
+  clearImage: vi.fn(),
+  setImages: vi.fn(),
   annotationHandler: null,
 }));
 vi.mock('@/components/agent/preview-pane-context', () => ({
@@ -33,9 +54,73 @@ vi.mock('@/components/ui/sidebar', () => ({
   useSidebar: () => ({ open: true, setOpen: vi.fn() }),
 }));
 vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
+vi.mock('@/core/i18n/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/core/i18n/navigation')>()),
+  useRouter: () => ({ push: vi.fn() }),
+}));
+vi.mock('@/components/agent/agent-header-context', () => ({
+  useAgentHeader: () => ({ setContent: vi.fn() }),
+}));
 
 describe('workspace rendered semantics', () => {
   afterEach(() => vi.unstubAllGlobals());
+
+  it.each([390, 768, 1440])(
+    'enters Library at %i with matching responsive preview and clears the previous selection',
+    (width) => {
+      mountEffects.length = 0;
+      effectDependencies.length = 0;
+      preview.setOpen.mockClear();
+      preview.clearImage.mockClear();
+      const LibraryPage = LibraryRoute.options.component!;
+      renderToStaticMarkup(
+        <QueryClientProvider client={new QueryClient()}>
+          <LibraryPage />
+        </QueryClientProvider>
+      );
+      vi.stubGlobal('window', {
+        matchMedia: () => ({ matches: width >= 768 }),
+      });
+      const lifecycleIndex = effectDependencies.findIndex(
+        (deps) =>
+          deps?.includes(preview.clearImage) && deps.includes(preview.setImages)
+      );
+      expect(lifecycleIndex).toBeGreaterThanOrEqual(0);
+      mountEffects[lifecycleIndex]();
+      expect(preview.setOpen).toHaveBeenLastCalledWith(width >= 768);
+      expect(preview.clearImage).toHaveBeenCalledOnce();
+    }
+  );
+
+  it.each([768, 1440])(
+    'clamps a previously wide preview to half the %i viewport',
+    (width) => {
+      mountEffects.length = 0;
+      stateUpdates.length = 0;
+      renderToStaticMarkup(<PreviewPane />);
+      const listeners = new Map<string, () => void>();
+      vi.stubGlobal('window', {
+        innerWidth: width,
+        matchMedia: () => ({
+          matches: true,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }),
+        addEventListener: (event: string, handler: () => void) =>
+          listeners.set(event, handler),
+        removeEventListener: vi.fn(),
+      });
+      // Run the actual PreviewPane effects to obtain its resize state updater.
+      mountEffects.forEach((effect) => effect());
+      listeners.get('resize')!();
+      const update = stateUpdates.find(
+        (value) => typeof value === 'function'
+      ) as (current: number) => number;
+      expect(update).toBeTypeOf('function');
+      expect(update(1040)).toBeLessThanOrEqual(width / 2);
+      expect(update(1040)).toBe(width / 2);
+    }
+  );
 
   it.each([
     { width: 390, hasExplicitPreview: false, expected: false },

@@ -59,7 +59,7 @@ function LibraryPage() {
   }, [setHeaderContent]);
 
   useEffect(() => {
-    setOpen(false);
+    setOpen(window.matchMedia('(min-width: 768px)').matches);
     clearImage();
     return () => {
       setImages([]);
