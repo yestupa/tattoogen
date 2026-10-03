@@ -182,7 +182,10 @@ export function ChatTranscript({
   surfacedSrcs: Set<string>;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3">
+    <div
+      aria-busy={streaming}
+      className="[&_button]:focus-visible:outline-ring mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-6 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2"
+    >
       {messages.length === 0 ? (
         <div className="flex flex-col items-center pt-10 text-center">
           <p className="text-muted-foreground text-sm">
@@ -201,7 +204,11 @@ export function ChatTranscript({
         ))
       )}
       {streaming && (
-        <p className="text-muted-foreground text-xs">
+        <p
+          role="status"
+          aria-live="polite"
+          className="text-muted-foreground text-sm"
+        >
           {m['agent.chat.thinking']()}
         </p>
       )}
@@ -268,7 +275,7 @@ function UserBubble({ content }: { content: string }) {
         </div>
       )}
       {text && (
-        <div className="bg-accent text-accent-foreground max-w-[85%] min-w-0 overflow-hidden rounded-lg rounded-br-sm px-3 py-1.5 text-sm leading-relaxed break-words whitespace-pre-wrap">
+        <div className="bg-primary/10 text-foreground max-w-[85%] min-w-0 overflow-hidden rounded-2xl rounded-br-md px-4 py-3 text-sm leading-7 break-words whitespace-pre-wrap">
           {text}
         </div>
       )}
@@ -452,10 +459,11 @@ function ToolGroupBlock({
               <button
                 type="button"
                 onClick={() => toggleTool(tc.id)}
-                className="text-muted-foreground hover:text-foreground group flex w-full items-center gap-2 py-0.5 text-left text-sm"
+                aria-expanded={isExpanded}
+                className="text-muted-foreground hover:text-foreground group flex min-h-11 w-full items-center gap-2 rounded-xl px-2 py-1 text-left text-sm"
               >
                 {running ? (
-                  <Loader2 className="size-4 shrink-0 animate-spin" />
+                  <Loader2 className="size-4 shrink-0 motion-safe:animate-spin" />
                 ) : (
                   <Icon className="size-4 shrink-0 opacity-70" />
                 )}
@@ -538,7 +546,7 @@ function MarkdownContent({
   const parts = useMemo(() => splitDataImages(content), [content]);
 
   return (
-    <div className="text-foreground min-w-0 space-y-3 overflow-hidden text-sm leading-relaxed break-words [&_p]:m-0 [&_p+p]:mt-3">
+    <div className="text-foreground min-w-0 space-y-3 overflow-hidden text-sm leading-7 break-words [&_p]:m-0 [&_p+p]:mt-3">
       {parts.map((p, i) => {
         if (p.type === 'image') {
           const src = p.src;
@@ -561,6 +569,9 @@ function MarkdownContent({
             remarkPlugins={[remarkGfm, remarkBreaks]}
             urlTransform={(url, key) => agentUrlTransform(url, key)}
             components={{
+              h1: ({ children }) => (
+                <h2 className="font-serif text-xl">{children}</h2>
+              ),
               img: ({ src, alt }) => {
                 const url = src as string;
                 // Already surfaced as an attached image on this bubble
@@ -628,6 +639,7 @@ function AgentImage({
       }
       className="group relative block max-w-full cursor-zoom-in overflow-hidden rounded-md text-left"
       title={m['agent.preview.open_image']()}
+      aria-label={m['agent.preview.open_image']()}
     >
       <img src={src} alt={alt} loading={loading} className={className} />
       <span className="pointer-events-none absolute top-3 right-3 rounded-full bg-black/55 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">

@@ -26,6 +26,7 @@ export interface PageStateProps {
   primaryAction?: ReactNode;
   secondaryAction?: ReactNode;
   className?: string;
+  headingLevel?: 1 | 2 | 3;
 }
 
 const stateIcons = {
@@ -46,9 +47,11 @@ export function PageState({
   primaryAction,
   secondaryAction,
   className,
+  headingLevel = 1,
 }: PageStateProps) {
   const loading = variant === 'loading';
   const Icon = stateIcons[variant];
+  const Heading = `h${headingLevel}` as 'h1' | 'h2' | 'h3';
 
   return (
     <section
@@ -79,9 +82,9 @@ export function PageState({
             {code}
           </p>
         )}
-        <h1 className="font-serif text-3xl tracking-tight text-balance sm:text-4xl">
+        <Heading className="font-serif text-3xl tracking-tight text-balance sm:text-4xl">
           {title}
-        </h1>
+        </Heading>
         <div className="text-muted-foreground mx-auto max-w-xl text-sm leading-relaxed text-pretty sm:text-base">
           {description}
         </div>

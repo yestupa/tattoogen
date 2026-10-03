@@ -25,7 +25,10 @@ function RatioGlyph({ ratio }: { ratio: string }) {
   const [w, h] = ratio.split(':').map(Number);
   const scale = 18 / Math.max(w, h);
   return (
-    <span className="flex h-[18px] items-center justify-center">
+    <span
+      aria-hidden="true"
+      className="flex h-[18px] items-center justify-center"
+    >
       <span
         className="block rounded-[3px] border-[1.5px] border-current"
         style={{ width: w * scale, height: h * scale }}
@@ -70,7 +73,8 @@ export function ComposerSettings({
             variant="ghost"
             size="sm"
             disabled={disabled}
-            className="bg-muted/70 text-foreground hover:bg-muted h-9 gap-1.5 rounded-md px-3 text-xs"
+            aria-label={`${m['agent.composer.resolution']()}: ${resolutionLabel}; ${m['agent.composer.aspect_ratio']()}: ${aspectLabel}`}
+            className="bg-secondary text-foreground hover:bg-muted h-11 gap-1.5 rounded-xl px-3 text-xs"
           />
         }
       >
@@ -80,7 +84,10 @@ export function ComposerSettings({
         <ChevronDown className="text-muted-foreground size-3.5" />
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-[300px] p-3">
+      <DropdownMenuContent
+        align="end"
+        className="[&_button]:focus-visible:outline-ring w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-3 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2"
+      >
         <p className="mb-2 text-xs font-medium">
           {m['agent.composer.resolution']()}
         </p>
@@ -92,11 +99,12 @@ export function ComposerSettings({
                 key={item.value}
                 type="button"
                 onClick={() => update({ resolution: item.value })}
+                aria-pressed={active}
                 title={tDynamic(
                   `agent.composer.resolution_${item.value}_description`
                 )}
                 className={cn(
-                  'flex-1 rounded-[5px] py-1.5 text-xs transition-colors',
+                  'min-h-11 min-w-11 flex-1 rounded-lg py-1.5 text-xs motion-safe:transition-colors',
                   active
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -122,6 +130,7 @@ export function ComposerSettings({
                 key={ratio}
                 type="button"
                 onClick={() => update({ aspectRatio: ratio })}
+                aria-pressed={active}
                 className={cn(
                   'flex h-14 flex-col items-center justify-center gap-1 rounded-md border text-[11px] transition-colors',
                   active

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { ImageIcon } from 'lucide-react';
 
 import { useRouter } from '@/core/i18n/navigation';
 import { labelForGeneratedModel } from '@/lib/agent-settings';
@@ -10,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { useAgentHeader } from '@/components/agent/agent-header-context';
 import { usePreviewPane } from '@/components/agent/preview-pane-context';
+import { PageState } from '@/components/page-state';
 import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute('/(agent)/library')({
@@ -88,29 +88,29 @@ function LibraryPage() {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-x-hidden overflow-y-auto px-4 py-6">
+    <div className="[&_button]:focus-visible:outline-ring h-full min-h-0 overflow-x-hidden overflow-y-auto px-4 py-8 sm:px-6 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2">
       <div className="mx-auto w-full max-w-6xl">
         {libraryQuery.isLoading ? (
-          <LibraryState text={m['agent.library.loading']()} />
+          <LibraryState loading text={m['agent.library.loading']()} />
         ) : images.length === 0 ? (
           <LibraryState
             text={m['agent.library.empty']()}
             muted={m['agent.library.empty_description']()}
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
             {images.map((image) => (
               <button
                 key={image.id}
                 type="button"
                 onClick={() => openImage(image)}
-                className="group border-border bg-card hover:border-primary/50 min-w-0 overflow-hidden rounded-lg border text-left transition-colors"
+                className="group border-border bg-card hover:border-primary/50 min-w-0 overflow-hidden rounded-2xl border text-left motion-safe:transition-colors"
               >
                 <div className="bg-muted aspect-square overflow-hidden">
                   <LibraryImageThumb
                     src={image.src}
                     alt={image.alt || image.name}
-                    className="size-full object-cover transition-transform group-hover:scale-[1.02]"
+                    className="size-full object-cover motion-safe:transition-transform motion-safe:group-hover:scale-[1.02]"
                   />
                 </div>
                 <div className="min-w-0 px-3 py-2">
@@ -146,15 +146,22 @@ function LibraryPage() {
   );
 }
 
-function LibraryState({ text, muted }: { text: string; muted?: string }) {
+function LibraryState({
+  text,
+  muted,
+  loading = false,
+}: {
+  text: string;
+  muted?: string;
+  loading?: boolean;
+}) {
   return (
-    <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
-      <div className="border-border bg-muted/40 flex size-12 items-center justify-center rounded-lg border">
-        <ImageIcon className="text-muted-foreground size-5" />
-      </div>
-      <p className="mt-3 text-sm font-medium">{text}</p>
-      {muted && <p className="text-muted-foreground mt-1 text-xs">{muted}</p>}
-    </div>
+    <PageState
+      headingLevel={2}
+      variant={loading ? 'loading' : 'empty'}
+      title={text}
+      description={muted || m['agent.library.empty_description']()}
+    />
   );
 }
 

@@ -146,7 +146,7 @@ export function ChatComposer({
         onClick={onStop}
         aria-label={m['agent.chat.stop']()}
         title={m['agent.chat.stop']()}
-        className="size-8 shrink-0 rounded-full"
+        className="size-11 shrink-0 rounded-2xl"
       >
         <Square className="size-3 fill-current" />
       </Button>
@@ -156,7 +156,7 @@ export function ChatComposer({
         size="icon"
         aria-label={m['agent.home.submit']()}
         disabled={disabled || submitDisabled}
-        className="size-8 shrink-0 rounded-full"
+        className="size-11 shrink-0 rounded-2xl"
       >
         <ArrowUp className="size-4" />
       </Button>
@@ -188,7 +188,7 @@ export function ChatComposer({
         setExpanded(false);
       }}
       className={cn(
-        'border-border bg-card rounded-3xl border shadow-sm transition-shadow focus-within:shadow-md',
+        'border-border bg-card focus-within:ring-ring/30 min-w-0 rounded-3xl border shadow-sm focus-within:ring-2 motion-safe:transition-shadow',
         className
       )}
     >
@@ -204,7 +204,9 @@ export function ChatComposer({
               setExpanded(true);
             }
           }}
-          className="flex cursor-text items-center gap-2 px-3 py-2.5"
+          aria-label={placeholder}
+          aria-disabled={disabled}
+          className="focus-visible:outline-ring flex min-h-16 cursor-text items-center gap-2 rounded-3xl px-3 py-2.5 focus-visible:outline-2"
         >
           <span
             aria-hidden
@@ -224,7 +226,7 @@ export function ChatComposer({
           {attachments.map((item, index) => (
             <div
               key={item.id}
-              className="border-border bg-background relative size-16 overflow-hidden rounded-md border"
+              className="border-border bg-background relative size-24 overflow-hidden rounded-2xl border"
               title={item.error || item.name}
             >
               <button
@@ -244,13 +246,13 @@ export function ChatComposer({
               </button>
               {item.status === 'uploading' && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35">
-                  <Loader2 className="size-4 animate-spin text-white" />
+                  <Loader2 className="size-4 text-white motion-safe:animate-spin" />
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => onRemoveAttachment(item.id)}
-                className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
+                className="focus-visible:outline-ring absolute top-0 right-0 flex size-11 items-center justify-center rounded-2xl bg-black/60 text-white focus-visible:outline-2"
                 aria-label={m['landing.hero.remove_image']()}
               >
                 <X className="size-3" />
@@ -286,6 +288,7 @@ export function ChatComposer({
           }
         }}
         placeholder={placeholder}
+        aria-label={placeholder}
         rows={size === 'lg' ? 3 : 2}
         disabled={disabled}
         className={cn(
@@ -313,7 +316,7 @@ export function ChatComposer({
                   size="icon"
                   disabled={disabled}
                   aria-label={m['agent.home.attach']()}
-                  className="text-muted-foreground size-8 rounded-full"
+                  className="text-muted-foreground size-11 rounded-2xl"
                 />
               }
             >
@@ -322,14 +325,14 @@ export function ChatComposer({
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem
                 onClick={() => fileInputRef.current?.click()}
-                className="gap-2"
+                className="min-h-11 gap-2"
               >
                 <Paperclip className="size-4" />
                 {m['landing.hero.upload_local']()}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setLibraryOpen(true)}
-                className="gap-2"
+                className="min-h-11 gap-2"
               >
                 <Images className="size-4" />
                 {m['agent.composer.add_from_library']()}
@@ -350,7 +353,7 @@ export function ChatComposer({
           {toolbarExtra}
         </div>
         {/* ml-auto keeps this group right-aligned after the row wraps. */}
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
           <ComposerControls
             settings={settings}
             onChange={onSettingsChange}
@@ -420,7 +423,7 @@ function LibraryPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[min(80dvh,46rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden sm:max-w-2xl">
+      <DialogContent className="h-[min(80dvh,46rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden rounded-3xl sm:max-w-2xl [&_button]:min-h-11 [&_button]:min-w-11">
         <DialogHeader>
           <DialogTitle>{m['agent.composer.library_title']()}</DialogTitle>
           <DialogDescription>
@@ -457,7 +460,7 @@ function LibraryPicker({
                         src={image.src}
                         alt={image.alt || image.name}
                         loading="lazy"
-                        className="size-full object-cover transition-transform group-hover:scale-[1.02]"
+                        className="size-full object-cover motion-safe:transition-transform motion-safe:group-hover:scale-[1.02]"
                       />
                       {selected && (
                         <span className="bg-primary text-primary-foreground absolute top-2 right-2 flex size-5 items-center justify-center rounded-full shadow-sm">
@@ -548,13 +551,14 @@ function AttachmentLightbox({
       role="dialog"
       aria-modal="true"
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+      aria-label={m['agent.composer.zoom_image']()}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-white"
     >
       <button
         type="button"
         onClick={onClose}
         aria-label={m['agent.composer.close_zoom']()}
-        className="absolute top-4 right-4 flex size-9 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+        className="absolute top-4 right-4 flex size-11 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20"
       >
         <X className="size-5" />
       </button>
@@ -568,7 +572,7 @@ function AttachmentLightbox({
               onIndexChange((index - 1 + total) % total);
             }}
             aria-label={m['agent.composer.previous_image']()}
-            className="absolute left-4 flex size-9 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+            className="absolute left-4 flex size-11 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20"
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -579,7 +583,7 @@ function AttachmentLightbox({
               onIndexChange((index + 1) % total);
             }}
             aria-label={m['agent.composer.next_image']()}
-            className="absolute right-4 flex size-9 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
+            className="absolute right-4 flex size-11 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20"
           >
             <ChevronRight className="size-5" />
           </button>

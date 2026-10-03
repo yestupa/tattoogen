@@ -4,6 +4,7 @@ import { Sparkles, Upload, Wand2 } from 'lucide-react';
 
 import { AGENT_MODEL_OPTIONS } from '@/lib/agent-settings';
 import { m } from '@/paraglide/messages.js';
+import { PageState } from '@/components/page-state';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -36,9 +37,9 @@ function EditorPage() {
   const [model, setModel] = useState(MODELS[0].id);
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="h-full min-w-0 space-y-6 overflow-y-auto p-4 sm:p-6 [&_[data-slot=card]]:rounded-3xl [&_button]:min-h-11 [&_button]:min-w-11">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-serif text-3xl tracking-tight">
           {m['agent.editor.title']()}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -46,7 +47,7 @@ function EditorPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* Canvas */}
         <Card>
           <CardHeader>
@@ -54,18 +55,28 @@ function EditorPage() {
           </CardHeader>
           <CardContent>
             <label
-              className="border-border bg-muted/30 hover:bg-muted/50 flex h-80 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-md border-2 border-dashed text-center transition-colors"
+              className="border-border bg-secondary/30 hover:bg-secondary/50 focus-visible:outline-ring flex min-h-80 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-4 text-center focus-visible:outline-2"
               htmlFor="upload"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  event.currentTarget.querySelector('input')?.click();
+                }
+              }}
             >
-              <Upload className="text-muted-foreground size-8" />
-              <div>
-                <p className="text-foreground text-sm font-medium">
-                  {m['agent.editor.upload_label']()}
-                </p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  {m['agent.editor.upload_hint']()}
-                </p>
-              </div>
+              <PageState
+                headingLevel={2}
+                title={m['agent.editor.upload_label']()}
+                description={m['agent.editor.upload_hint']()}
+                artwork={
+                  <Upload
+                    aria-hidden="true"
+                    className="text-primary mx-auto size-10"
+                  />
+                }
+                className="border-0 bg-transparent px-2 py-6 sm:px-2 sm:py-6 [&_h2]:text-xl [&_h2]:sm:text-2xl"
+              />
               <input
                 id="upload"
                 type="file"
@@ -91,7 +102,10 @@ function EditorPage() {
               value={model}
               onValueChange={(v) => v && setModel(v)}
             >
-              <SelectTrigger>
+              <SelectTrigger
+                aria-label={m['agent.editor.model_label']()}
+                className="min-h-11 w-full"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -107,6 +121,8 @@ function EditorPage() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={m['agent.editor.prompt_placeholder']()}
+              aria-label={m['agent.editor.prompt_label']()}
+              className="min-h-11"
             />
 
             <Button className="w-full gap-2" disabled={!prompt.trim()}>
@@ -125,9 +141,12 @@ function EditorPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border-border text-muted-foreground rounded-lg border border-dashed p-12 text-center text-sm">
-            {m['agent.editor.empty_history']()}
-          </div>
+          <PageState
+            headingLevel={2}
+            title={m['agent.editor.empty_history']()}
+            description={m['agent.editor.description']()}
+            className="border-dashed [&_h2]:text-xl [&_h2]:sm:text-2xl"
+          />
         </CardContent>
       </Card>
     </div>

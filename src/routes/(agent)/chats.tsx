@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  MessageSquare,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -18,6 +17,7 @@ import { m } from '@/paraglide/messages.js';
 import { useAgentHeader } from '@/components/agent/agent-header-context';
 import { useChatActions } from '@/components/agent/chat-actions';
 import { ChatCover } from '@/components/agent/chat-cover';
+import { PageState } from '@/components/page-state';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -81,18 +81,18 @@ function ChatsPage() {
   }, [page, pageCount]);
 
   return (
-    <div className="h-full min-h-0 overflow-x-hidden overflow-y-auto px-4 py-6">
+    <div className="[&_button]:focus-visible:outline-ring h-full min-h-0 overflow-x-hidden overflow-y-auto px-4 py-8 sm:px-6 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2">
       <div className="mx-auto w-full max-w-3xl">
         {listQuery.isLoading ? (
-          <ChatsState text={m['agent.chats.loading']()} />
+          <ChatsState loading text={m['agent.chats.loading']()} />
         ) : chats.length === 0 ? (
           <ChatsState text={m['agent.chats.empty']()} />
         ) : (
-          <ul className="divide-border border-border divide-y overflow-hidden rounded-lg border">
+          <ul className="bg-card divide-border border-border divide-y overflow-hidden rounded-3xl border">
             {chats.map((chat) => (
               <li
                 key={chat.id}
-                className="hover:bg-muted/50 flex items-center gap-3 px-4 py-3 transition-colors"
+                className="hover:bg-secondary/50 flex items-center gap-3 px-4 py-4 motion-safe:transition-colors"
               >
                 <button
                   type="button"
@@ -113,7 +113,7 @@ function ChatsPage() {
                       </span>
                       {runningSessions.includes(chat.id) && (
                         <Loader2
-                          className="text-primary size-3.5 shrink-0 animate-spin"
+                          className="text-primary size-3.5 shrink-0 motion-safe:animate-spin"
                           aria-label={m['agent.chats.working']()}
                         />
                       )}
@@ -124,7 +124,7 @@ function ChatsPage() {
                   </span>
                 </button>
                 <time
-                  className="text-muted-foreground shrink-0 text-xs"
+                  className="text-muted-foreground hidden shrink-0 text-xs sm:block"
                   dateTime={chat.updatedAt}
                 >
                   {formatUpdatedAt(chat.updatedAt)}
@@ -135,19 +135,23 @@ function ChatsPage() {
                       <button
                         type="button"
                         aria-label={m['agent.chats.more']()}
-                        className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-md transition-colors"
+                        className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-xl"
                       />
                     }
                   >
                     <MoreHorizontal className="size-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openRename(chat)}>
+                    <DropdownMenuItem
+                      className="min-h-11"
+                      onClick={() => openRename(chat)}
+                    >
                       <Pencil className="size-4" />
                       {m['agent.chats.rename']()}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       variant="destructive"
+                      className="min-h-11"
                       onClick={() => openDelete(chat)}
                     >
                       <Trash2 className="size-4" />
@@ -209,13 +213,19 @@ function formatUpdatedAt(value: string): string {
     : date.toLocaleDateString();
 }
 
-function ChatsState({ text }: { text: string }) {
+function ChatsState({
+  text,
+  loading = false,
+}: {
+  text: string;
+  loading?: boolean;
+}) {
   return (
-    <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
-      <div className="border-border bg-muted/40 flex size-12 items-center justify-center rounded-lg border">
-        <MessageSquare className="text-muted-foreground size-5" />
-      </div>
-      <p className="mt-3 text-sm font-medium">{text}</p>
-    </div>
+    <PageState
+      headingLevel={2}
+      variant={loading ? 'loading' : 'empty'}
+      title={text}
+      description={m['agent.home.placeholder']()}
+    />
   );
 }

@@ -1,25 +1,35 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { Download, ExternalLink, ImageIcon, Pencil, X } from 'lucide-react';
+import { Download, ExternalLink, Pencil, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { ImageAnnotationEditor } from '@/components/agent/image-annotation';
 import {
   usePreviewPane,
   type PreviewImage,
 } from '@/components/agent/preview-pane-context';
+import { BrandArtwork } from '@/components/brand-artwork';
+import { PageState } from '@/components/page-state';
 import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { useSidebar } from '@/components/ui/sidebar';
 
 // Pane sizing: never squeeze the conversation below MIN_CHAT_WIDTH, and keep
 // the pane itself within a comfortable range.
-const MIN_PANE_WIDTH = 360;
+const MIN_PANE_WIDTH = 300;
 const MAX_PANE_WIDTH = 1100;
-const MIN_CHAT_WIDTH = 360;
-const DESKTOP_BREAKPOINT = 1024;
+const MIN_CHAT_WIDTH = 320;
+const DESKTOP_BREAKPOINT = 768;
 // Mirrors SIDEBAR_WIDTH / SIDEBAR_WIDTH_ICON in components/ui/sidebar.
 const SIDEBAR_WIDTH = 256;
-const SIDEBAR_ICON_WIDTH = 48;
+const SIDEBAR_ICON_WIDTH = 0;
 // Re-expanding needs more room than collapsing frees, so the sidebar can't
 // flip back and forth around a single pixel.
 const EXPAND_HYSTERESIS = 80;
@@ -49,10 +59,19 @@ export function PreviewPane() {
   const { open, setOpen, image, images, openImage, annotationHandler } =
     usePreviewPane();
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
-  const [width, setWidth] = useState(620);
+  const [width, setWidth] = useState(400);
+  const isMobile = useIsMobile();
   const [annotating, setAnnotating] = useState(false);
   // Only re-open the sidebar if we're the ones who closed it.
   const autoCollapsed = useRef(false);
+
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const syncPreview = () => setOpen(desktop.matches);
+    syncPreview();
+    desktop.addEventListener('change', syncPreview);
+    return () => desktop.removeEventListener('change', syncPreview);
+  }, [setOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -131,131 +150,165 @@ export function PreviewPane() {
       ? m['agent.preview.counter']({ current: index + 1, total: images.length })
       : m['agent.preview.gallery']({ count: images.length });
 
+  const content = (
+    <div className="bg-card border-border [&_button]:focus-visible:outline-ring flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border [&_a]:min-h-11 [&_a]:min-w-11 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2">
+      <div className="border-border flex min-h-16 shrink-0 items-center justify-between gap-2 border-b px-3">
+        <span className="truncate text-sm font-medium">
+          {annotating ? m['agent.annotation.title']() : title}
+        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          {current?.src && !annotating && (
+            <>
+              {annotationHandler && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setAnnotating(true)}
+                  aria-label={m['agent.annotation.start']()}
+                  title={m['agent.annotation.start']()}
+                  className="text-muted-foreground hover:text-foreground size-11 rounded-xl"
+                >
+                  <Pencil className="size-4" />
+                </Button>
+              )}
+              <a
+                href={current.src}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={m['agent.preview.open']()}
+                className={cn(
+                  buttonVariants({ variant: 'ghost', size: 'icon' }),
+                  'text-muted-foreground hover:text-foreground size-11 rounded-xl'
+                )}
+              >
+                <ExternalLink className="size-4" />
+              </a>
+              {/* Proxied: <a download> is ignored cross-origin, so the
+                    storage URL would just open in a tab. */}
+              <a
+                href={`/api/storage/download?url=${encodeURIComponent(
+                  current.src
+                )}${current.name ? `&name=${encodeURIComponent(current.name)}` : ''}`}
+                download={current.name}
+                aria-label={m['agent.preview.download']()}
+                className={cn(
+                  buttonVariants({ variant: 'ghost', size: 'icon' }),
+                  'text-muted-foreground hover:text-foreground size-11 rounded-xl'
+                )}
+              >
+                <Download className="size-4" />
+              </a>
+            </>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (annotating) setAnnotating(false);
+              else setOpen(false);
+            }}
+            aria-label={
+              annotating
+                ? m['agent.annotation.cancel']()
+                : m['agent.preview.close']()
+            }
+            className="text-muted-foreground hover:text-foreground size-11 rounded-xl"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      {current && annotating && annotationHandler ? (
+        <ImageAnnotationEditor
+          source={current}
+          onCancel={() => setAnnotating(false)}
+          onComplete={(guide) => {
+            annotationHandler({ source: current, guide });
+            setAnnotating(false);
+          }}
+        />
+      ) : current ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="bg-secondary/30 min-h-0 flex-1 overflow-auto p-4">
+            {/* Centred both ways: a short image shouldn't hug the top of a
+                  tall pane. */}
+            <div className="flex min-h-full items-center justify-center">
+              <PreviewImageElement
+                src={current.src}
+                alt={current.alt || current.name || m['agent.preview.image']()}
+                className="max-h-none max-w-full rounded-2xl border object-contain shadow-sm"
+              />
+            </div>
+          </div>
+          <div className="border-border min-w-0 border-t px-4 py-3">
+            <p className="truncate text-sm font-medium">
+              {current.name || current.alt || m['agent.preview.image']()}
+            </p>
+            {current.alt && current.alt !== current.name && (
+              <p className="text-muted-foreground mt-1 text-xs leading-relaxed break-words">
+                {current.alt}
+              </p>
+            )}
+            <p className="text-muted-foreground mt-1 text-xs">{title}</p>
+          </div>
+          {images.length > 1 && (
+            <FilmStrip
+              images={images}
+              current={current}
+              onSelect={(next) => {
+                setAnnotating(false);
+                openImage(next);
+              }}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 items-center overflow-auto p-4">
+          <EmptyPreview />
+        </div>
+      )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="bg-sidebar w-full max-w-full gap-0 p-2 motion-reduce:transition-none sm:max-w-full"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>
+              {m['agent.preview.gallery']({ count: images.length })}
+            </SheetTitle>
+            <SheetDescription>
+              {m['agent.preview.empty_description']()}
+            </SheetDescription>
+          </SheetHeader>
+          {content}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <aside
-      className="fixed inset-y-0 right-0 z-30 flex max-w-[94vw] shrink-0 p-2 lg:relative lg:z-auto lg:h-dvh lg:pl-0"
+      aria-label={m['agent.preview.gallery']({ count: images.length })}
+      className="relative flex h-dvh max-w-[50vw] shrink-0 py-2 pr-2"
       style={{ width }}
     >
-      {/* Resize handle: a wide invisible hit area with a hairline that only
-          shows on hover or while dragging. */}
       <div
         onMouseDown={startResize}
-        className="group absolute top-6 bottom-6 -left-1.5 hidden w-3 cursor-col-resize lg:block"
+        className="group absolute top-6 bottom-6 -left-1.5 hidden w-3 cursor-col-resize xl:block"
         aria-hidden="true"
       >
-        <span className="group-hover:bg-primary/50 group-active:bg-primary absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors" />
+        <span className="group-hover:bg-primary/50 group-active:bg-primary absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent" />
       </div>
-      <div className="bg-background flex min-h-0 w-full flex-col overflow-hidden rounded-xl shadow-2xl lg:shadow-sm">
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 px-4">
-          <span className="truncate text-sm font-medium">
-            {annotating ? m['agent.annotation.title']() : title}
-          </span>
-          <div className="flex shrink-0 items-center gap-1">
-            {current?.src && !annotating && (
-              <>
-                {annotationHandler && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setAnnotating(true)}
-                    aria-label={m['agent.annotation.start']()}
-                    title={m['agent.annotation.start']()}
-                    className="text-muted-foreground hover:text-foreground size-8 rounded-md"
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                )}
-                <a
-                  href={current.src}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={m['agent.preview.open']()}
-                  className={cn(
-                    buttonVariants({ variant: 'ghost', size: 'icon' }),
-                    'text-muted-foreground hover:text-foreground size-8 rounded-md'
-                  )}
-                >
-                  <ExternalLink className="size-4" />
-                </a>
-                {/* Proxied: <a download> is ignored cross-origin, so the
-                    storage URL would just open in a tab. */}
-                <a
-                  href={`/api/storage/download?url=${encodeURIComponent(
-                    current.src
-                  )}${current.name ? `&name=${encodeURIComponent(current.name)}` : ''}`}
-                  download={current.name}
-                  aria-label={m['agent.preview.download']()}
-                  className={cn(
-                    buttonVariants({ variant: 'ghost', size: 'icon' }),
-                    'text-muted-foreground hover:text-foreground size-8 rounded-md'
-                  )}
-                >
-                  <Download className="size-4" />
-                </a>
-              </>
-            )}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                if (annotating) setAnnotating(false);
-                else setOpen(false);
-              }}
-              aria-label={
-                annotating
-                  ? m['agent.annotation.cancel']()
-                  : m['agent.preview.close']()
-              }
-              className="text-muted-foreground hover:text-foreground size-8 rounded-md"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        </div>
-
-        {current && annotating && annotationHandler ? (
-          <ImageAnnotationEditor
-            source={current}
-            onCancel={() => setAnnotating(false)}
-            onComplete={(guide) => {
-              annotationHandler({ source: current, guide });
-              setAnnotating(false);
-            }}
-          />
-        ) : current ? (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 overflow-auto p-6">
-              {/* Centred both ways: a short image shouldn't hug the top of a
-                  tall pane. */}
-              <div className="flex min-h-full items-center justify-center">
-                <PreviewImageElement
-                  src={current.src}
-                  alt={
-                    current.alt || current.name || m['agent.preview.image']()
-                  }
-                  className="max-h-none max-w-full rounded-lg border object-contain shadow-sm"
-                />
-              </div>
-            </div>
-            {images.length > 1 && (
-              <FilmStrip
-                images={images}
-                current={current}
-                onSelect={(next) => {
-                  setAnnotating(false);
-                  openImage(next);
-                }}
-              />
-            )}
-          </div>
-        ) : (
-          <div className="min-h-0 flex-1 overflow-auto p-6">
-            <EmptyPreview />
-          </div>
-        )}
-      </div>
+      {content}
     </aside>
   );
 }
@@ -284,6 +337,7 @@ function FilmStrip({
               type="button"
               onClick={() => onSelect(item)}
               title={item.name || item.alt || m['agent.preview.image']()}
+              aria-label={item.name || item.alt || m['agent.preview.image']()}
               aria-current={selected ? 'true' : undefined}
               className={cn(
                 'bg-muted size-16 shrink-0 overflow-hidden rounded-md border-2 transition-colors',
@@ -307,17 +361,13 @@ function FilmStrip({
 
 function EmptyPreview() {
   return (
-    <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-      <div className="border-border bg-muted/40 flex size-12 items-center justify-center rounded-lg border">
-        <ImageIcon className="text-muted-foreground size-5" />
-      </div>
-      <p className="mt-3 text-sm font-medium">
-        {m['agent.preview.empty_title']()}
-      </p>
-      <p className="text-muted-foreground mt-1 text-xs">
-        {m['agent.preview.empty_description']()}
-      </p>
-    </div>
+    <PageState
+      headingLevel={2}
+      artwork={<BrandArtwork className="text-primary mx-auto max-w-32" />}
+      title={m['agent.preview.empty_title']()}
+      description={m['agent.preview.empty_description']()}
+      className="border-0 bg-transparent px-3 py-8 sm:px-3 sm:py-8 [&_h2]:text-xl [&_h2]:sm:text-2xl"
+    />
   );
 }
 

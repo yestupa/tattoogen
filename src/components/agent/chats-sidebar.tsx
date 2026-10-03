@@ -8,6 +8,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  X,
 } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
@@ -19,6 +20,7 @@ import { m } from '@/paraglide/messages.js';
 import { useChatActions } from '@/components/agent/chat-actions';
 import { ChatCover } from '@/components/agent/chat-cover';
 import { PlanCard } from '@/components/agent/plan-card';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +39,7 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { UserMenu } from '@/components/user-menu';
 
@@ -76,6 +79,7 @@ export function ChatsSidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const { openRename, openDelete, dialogs } = useChatActions();
 
@@ -114,13 +118,29 @@ export function ChatsSidebar() {
   const user = session?.user;
 
   return (
-    <Sidebar variant="inset">
-      <SidebarHeader>
+    <Sidebar
+      variant="inset"
+      aria-label={m['agent.chats.title']()}
+      className="[&_a]:min-h-11 [&_button]:min-h-11 [&_button]:min-w-11 [&_svg]:shrink-0"
+    >
+      <SidebarHeader className="relative px-3 pt-5 pb-3">
+        {isMobile && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={m['agent.preview.close']()}
+            onClick={() => setOpenMobile(false)}
+            className="absolute top-2 right-2 z-10 size-11 rounded-xl"
+          >
+            <X />
+          </Button>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <Link
               href="/chat"
-              className="flex h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm"
+              className="focus-visible:outline-ring flex min-h-11 w-full items-center gap-3 rounded-xl px-2 pr-11 text-left text-sm focus-visible:outline-2"
             >
               <img
                 src={envConfigs.app_logo}
@@ -135,86 +155,91 @@ export function ChatsSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <Link href="/chat">
-                  <SidebarMenuButton
-                    tooltip={m['agent.nav.new_chat']()}
-                    isActive={pathname.endsWith('/chat')}
-                  >
-                    <Plus />
-                    <span>{m['agent.nav.new_chat']()}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link href="/library">
-                  <SidebarMenuButton
-                    tooltip={m['agent.nav.library']()}
-                    isActive={pathname.endsWith('/library')}
-                  >
-                    <Images />
-                    <span>{m['agent.nav.library']()}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link href="/chats">
-                  <SidebarMenuButton
-                    tooltip={m['agent.nav.chats']()}
-                    isActive={pathname.endsWith('/chats')}
-                  >
-                    <MessagesSquare />
-                    <span>{m['agent.nav.chats']()}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="[&_[data-slot=sidebar-menu-button][data-active=true]]:bg-primary/10 [&_[data-slot=sidebar-menu-button][data-active=true]]:text-primary gap-5 px-1 [&_[data-slot=sidebar-menu-button]]:rounded-xl [&_[data-slot=sidebar-menu-button]]:px-3 [&_[data-slot=sidebar-menu-button][data-active=true]]:font-semibold">
+        <nav
+          aria-label={m['agent.chats.title']()}
+          className="space-y-5 [&_a]:min-h-11 [&_button]:min-h-11 [&_button]:min-w-11"
+        >
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <Link href="/chat">
+                    <SidebarMenuButton
+                      tooltip={m['agent.nav.new_chat']()}
+                      isActive={pathname.endsWith('/chat')}
+                    >
+                      <Plus />
+                      <span>{m['agent.nav.new_chat']()}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <Link href="/library">
+                    <SidebarMenuButton
+                      tooltip={m['agent.nav.library']()}
+                      isActive={pathname.endsWith('/library')}
+                    >
+                      <Images />
+                      <span>{m['agent.nav.library']()}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <Link href="/chats">
+                    <SidebarMenuButton
+                      tooltip={m['agent.nav.chats']()}
+                      isActive={pathname.endsWith('/chats')}
+                    >
+                      <MessagesSquare />
+                      <span>{m['agent.nav.chats']()}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>{m['agent.chats.title']()}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            {chats.length === 0 ? (
-              <div className="px-2 py-4 text-center">
-                <p className="text-muted-foreground text-xs">
-                  {m['agent.chats.empty']()}
-                </p>
-              </div>
-            ) : (
-              <>
-                <ChatList
-                  items={chats}
-                  activeId={derivedActiveId}
-                  runningIds={runningSessions}
-                  onRename={openRename}
-                  onDelete={openDelete}
-                />
-                {(listQuery.data?.total ?? 0) > SIDEBAR_CHAT_LIMIT && (
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      {/* Everything past the inline slice lives on the
+          <SidebarGroup>
+            <SidebarGroupLabel>{m['agent.chats.title']()}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              {chats.length === 0 ? (
+                <div className="px-2 py-4 text-center">
+                  <p className="text-muted-foreground text-xs">
+                    {m['agent.chats.empty']()}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <ChatList
+                    items={chats}
+                    activeId={derivedActiveId}
+                    runningIds={runningSessions}
+                    onRename={openRename}
+                    onDelete={openDelete}
+                  />
+                  {(listQuery.data?.total ?? 0) > SIDEBAR_CHAT_LIMIT && (
+                    <SidebarMenu>
+                      <SidebarMenuItem>
+                        {/* Everything past the inline slice lives on the
                           full chats page. */}
-                      <Link href="/chats">
-                        <SidebarMenuButton className="text-muted-foreground">
-                          <MoreHorizontal />
-                          <span>{m['agent.chats.view_all']()}</span>
-                        </SidebarMenuButton>
-                      </Link>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                )}
-              </>
-            )}
-          </SidebarGroupContent>
-        </SidebarGroup>
+                        <Link href="/chats">
+                          <SidebarMenuButton className="text-muted-foreground">
+                            <MoreHorizontal />
+                            <span>{m['agent.chats.view_all']()}</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                    </SidebarMenu>
+                  )}
+                </>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </nav>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-sidebar-border gap-3 border-t p-3 [&_a]:min-h-11 [&_button]:min-h-11 [&_button]:min-w-11">
         {user && <PlanCard />}
         {user && (
           <UserMenu
@@ -256,7 +281,7 @@ function ChatList({
               <SidebarMenuButton
                 tooltip={item.title}
                 isActive={isActive}
-                className="pr-8"
+                className="pr-12"
               >
                 {item.cover && (
                   <ChatCover
@@ -276,7 +301,7 @@ function ChatList({
                 className="text-primary absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center"
                 title={m['agent.chats.working']()}
               >
-                <Loader2 className="size-3.5 animate-spin" />
+                <Loader2 className="size-3.5 motion-safe:animate-spin" />
               </span>
             ) : (
               <DropdownMenu>
@@ -284,6 +309,7 @@ function ChatList({
                   render={
                     <SidebarMenuAction
                       showOnHover
+                      className="top-0 right-0 size-11 rounded-xl"
                       aria-label={m['agent.chats.more']()}
                     />
                   }
@@ -291,12 +317,16 @@ function ChatList({
                   <MoreHorizontal />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="start">
-                  <DropdownMenuItem onClick={() => onRename(item)}>
+                  <DropdownMenuItem
+                    className="min-h-11"
+                    onClick={() => onRename(item)}
+                  >
                     <Pencil className="size-4" />
                     {m['agent.chats.rename']()}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
+                    className="min-h-11"
                     onClick={() => onDelete(item)}
                   >
                     <Trash2 className="size-4" />

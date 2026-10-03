@@ -430,7 +430,12 @@ function ChatSessionPage() {
   function scrollToBottom() {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'auto'
+        : 'smooth',
+    });
   }
 
   async function commitRename() {
@@ -505,7 +510,7 @@ function ChatSessionPage() {
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-6 pb-4"
+        className="relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pt-8 pb-6 sm:px-6"
       >
         <ChatTranscript
           messages={messages}
@@ -525,7 +530,7 @@ function ChatSessionPage() {
               type="button"
               onClick={scrollToBottom}
               aria-label="Scroll to bottom"
-              className="border-border bg-background text-muted-foreground hover:text-foreground pointer-events-auto flex size-8 items-center justify-center rounded-full border shadow-sm"
+              className="border-border bg-background text-muted-foreground hover:text-foreground pointer-events-auto flex size-11 items-center justify-center rounded-full border shadow-sm"
             >
               <ArrowDown className="size-4" />
             </button>
@@ -537,7 +542,7 @@ function ChatSessionPage() {
       {/* pt-4 is the gap the transcript can never eat into: the scroll
           container's own bottom padding only shows at rest, so mid-scroll the
           last line used to run right up against the input box. */}
-      <div className="shrink-0 overflow-hidden px-4 pt-4 pb-6">
+      <div className="border-border bg-background shrink-0 overflow-hidden border-t px-4 pt-4 pb-5 sm:px-6">
         <div className="mx-auto w-full max-w-3xl min-w-0 space-y-2">
           <ChatComposer
             // Rebuild per session: the composer's own state (expanded or

@@ -38,7 +38,8 @@ export function ComposerControls({
             variant="ghost"
             size="sm"
             disabled={disabled}
-            className="bg-muted/70 text-foreground hover:bg-muted h-9 max-w-[210px] gap-1.5 rounded-md px-3 text-xs"
+            aria-label={`${m['agent.composer.image_models']()}: ${labelForModelOption(settings.modelOption)}`}
+            className="bg-secondary text-foreground hover:bg-muted h-11 max-w-[210px] gap-1.5 rounded-xl px-3 text-xs"
           />
         }
       >
@@ -58,7 +59,7 @@ export function ComposerControls({
             onClick={() =>
               update({ modelOption: model.value as AgentModelOptionValue })
             }
-            className="items-center gap-2.5"
+            className="min-h-11 items-center gap-2.5"
           >
             <ModelLogo model={model.value} className="size-4 shrink-0" />
             <span className="min-w-0 flex-1 truncate text-sm">

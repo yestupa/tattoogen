@@ -23,7 +23,7 @@ export function UpgradeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Grows with the viewport — three plan cards need the room — and stays
           scrollable on short screens. */}
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl sm:p-6 lg:max-w-5xl xl:max-w-6xl">
+      <DialogContent className="max-h-[90dvh] overflow-x-hidden overflow-y-auto rounded-3xl sm:max-w-3xl sm:p-6 lg:max-w-5xl xl:max-w-6xl [&_button]:min-h-11 [&_button]:min-w-11">
         <DialogHeader>
           <DialogTitle>{m['agent.plan.upgrade_title']()}</DialogTitle>
           <DialogDescription>
