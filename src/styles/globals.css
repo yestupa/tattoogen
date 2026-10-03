@@ -19,6 +19,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-readable: var(--primary-readable);
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -74,6 +75,7 @@
     --popover: var(--card);
     --popover-foreground: var(--foreground);
     --primary: #7137f2;
+    --primary-readable: var(--primary);
     --primary-hover: #5f28d8;
     --primary-foreground: var(--card);
     --secondary: #f1eaff;
@@ -118,7 +120,8 @@
     --popover: var(--card);
     --popover-foreground: var(--foreground);
     --primary: #9668ff;
-    --primary-hover: color-mix(in oklch, var(--primary) 85%, var(--foreground));
+    --primary-readable: #aa86ff;
+    --primary-hover: #a47dff;
     --primary-foreground: var(--background);
     --secondary: #2a2632;
     --secondary-foreground: var(--foreground);
@@ -151,6 +154,16 @@
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
   }
+}
+
+/* Opaque derivatives keep dark text and interactive hover states readable. */
+.dark .text-primary {
+  color: var(--primary-readable);
+}
+
+.dark :is(a, button, [role='button']).bg-primary:hover {
+  background-color: var(--primary-hover);
+  color: var(--primary-foreground);
 }
 
 @layer base {

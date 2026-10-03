@@ -7,36 +7,131 @@ const css = readFileSync(
   'utf8'
 ).toLowerCase();
 
+function blockBody(selector: string): string {
+  const start = css.indexOf('{', css.indexOf(selector));
+  if (!css.includes(selector) || start < 0) return '';
+  let depth = 1;
+  let end = start + 1;
+  while (depth > 0 && end < css.length) {
+    if (css[end] === '{') depth++;
+    if (css[end] === '}') depth--;
+    end++;
+  }
+  return css.slice(start + 1, end - 1);
+}
+
+const light =
+  Array.from(css.matchAll(/:root\s*\{([^}]+)\}/g)).find((match) =>
+    match[1].includes('--background:')
+  )?.[1] ?? '';
+const dark = blockBody('.dark {');
+
+type Rgb = readonly [number, number, number];
+
+function rgb(hex: string): Rgb {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function blend(foreground: Rgb, background: Rgb, alpha: number): Rgb {
+  return [
+    foreground[0] * alpha + background[0] * (1 - alpha),
+    foreground[1] * alpha + background[1] * (1 - alpha),
+    foreground[2] * alpha + background[2] * (1 - alpha),
+  ];
+}
+
+function luminance(color: Rgb): number {
+  const linear = color.map((channel) => {
+    const srgb = channel / 255;
+    return srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+  });
+  return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+}
+
+function contrast(foreground: Rgb, background: Rgb): number {
+  const first = luminance(foreground);
+  const second = luminance(background);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+function darkHex(name: string): string | undefined {
+  return dark.match(new RegExp(`--${name}:\\s*(#[a-f0-9]{6})\\s*;`))?.[1];
+}
+
 describe('tattoo generator visual tokens', () => {
   it('uses the approved warm paper and violet light palette', () => {
-    for (const color of [
-      '#fbf8f3',
-      '#fffdfc',
-      '#171827',
-      '#676779',
-      '#7137f2',
-      '#5f28d8',
-      '#f1eaff',
-      '#e6e0d8',
-    ]) {
-      expect(css).toContain(color);
+    for (const [name, color] of Object.entries({
+      background: '#fbf8f3',
+      card: '#fffdfc',
+      foreground: '#171827',
+      'muted-foreground': '#676779',
+      primary: '#7137f2',
+      'primary-hover': '#5f28d8',
+      secondary: '#f1eaff',
+      border: '#e6e0d8',
+    })) {
+      expect(light).toMatch(new RegExp(`--${name}:\\s*${color}\\s*;`));
     }
   });
 
   it('uses the approved dark surfaces and violet palette', () => {
-    const dark = css.match(/\.dark\s*\{([^}]+)\}/)?.[1];
-    expect(dark).toBeDefined();
-    for (const color of [
-      '#17151c',
-      '#211e28',
-      '#2a2632',
-      '#f5f1ea',
-      '#aaa3b4',
-      '#9668ff',
-      '#393441',
-    ]) {
-      expect(dark).toContain(color);
+    for (const [name, color] of Object.entries({
+      background: '#17151c',
+      card: '#211e28',
+      secondary: '#2a2632',
+      foreground: '#f5f1ea',
+      'muted-foreground': '#aaa3b4',
+      primary: '#9668ff',
+      border: '#393441',
+    })) {
+      expect(dark).toMatch(new RegExp(`--${name}:\\s*${color}\\s*;`));
     }
+  });
+
+  it('maintains readable primary text contrast on dark cards', () => {
+    const readable = rgb(darkHex('primary-readable') ?? darkHex('primary')!);
+    expect(contrast(readable, rgb(darkHex('card')!))).toBeGreaterThanOrEqual(
+      4.5
+    );
+  });
+
+  it.each(['card', 'secondary'])(
+    'maintains readable primary contrast on a 10%% primary tint over %s',
+    (surface) => {
+      const readable = rgb(darkHex('primary-readable') ?? darkHex('primary')!);
+      const tinted = blend(
+        rgb(darkHex('primary')!),
+        rgb(darkHex(surface)!),
+        0.1
+      );
+      expect(contrast(readable, tinted)).toBeGreaterThanOrEqual(4.5);
+    }
+  );
+
+  it('maintains primary button foreground contrast during dark hover', () => {
+    const hover = darkHex('primary-hover');
+    const background = hover
+      ? rgb(hover)
+      : blend(rgb(darkHex('primary')!), rgb(darkHex('card')!), 0.8);
+    expect(dark).toMatch(/--primary-foreground:\s*var\(--background\)\s*;/);
+    expect(
+      contrast(rgb(darkHex('background')!), background)
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('applies accessible dark derivatives to primary text and exact primary interactive hover', () => {
+    expect(css).toMatch(
+      /--color-primary-readable:\s*var\(--primary-readable\)/
+    );
+    expect(blockBody('.dark .text-primary')).toMatch(
+      /color:\s*var\(--primary-readable\)\s*;/
+    );
+    const hover = blockBody(
+      ".dark :is(a, button, [role='button']).bg-primary:hover"
+    );
+    expect(hover).toMatch(/background-color:\s*var\(--primary-hover\)\s*;/);
+    expect(hover).toMatch(/color:\s*var\(--primary-foreground\)\s*;/);
   });
 
   it('exposes base, card, and shell radii to Tailwind', () => {
@@ -65,9 +160,9 @@ describe('tattoo generator visual tokens', () => {
   });
 
   it('disables nonessential motion when reduced motion is requested', () => {
-    expect(css).toContain('(prefers-reduced-motion: reduce)');
-    expect(css).toMatch(/animation:\s*none\s*!important/);
-    expect(css).toMatch(/transition:\s*none\s*!important/);
-    expect(css).toMatch(/scroll-behavior:\s*auto\s*!important/);
+    const reducedMotion = blockBody('@media (prefers-reduced-motion: reduce)');
+    expect(reducedMotion).toMatch(/animation:\s*none\s*!important/);
+    expect(reducedMotion).toMatch(/transition:\s*none\s*!important/);
+    expect(reducedMotion).toMatch(/scroll-behavior:\s*auto\s*!important/);
   });
 });
