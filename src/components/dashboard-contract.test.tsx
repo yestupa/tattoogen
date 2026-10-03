@@ -132,7 +132,217 @@ function behavior(text: string) {
   return found;
 }
 
+type CriticalSources = Record<'menu' | 'layout' | 'admin' | 'settings', string>;
+
+// Structural checks supplement the broad fingerprints. They accept formatting
+// changes and inspect the actual handler/prop AST, without running side effects.
+function validateCriticalBehavior(sources: CriticalSources): string[] {
+  const parse = (text: string) =>
+    ts.createSourceFile(
+      'contract.tsx',
+      text,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX
+    );
+  const nodes = (root: ts.Node): ts.Node[] => {
+    const result: ts.Node[] = [];
+    const visit = (node: ts.Node) => {
+      result.push(node);
+      ts.forEachChild(node, visit);
+    };
+    visit(root);
+    return result;
+  };
+  const namedFunction = (file: ts.SourceFile, name: string) =>
+    nodes(file).find(
+      (node): node is ts.FunctionDeclaration =>
+        ts.isFunctionDeclaration(node) && node.name?.text === name
+    );
+  const expressionName = (node: ts.Expression): string | undefined => {
+    if (ts.isIdentifier(node)) return node.text;
+    if (ts.isPropertyAccessExpression(node))
+      return `${expressionName(node.expression)}.${node.name.text}`;
+    return undefined;
+  };
+  const call = (
+    node: ts.Node,
+    name: string,
+    _file: ts.SourceFile
+  ): node is ts.CallExpression =>
+    ts.isCallExpression(node) && expressionName(node.expression) === name;
+  const stringValue = (node: ts.Node | undefined, value: string) =>
+    !!node && ts.isStringLiteral(node) && node.text === value;
+  const violations: string[] = [];
+  const menu = parse(sources.menu);
+  const signOut = namedFunction(menu, 'handleSignOut');
+  const statements = signOut?.body?.statements ?? [];
+  const awaitedIndex = statements.findIndex(
+    (node) =>
+      ts.isExpressionStatement(node) &&
+      ts.isAwaitExpression(node.expression) &&
+      call(node.expression.expression, 'signOut', menu)
+  );
+  const redirectIndex = statements.findIndex(
+    (node) =>
+      ts.isExpressionStatement(node) &&
+      call(node.expression, 'router.push', menu) &&
+      stringValue(node.expression.arguments[0], '/')
+  );
+  if (
+    awaitedIndex < 0 ||
+    redirectIndex <= awaitedIndex ||
+    !signOut?.modifiers?.some(
+      (node) => node.kind === ts.SyntaxKind.AsyncKeyword
+    )
+  )
+    violations.push('sign-out-await');
+  const gatedProfile = nodes(menu).some(
+    (node) =>
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken &&
+      ts.isIdentifier(node.left) &&
+      node.left.text === 'profileHref' &&
+      nodes(node.right).some(
+        (child) =>
+          call(child, 'localizeHref', menu) &&
+          child.arguments.length === 1 &&
+          ts.isIdentifier(child.arguments[0]) &&
+          child.arguments[0].text === 'profileHref'
+      )
+  );
+  if (!gatedProfile) violations.push('profile-gate');
+  const admin = parse(sources.admin);
+  const gatedAdmin = nodes(admin).some(
+    (node) =>
+      (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+      node.tagName.getText(admin) === 'AppLayout' &&
+      node.attributes.properties.some(
+        (attribute) =>
+          ts.isJsxAttribute(attribute) &&
+          attribute.name.getText(admin) === 'requirePermission' &&
+          stringValue(attribute.initializer, 'admin.*')
+      )
+  );
+  if (!gatedAdmin) violations.push('admin-permission');
+  const layout = parse(sources.layout);
+  const parameter = namedFunction(layout, 'AppLayout')?.parameters[0];
+  const defaultRedirect =
+    parameter &&
+    ts.isObjectBindingPattern(parameter.name) &&
+    parameter.name.elements.some(
+      (element) =>
+        ts.isIdentifier(element.name) &&
+        element.name.text === 'unauthorizedRedirect' &&
+        stringValue(element.initializer, '/settings')
+    );
+  if (!defaultRedirect) violations.push('unauthorized-default');
+  const settings = parse(sources.settings);
+  const save = namedFunction(settings, 'handleSave');
+  const saveNodes = save ? nodes(save) : [];
+  const declaredPayload = saveNodes.some(
+    (node) =>
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === 'toSave' &&
+      node.initializer &&
+      ts.isObjectLiteralExpression(node.initializer)
+  );
+  const populatedPayload = saveNodes.some(
+    (node) =>
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isElementAccessExpression(node.left) &&
+      ts.isIdentifier(node.left.expression) &&
+      node.left.expression.text === 'toSave' &&
+      expressionName(node.left.argumentExpression) === 's.name' &&
+      ts.isElementAccessExpression(node.right) &&
+      expressionName(node.right.expression) === 'configs' &&
+      expressionName(node.right.argumentExpression) === 's.name'
+  );
+  const submittedPayload = saveNodes.some(
+    (node) =>
+      call(node, 'saveMutation.mutate', settings) &&
+      node.arguments.length === 1 &&
+      ts.isIdentifier(node.arguments[0]) &&
+      node.arguments[0].text === 'toSave'
+  );
+  if (!declaredPayload || !populatedPayload || !submittedPayload)
+    violations.push('save-payload');
+  return violations;
+}
+
+const criticalSources = (): CriticalSources => ({
+  menu: source('src/components/user-menu.tsx'),
+  layout: source('src/components/app-layout.tsx'),
+  admin: source('src/routes/admin/route.tsx'),
+  settings: source('src/routes/admin/settings.tsx'),
+});
+
+describe('critical dashboard behavior structure', () => {
+  it('accepts the actual source without executing requests', () => {
+    expect(validateCriticalBehavior(criticalSources())).toEqual([]);
+  });
+
+  it('accepts equivalent formatting rather than requiring a fixed hash', () => {
+    const originals = criticalSources();
+    const formatted = {
+      ...originals,
+      menu: originals.menu.replace('await signOut();', 'await   signOut( );'),
+      settings: originals.settings.replace(
+        'configs[s.name]',
+        'configs[ s . name ]'
+      ),
+    };
+    expect(validateCriticalBehavior(formatted)).toEqual([]);
+  });
+
+  it.each([
+    ['menu', 'await signOut();', '', 'sign-out-await'],
+    ['menu', 'profileHref && (', 'true && (', 'profile-gate'],
+    ['admin', 'requirePermission="admin.*"', '', 'admin-permission'],
+    [
+      'layout',
+      "unauthorizedRedirect = '/settings'",
+      "unauthorizedRedirect = '/'",
+      'unauthorized-default',
+    ],
+    [
+      'settings',
+      'saveMutation.mutate(toSave)',
+      'saveMutation.mutate({})',
+      'save-payload',
+    ],
+  ] as const)(
+    'rejects the in-memory %s mutation: %s',
+    (key, before, after, violation) => {
+      const originals = criticalSources();
+      const mutated = originals[key].replace(before, after);
+      expect(mutated).not.toBe(originals[key]);
+      expect(
+        validateCriticalBehavior({ ...originals, [key]: mutated })
+      ).toContain(violation);
+    }
+  );
+});
+
 describe('dashboard visual and behavior contracts', () => {
+  it('scopes indirect portal dialogs to the authenticated workspace', () => {
+    const layout = source('src/components/app-layout.tsx');
+    expect(layout).toContain('data-app-workspace');
+    expect(layout).toContain('body:has([data-app-workspace])');
+    expect(layout).toContain('[data-slot="dialog-content"] :is(button, a)');
+    expect(layout).toContain('min-height: 44px');
+    expect(layout).toContain('min-width: 44px');
+    expect(layout).toContain('display: inline-flex');
+    expect(layout).toContain(':focus-visible');
+    expect(source('src/routes/settings/credits.tsx')).toContain(
+      '<CreditTopUpDialog'
+    );
+    expect(source('src/routes/admin/settings.tsx')).toContain(
+      '<SettingsTestDialog'
+    );
+  });
   it.each(pages)('reuses the page heading on %s', (path) => {
     expect(source(path)).toContain('<PageHeading');
     expect(source(path)).not.toContain('<h1');

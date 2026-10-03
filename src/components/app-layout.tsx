@@ -133,7 +133,29 @@ export function AppLayout({
   }
 
   return (
-    <SidebarProvider className="bg-background h-svh min-h-0 overflow-hidden">
+    <SidebarProvider
+      data-app-workspace
+      className="bg-background h-svh min-h-0 overflow-hidden"
+    >
+      {/* Dialog portals live outside this subtree. Scope their touch targets to
+          a mounted workspace so public, auth and agent surfaces stay unchanged. */}
+      <style>{`
+        body:has([data-app-workspace]) [data-slot="dialog-content"] {
+          border-radius: 1rem;
+        }
+        body:has([data-app-workspace]) [data-slot="dialog-content"] :is(button, a) {
+          min-height: 44px;
+          min-width: 44px;
+        }
+        body:has([data-app-workspace]) [data-slot="dialog-content"] a {
+          display: inline-flex;
+          align-items: center;
+        }
+        body:has([data-app-workspace]) [data-slot="dialog-content"] :is(button, a):focus-visible {
+          outline: 2px solid var(--ring);
+          outline-offset: 2px;
+        }
+      `}</style>
       <AppSidebar
         brand={brand}
         brandHref={brandHref}
