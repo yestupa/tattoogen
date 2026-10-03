@@ -39,7 +39,7 @@ export function Blog({ posts = [] }: { posts?: BlogPost[] } = {}) {
         <div className="mt-10 text-center">
           <Link
             href="/blog"
-            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium transition-colors"
+            className="touch-target text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium transition-colors"
           >
             {m['landing.blog.view_all']()}
             <ArrowRight aria-hidden className="size-4" />

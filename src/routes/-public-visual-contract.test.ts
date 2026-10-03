@@ -77,6 +77,75 @@ describe('public visual contracts', () => {
     expect(blog).toContain('href="/blog"');
   });
 
+  it('gives the centered blog entry a 44px touch target', () => {
+    const text = source('../blocks/blog.tsx');
+    const file = ts.createSourceFile(
+      'blog.tsx',
+      text,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX
+    );
+    const entryClasses: string[] = [];
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isJsxOpeningElement(node) &&
+        node.tagName.getText(file) === 'Link'
+      ) {
+        const attributes = node.attributes.properties.filter(ts.isJsxAttribute);
+        const href = attributes.find(
+          (attribute) => attribute.name.getText(file) === 'href'
+        );
+        if (href?.initializer?.getText(file) === '"/blog"') {
+          const className = attributes.find(
+            (attribute) => attribute.name.getText(file) === 'className'
+          );
+          entryClasses.push(className?.initializer?.getText(file) ?? '');
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+    expect(entryClasses).toHaveLength(1);
+    expect(entryClasses[0]).toContain('touch-target');
+    expect(text).toContain('text-center');
+    expect(source('../styles/globals.css')).toMatch(
+      /\.touch-target\s*\{[^}]*min-height:\s*44px/
+    );
+  });
+
+  it.each(['en', 'zh'])(
+    'describes conditional signup credits in %s without a monthly free allowance',
+    (locale) => {
+      const copy = JSON.parse(source(`../../messages/${locale}.json`));
+      const answer = copy['landing.faq.a_2'];
+      expect(answer).not.toMatch(/80|per month|monthly|每月|月度/i);
+      expect(answer).toMatch(/sign up|signup|register|注册/i);
+      expect(answer).toMatch(/may|可能/i);
+      expect(answer).toMatch(/current|当前/i);
+      expect(answer).toMatch(/trial|试用/i);
+    }
+  );
+
+  it.each(['en', 'zh'])(
+    'keeps the published FAQ claims supported and non-absolute in %s',
+    (locale) => {
+      const copy = JSON.parse(source(`../../messages/${locale}.json`));
+      const unsupportedClaims = {
+        a_5: /never.*train|permanently|at rest|绝不|彻底|存储时.*加密/i,
+        a_6: /all paid|full commercial license|free.*commercial|完整商用授权|免费版.*商/i,
+        a_7: /monthly|fair.use queue|月度|公平队列/i,
+        a_8: /10 seconds|10 秒|Google.*GitHub/i,
+        a_10: /every message|weekly|每条消息|每周/i,
+      };
+      for (const [answer, unsupported] of Object.entries(unsupportedClaims)) {
+        expect(copy[`landing.faq.${answer}`]).toEqual(expect.any(String));
+        expect(copy[`landing.faq.${answer}`].trim()).not.toBe('');
+        expect(copy[`landing.faq.${answer}`]).not.toMatch(unsupported);
+      }
+    }
+  );
+
   it('uses the shared public shell and a page heading on pricing and legal pages', () => {
     expect(source('./pricing.tsx')).toContain('<h1');
     const legal = source('./(pages)/route.tsx');
