@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Coins, MoreHorizontal, Shield } from 'lucide-react';
+import { Coins, MoreHorizontal, Shield, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -81,6 +81,9 @@ function UsersPage() {
   );
   const [creditsAmount, setCreditsAmount] = useState('');
   const [creditsDesc, setCreditsDesc] = useState('');
+
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -198,6 +201,20 @@ function UsersPage() {
 
   const toggling = assignRoleMutation.isPending || removeRoleMutation.isPending;
 
+  const deleteMutation = useMutation({
+    mutationFn: (target: User) =>
+      apiDelete(
+        `/api/admin/users?id=${encodeURIComponent(target.id)}&email=${encodeURIComponent(deleteConfirmation.trim())}`
+      ),
+    onSuccess: () => {
+      toast.success(m['admin.users.deleted']());
+      setDeletingUser(null);
+      setDeleteConfirmation('');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   function toggleRole(roleId: string) {
     if (!managingUser || toggling) return;
     if (userRoleIds.has(roleId)) {
@@ -285,6 +302,16 @@ function UsersPage() {
             <DropdownMenuItem onClick={() => openRoleDialog(u)}>
               <Shield className="size-4" />
               {m['admin.users.manage_roles_title']()}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => {
+                setDeletingUser(u);
+                setDeleteConfirmation('');
+              }}
+            >
+              <Trash2 className="size-4" />
+              {m['admin.users.delete_action']()}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -456,6 +483,66 @@ function UsersPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!deletingUser}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setDeletingUser(null);
+            setDeleteConfirmation('');
+          }
+        }}
+      >
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>{m['admin.users.delete_title']()}</DialogTitle>
+            <DialogDescription>
+              {m['admin.users.delete_description']({
+                email: deletingUser?.email ?? '',
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label htmlFor="delete-user-email" className="text-sm font-medium">
+              {m['admin.users.delete_confirm_label']()}
+            </label>
+            <Input
+              id="delete-user-email"
+              value={deleteConfirmation}
+              autoComplete="off"
+              onChange={(event) => setDeleteConfirmation(event.target.value)}
+              placeholder={deletingUser?.email ?? ''}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleteMutation.isPending}
+              onClick={() => setDeletingUser(null)}
+            >
+              {m['common.action.cancel']()}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={
+                !deletingUser ||
+                deleteMutation.isPending ||
+                deleteConfirmation.trim().toLowerCase() !==
+                  deletingUser.email.toLowerCase()
+              }
+              onClick={() =>
+                deletingUser && deleteMutation.mutate(deletingUser)
+              }
+            >
+              {deleteMutation.isPending
+                ? m['admin.users.deleting']()
+                : m['admin.users.delete_confirm']()}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

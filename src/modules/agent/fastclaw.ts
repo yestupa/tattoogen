@@ -27,6 +27,19 @@ export interface FastClawBillingTask {
   options: { sessionId: string };
 }
 
+export interface FastClawUsageTotals {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  requestCount: number;
+}
+
+export interface NormalizedFastClawUsage {
+  totals: FastClawUsageTotals;
+  daily: Record<string, unknown>[];
+}
+
 interface FastClawPayload {
   choices?: Array<{
     delta?: { content?: unknown };
@@ -46,6 +59,80 @@ export function resolveFastClawConfig(
     apiKey,
     baseUrl: configs.fastclaw_base_url?.trim() || DEFAULT_FASTCLAW_BASE_URL,
     agentId: configs.fastclaw_agent_id?.trim() || DEFAULT_FASTCLAW_AGENT_ID,
+  };
+}
+
+function fastClawHeaders(config: FastClawConfig) {
+  return {
+    Authorization: `Bearer ${config.apiKey}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+export function createFastClawUserRequest(params: {
+  config: FastClawConfig;
+  externalId: string;
+  displayName?: string;
+}) {
+  const baseUrl = params.config.baseUrl.replace(/\/+$/, '');
+  const displayName = params.displayName?.trim();
+  return new Request(`${baseUrl}/v1/users`, {
+    method: 'POST',
+    headers: fastClawHeaders(params.config),
+    body: JSON.stringify({
+      external_id: params.externalId,
+      ...(displayName ? { display_name: displayName } : {}),
+    }),
+  });
+}
+
+export function createFastClawUsageRequest(params: {
+  config: FastClawConfig;
+  fastClawUserId: string;
+  days: number;
+}) {
+  const baseUrl = params.config.baseUrl.replace(/\/+$/, '');
+  const days = Math.min(90, Math.max(1, Math.floor(params.days)));
+  const query = new URLSearchParams({
+    user_id: params.fastClawUserId,
+    days: String(days),
+  });
+  return new Request(`${baseUrl}/v1/usage?${query}`, {
+    headers: { Authorization: `Bearer ${params.config.apiKey}` },
+  });
+}
+
+function nonNegativeInteger(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : 0;
+}
+
+export function normalizeFastClawUsage(
+  payload: unknown
+): NormalizedFastClawUsage {
+  const record =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {};
+  const totals =
+    record.totals && typeof record.totals === 'object'
+      ? (record.totals as Record<string, unknown>)
+      : {};
+  return {
+    totals: {
+      inputTokens: nonNegativeInteger(totals.inputTokens),
+      outputTokens: nonNegativeInteger(totals.outputTokens),
+      cacheReadTokens: nonNegativeInteger(totals.cacheReadTokens),
+      cacheCreationTokens: nonNegativeInteger(totals.cacheCreationTokens),
+      requestCount: nonNegativeInteger(totals.requestCount),
+    },
+    daily: Array.isArray(record.daily)
+      ? record.daily.filter(
+          (item): item is Record<string, unknown> =>
+            !!item && typeof item === 'object'
+        )
+      : [],
   };
 }
 
@@ -86,8 +173,7 @@ export function createFastClawRequest(params: {
     method: 'POST',
     headers: {
       Accept: 'text/event-stream, application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-      'Content-Type': 'application/json',
+      ...fastClawHeaders(config),
       'X-Fastclaw-Session-Key': `tattoo-generator:${userId}:${sessionId}`,
     },
     body: JSON.stringify(body),

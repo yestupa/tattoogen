@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
 import * as apikeys from '@/modules/apikeys/service';
+import { hasPermission } from '@/modules/rbac/service';
 import { respData, respErr, respOk, respPage } from '@/lib/resp';
 
 async function GET({ request }: { request: Request }) {
@@ -11,6 +12,9 @@ async function GET({ request }: { request: Request }) {
 
     if (!session?.user) {
       return respErr('Unauthorized');
+    }
+    if (!(await hasPermission(session.user.id, 'admin.*'))) {
+      return respErr('Forbidden');
     }
 
     const { searchParams } = new URL(request.url);
@@ -41,6 +45,9 @@ async function POST({ request }: { request: Request }) {
     if (!session?.user) {
       return respErr('Unauthorized');
     }
+    if (!(await hasPermission(session.user.id, 'admin.*'))) {
+      return respErr('Forbidden');
+    }
 
     const body = await request.json();
     const { title } = body;
@@ -67,6 +74,9 @@ async function DELETE({ request }: { request: Request }) {
 
     if (!session?.user) {
       return respErr('Unauthorized');
+    }
+    if (!(await hasPermission(session.user.id, 'admin.*'))) {
+      return respErr('Forbidden');
     }
 
     const { searchParams } = new URL(request.url);

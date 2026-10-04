@@ -24,6 +24,7 @@ import {
 } from './fastclaw';
 import { collectConversationImages, loadAgentHistory } from './history';
 import { createAgentTools } from './tools';
+import { ensureFastClawUser } from './usage';
 
 // FastClaw is the primary runtime for Tattoo Generator. The template's
 // in-process image agent remains as a configuration fallback for local work.
@@ -145,6 +146,7 @@ export async function* runAgentTurn(
   if (fastClaw) {
     let billingTaskId: string | undefined;
     try {
+      await ensureFastClawUser({ config: fastClaw, userId });
       const history = await loadAgentHistory(sessionId, userId);
       const current = splitAttachedImages(message);
       const prompt =

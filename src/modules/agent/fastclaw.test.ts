@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   createFastClawBillingTask,
   createFastClawRequest,
+  createFastClawUsageRequest,
+  createFastClawUserRequest,
+  normalizeFastClawUsage,
   readFastClawEvents,
   resolveFastClawConfig,
 } from './fastclaw';
@@ -46,6 +49,60 @@ describe('FastClaw configuration', () => {
 });
 
 describe('FastClaw request contract', () => {
+  it('provisions a stable upstream user and queries its usage server-side', async () => {
+    const config = {
+      apiKey: 'test-key',
+      baseUrl: 'https://cloud.fastclaw.ai/',
+      agentId: 'agt_test',
+    };
+    const provision = createFastClawUserRequest({
+      config,
+      externalId: 'tattoo-generator:user-42',
+      displayName: 'Avery',
+    });
+    expect(provision.url).toBe('https://cloud.fastclaw.ai/v1/users');
+    expect(provision.headers.get('authorization')).toBe('Bearer test-key');
+    expect(await provision.json()).toEqual({
+      external_id: 'tattoo-generator:user-42',
+      display_name: 'Avery',
+    });
+
+    const usage = createFastClawUsageRequest({
+      config,
+      fastClawUserId: 'u_123',
+      days: 30,
+    });
+    expect(usage.url).toBe(
+      'https://cloud.fastclaw.ai/v1/usage?user_id=u_123&days=30'
+    );
+  });
+
+  it('normalizes usage totals without trusting malformed upstream values', () => {
+    expect(
+      normalizeFastClawUsage({
+        userId: 'u_123',
+        days: 30,
+        daily: [{ day: '2026-09-01', inputTokens: 12 }],
+        totals: {
+          inputTokens: 100,
+          outputTokens: 40,
+          cacheReadTokens: -3,
+          cacheCreationTokens: 'bad',
+          requestCount: 2,
+        },
+      })
+    ).toEqual({
+      totals: {
+        inputTokens: 100,
+        outputTokens: 40,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+        requestCount: 2,
+      },
+      daily: [{ day: '2026-09-01', inputTokens: 12 }],
+    });
+  });
+
   it('sends stable app identity, conversation identity, images, and settings', async () => {
     const request = createFastClawRequest({
       config: {

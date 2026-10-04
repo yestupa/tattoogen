@@ -3,6 +3,7 @@ import {
   BadgePercent,
   CreditCard,
   FolderOpen,
+  Gauge,
   Home,
   LayoutDashboard,
   Settings,
@@ -39,6 +40,7 @@ function AdminLayout() {
         { href: '/admin/invite-codes', label: m['admin.nav.invite_codes']() },
         { href: '/admin/roles', label: m['admin.nav.roles']() },
         { href: '/admin/permissions', label: m['admin.nav.permissions']() },
+        { href: '/admin/usage', label: m['admin.nav.usage'](), icon: Gauge },
       ],
     },
     {
