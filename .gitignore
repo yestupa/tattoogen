@@ -26,6 +26,7 @@ wrangler.jsonc
 
 # claude code local state
 .claude/scheduled_tasks.lock
+/.worktrees/
 
 # production
 /build
