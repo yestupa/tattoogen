@@ -73,7 +73,12 @@ const TABS = ['all', 'published', 'draft'] as const;
 type Tab = (typeof TABS)[number];
 
 const postSchema = z.object({
-  slug: z.string().trim().min(1),
+  slug: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => m['common.validation.slug_required'](),
+    }),
   title: z.string().min(1),
   description: z.string(),
   content: z.string(),
@@ -242,6 +247,7 @@ function PostsPage() {
             variant="ghost"
             size="icon"
             className="size-7"
+            aria-label={m['common.action.edit']()}
             onClick={() => openEdit(p)}
           >
             <Pencil className="size-3" />
@@ -250,6 +256,7 @@ function PostsPage() {
             variant="ghost"
             size="icon"
             className="size-7"
+            aria-label={m['common.action.delete']()}
             onClick={() => setDeletingPost(p)}
           >
             <Trash2 className="size-3" />

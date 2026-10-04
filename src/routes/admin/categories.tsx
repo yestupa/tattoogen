@@ -49,7 +49,12 @@ interface Category {
 const PAGE_SIZE = 20;
 
 const categorySchema = z.object({
-  slug: z.string().trim().min(1),
+  slug: z
+    .string()
+    .trim()
+    .min(1, {
+      error: () => m['common.validation.slug_required'](),
+    }),
   title: z.string().min(1),
   description: z.string(),
 });
@@ -194,6 +199,7 @@ function CategoriesPage() {
             variant="ghost"
             size="icon"
             className="size-7"
+            aria-label={m['common.action.edit']()}
             onClick={() => openEdit(c)}
           >
             <Pencil className="size-3" />
@@ -202,6 +208,7 @@ function CategoriesPage() {
             variant="ghost"
             size="icon"
             className="size-7"
+            aria-label={m['common.action.delete']()}
             onClick={() => setDeletingCat(c)}
           >
             <Trash2 className="size-3" />

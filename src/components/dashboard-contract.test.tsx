@@ -109,13 +109,35 @@ const pages = [
 const source = (path: string) => readFileSync(path, 'utf8');
 
 it.each(['categories', 'posts'])(
+  'names the populated %s edit and delete icon actions',
+  (name) => {
+    const text = source(`src/routes/admin/${name}.tsx`);
+    const buttons = [
+      ...text.matchAll(
+        /<Button\s+variant="ghost"\s+size="icon"([\s\S]*?)>\s+<(?:Pencil|Trash2)\b/g
+      ),
+    ];
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0][1]).toContain("aria-label={m['common.action.edit']()}");
+    expect(buttons[1][1]).toContain("aria-label={m['common.action.delete']()}");
+    for (const locale of ['en', 'zh']) {
+      const messages = JSON.parse(source(`messages/${locale}.json`));
+      expect(messages['common.action.edit']).toBeTruthy();
+      expect(messages['common.action.delete']).toBeTruthy();
+    }
+  }
+);
+
+it.each(['categories', 'posts'])(
   'normalizes %s slugs in validation and create/edit payloads',
   async (name) => {
     const text = source(`src/routes/admin/${name}.tsx`);
     const schemaText = text.match(
       /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
     )![1];
-    const schema = new Function('z', `return ${schemaText}`)(z);
+    const schema = new Function('z', 'm', `return ${schemaText}`)(z, {
+      'common.validation.slug_required': () => 'Enter a non-empty slug',
+    });
     const value = {
       slug: '  botanical  ',
       title: 'Botanical',
@@ -148,6 +170,41 @@ it.each(['categories', 'posts'])(
         ts.transpile(`return (async () => { ${handler} })()`)
       )(value, mutation, mutation, { id: 'cat' }, { id: 'post' });
       expect(payload).toMatchObject({ slug: 'botanical', title: 'Botanical' });
+    }
+  }
+);
+
+it.each(['categories', 'posts'])(
+  'localizes %s whitespace slug errors in both locales',
+  (name) => {
+    const text = source(`src/routes/admin/${name}.tsx`);
+    const schemaText = text.match(
+      /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
+    )![1];
+    let locale = 'en';
+    const schema = new Function('z', 'm', `return ${schemaText}`)(z, {
+      'common.validation.slug_required': () =>
+        JSON.parse(source(`messages/${locale}.json`))[
+          'common.validation.slug_required'
+        ],
+    });
+    for (const activeLocale of ['en', 'zh']) {
+      locale = activeLocale;
+      const result = schema.safeParse({
+        slug: '   ',
+        title: 'Botanical',
+        description: '',
+        content: '',
+        categories: '',
+        authorName: '',
+        status: 'draft',
+      });
+      expect(result.success).toBe(false);
+      expect(
+        result.error.issues.find(
+          (issue: { path: string[] }) => issue.path[0] === 'slug'
+        ).message
+      ).toBe(locale === 'en' ? 'Enter a non-empty slug' : '请填写有效标识');
     }
   }
 );
