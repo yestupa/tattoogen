@@ -22,6 +22,7 @@ import { ModelsStrip } from '@/blocks/models-strip';
 import { Pricing } from '@/blocks/pricing';
 import { Stats } from '@/blocks/stats';
 import { SupportWidget } from '@/blocks/support-widget';
+import { getBlogPostsFn } from '@/content/posts/server';
 
 /**
  * Signed-in? Decided from the session cookie alone — `useSession()` would
@@ -41,6 +42,7 @@ function hasSessionCookie(): boolean {
 function HomePage() {
   const router = useRouter();
   const redirected = useRef(false);
+  const { posts } = Route.useLoaderData();
 
   // Signed-in visitors get the app, not the pitch. Client-side (and at layout
   // time, before paint) so the landing page still renders — and indexes — for
@@ -62,7 +64,7 @@ function HomePage() {
         <Stats />
         <Pricing />
         <FAQ />
-        <Blog />
+        <Blog posts={posts} />
         <CTA />
       </main>
       <Footer />
@@ -78,7 +80,11 @@ export const Route = createFileRoute('/')({
   beforeLoad: () => {
     if (hasSessionCookie()) throw redirect({ to: '/chat' });
   },
-  loader: () => ({ locale: getLocale() }),
+  loader: async () => {
+    const locale = getLocale();
+    const posts = await getBlogPostsFn({ data: { locale, limit: 3 } });
+    return { locale, posts };
+  },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? baseLocale;
     const title = m['landing.metadata.title'](
