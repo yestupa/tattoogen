@@ -71,7 +71,7 @@ export async function ensureFastClawUser(params: {
       .values({
         userId: params.userId,
         externalId,
-        fastclawUserId,
+        fastclawUserId: fastClawUserId,
         createdAt: now,
         updatedAt: now,
       })

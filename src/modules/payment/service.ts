@@ -19,6 +19,7 @@ import {
 import { credit, order, subscription } from '@/config/db/schema';
 import { getAllConfigs } from '@/modules/config/service';
 import { calculateCreditExpirationTime } from '@/modules/credits/service';
+import { notifyPaymentSuccess } from '@/modules/notifications/service';
 import {
   findByProviderSubscriptionId,
   findBySubscriptionNo,
@@ -231,7 +232,12 @@ export async function handlePaymentCallback(orderNo: string) {
     .limit(1);
 
   if (!existingOrder) return;
-  if (existingOrder.status === OrderStatus.PAID) return;
+  if (existingOrder.status === OrderStatus.PAID) {
+    await notifyPaymentSuccess(existingOrder).catch((error) => {
+      console.error('[payment] operational notification failed', error);
+    });
+    return;
+  }
 
   // Query the payment provider for latest status
   const pm = await getPaymentManager();
@@ -309,8 +315,14 @@ async function handleCheckoutSuccess(session: any, provider: string) {
 
   if (!existingOrder) return;
 
-  // Idempotency: skip if already paid
-  if (existingOrder.status === OrderStatus.PAID) return;
+  // Idempotency: credits and order writes stay skipped, while a failed or
+  // previously unavailable operational email may safely retry by event key.
+  if (existingOrder.status === OrderStatus.PAID) {
+    await notifyPaymentSuccess(existingOrder).catch((error) => {
+      console.error('[payment] operational notification failed', error);
+    });
+    return;
+  }
   if (
     existingOrder.status !== OrderStatus.CREATED &&
     existingOrder.status !== OrderStatus.PENDING
@@ -413,6 +425,13 @@ async function handleCheckoutSuccess(session: any, provider: string) {
         .set(orderUpdate)
         .where(eq(order.id, existingOrder.id));
     });
+
+    await notifyPaymentSuccess({
+      ...existingOrder,
+      ...orderUpdate,
+    }).catch((error) => {
+      console.error('[payment] operational notification failed', error);
+    });
   } else if (
     session.paymentStatus === PaymentStatus.FAILED ||
     session.paymentStatus === PaymentStatus.CANCELED
@@ -455,7 +474,7 @@ export async function handleSubscriptionRenewal(
   // Idempotency: drop duplicate renewals for the same provider transaction.
   if (paymentInfo?.transactionId) {
     const [dup] = await db()
-      .select({ id: order.id })
+      .select()
       .from(order)
       .where(
         and(
@@ -464,7 +483,12 @@ export async function handleSubscriptionRenewal(
         )
       )
       .limit(1);
-    if (dup) return;
+    if (dup) {
+      await notifyPaymentSuccess(dup).catch((error) => {
+        console.error('[payment] renewal notification failed', error);
+      });
+      return;
+    }
   }
 
   const renewalOrderNo = getSnowId();
@@ -537,6 +561,18 @@ export async function handleSubscriptionRenewal(
         status: 'active',
       });
     }
+  });
+
+  await notifyPaymentSuccess({
+    orderNo: renewalOrderNo,
+    userEmail: existingSub.userEmail,
+    productName: existingSub.productName,
+    amount: existingSub.amount,
+    currency: existingSub.currency,
+    paymentProvider: provider,
+    paidAt: paymentInfo?.paidAt || new Date(),
+  }).catch((error) => {
+    console.error('[payment] renewal notification failed', error);
   });
 }
 

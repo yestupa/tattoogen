@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
-import { getDbConfigs } from '@/modules/config/service';
+import { getAllConfigs } from '@/modules/config/service';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 
 // Endpoints worth slowing down: each one either creates an account or sends
@@ -29,7 +29,7 @@ async function handle(request: Request) {
     }
   }
 
-  const configs = await getDbConfigs();
+  const configs = await getAllConfigs();
   const auth = getAuth(configs);
   return auth.handler(request);
 }

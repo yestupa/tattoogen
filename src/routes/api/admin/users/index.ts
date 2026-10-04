@@ -104,8 +104,10 @@ async function DELETE({ request }: { request: Request }) {
     const policyError = validateUserDeletion({
       actorId: session.user.id,
       targetId,
-      actorRoles: actorRoles.map((item) => item.roleName),
-      targetRoles: targetRoles.map((item) => item.roleName),
+      actorRoles: actorRoles.map((item: { roleName: string }) => item.roleName),
+      targetRoles: targetRoles.map(
+        (item: { roleName: string }) => item.roleName
+      ),
       confirmationEmail,
       targetEmail: target.email,
     });

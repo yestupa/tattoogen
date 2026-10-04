@@ -268,6 +268,21 @@ export async function grantForNewUser(params: {
   const credits = parseInt(configs.initial_credits_amount) || 0;
   if (credits <= 0) return;
 
+  // Verification hooks can be retried. Any existing signup-style gift means
+  // this account has already received its welcome grant.
+  const [existing] = await db()
+    .select({ id: credit.id })
+    .from(credit)
+    .where(
+      and(
+        eq(credit.userId, userId),
+        eq(credit.transactionType, CreditTransactionType.GRANT),
+        eq(credit.transactionScene, CreditTransactionScene.GIFT)
+      )
+    )
+    .limit(1);
+  if (existing) return existing;
+
   const validDays = parseInt(configs.initial_credits_valid_days) || 0;
   const description = configs.initial_credits_description || 'Initial credits';
 

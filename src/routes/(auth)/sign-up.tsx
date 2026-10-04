@@ -141,13 +141,14 @@ function SignUpPage() {
         }
 
         if (emailVerificationEnabled) {
-          const verifyPath = `/verify-email?sent=1&email=${encodeURIComponent(
-            value.email
-          )}&callbackUrl=${encodeURIComponent(afterLoginUrl)}`;
-          void authClient.sendVerificationEmail({
+          const verificationResult = await authClient.sendVerificationEmail({
             email: value.email,
             callbackURL: localizeHref(afterLoginUrl),
           });
+          const sent = verificationResult?.error ? '0' : '1';
+          const verifyPath = `/verify-email?sent=${sent}&email=${encodeURIComponent(
+            value.email
+          )}&callbackUrl=${encodeURIComponent(afterLoginUrl)}`;
           router.push(verifyPath);
         } else {
           // Hard navigation so the destination reloads with a fresh session

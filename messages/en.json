@@ -1326,5 +1326,8 @@
   "admin.users.delete_confirm_label": "Type the user's full email to confirm",
   "admin.users.delete_confirm": "Permanently delete user",
   "admin.users.deleting": "Deleting…",
-  "admin.users.deleted": "User deleted. The same email can register again."
+  "admin.users.deleted": "User deleted. The same email can register again.",
+  "admin.settings.fields.operational_notification_email": "Operational notification email",
+  "admin.settings.fields.signup_notification_enabled": "Notify after verified signup",
+  "admin.settings.fields.payment_notification_enabled": "Notify after successful payment"
 }

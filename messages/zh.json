@@ -1326,5 +1326,8 @@
   "admin.users.delete_confirm_label": "输入该用户的完整邮箱进行确认",
   "admin.users.delete_confirm": "永久删除用户",
   "admin.users.deleting": "正在删除…",
-  "admin.users.deleted": "用户已删除，同一邮箱可以重新注册。"
+  "admin.users.deleted": "用户已删除，同一邮箱可以重新注册。",
+  "admin.settings.fields.operational_notification_email": "运营提醒邮箱",
+  "admin.settings.fields.signup_notification_enabled": "用户完成邮箱验证后提醒",
+  "admin.settings.fields.payment_notification_enabled": "付款成功后提醒"
 }

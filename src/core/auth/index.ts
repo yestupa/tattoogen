@@ -4,15 +4,12 @@ import { APIError } from 'better-auth/api';
 import { oneTap } from 'better-auth/plugins';
 
 import { db } from '@/core/db';
-import type { EmailProvider } from '@/core/email';
-import { CloudflareEmailProvider } from '@/core/email/cloudflare';
-import { ResendProvider } from '@/core/email/resend';
+import { getConfiguredEmailProvider } from '@/core/email/configured';
 import { VerifyEmail } from '@/core/email/templates/verify-email';
 import { AUTH_SECRET_PLACEHOLDER, envConfigs } from '@/config';
 import * as schema from '@/config/db/schema';
+import { completeUserOnboarding } from '@/modules/auth/onboarding';
 import { getAllConfigs } from '@/modules/config/service';
-import { grantForNewUser } from '@/modules/credits/service';
-import { grantRoleForNewUser } from '@/modules/rbac/service';
 import {
   getClientIpFromCtx,
   getCookieFromCtx,
@@ -108,42 +105,6 @@ function getSocialSignature(configs: Record<string, string>) {
   ].join('|');
 }
 
-/**
- * Build the configured email provider from admin settings.
- * Returns null if the chosen provider is not fully configured.
- */
-function getEmailProvider(
-  configs: Record<string, string>
-): { provider: EmailProvider; from: string } | null {
-  const selected = configs.email_provider || 'resend';
-
-  if (selected === 'cloudflare') {
-    const apiToken = configs.cloudflare_email_api_token;
-    const accountId = configs.cloudflare_email_account_id;
-    const from = configs.cloudflare_email_sender_email;
-    if (!apiToken || !accountId || !from) return null;
-    return {
-      provider: new CloudflareEmailProvider({
-        apiToken,
-        accountId,
-        defaultFrom: from,
-      }),
-      from,
-    };
-  }
-
-  // Default: resend
-  const apiKey = configs.resend_api_key;
-  const from = configs.resend_sender_email;
-  if (!apiKey || !from) return null;
-  return { provider: new ResendProvider({ apiKey, defaultFrom: from }), from };
-}
-
-/** Check whether email sending is available for the selected provider */
-function isEmailConfigured(configs: Record<string, string>): boolean {
-  return getEmailProvider(configs) !== null;
-}
-
 function getAuthPlugins(configs: Record<string, string> | undefined) {
   if (!configs) return [];
   const plugins: any[] = [];
@@ -176,8 +137,7 @@ export function getAuth(configs?: Record<string, string>) {
   // Rebuild if the email-verification flag changed
   if (configs) {
     const nextVerificationEnabled =
-      configs.email_verification_enabled === 'true' &&
-      isEmailConfigured(configs);
+      configs.email_verification_enabled === 'true';
     if (nextVerificationEnabled !== emailVerificationEnabledLoaded) {
       authInstance = null;
       emailVerificationEnabledLoaded = nextVerificationEnabled;
@@ -191,8 +151,7 @@ export function getAuth(configs?: Record<string, string>) {
     ? configs.email_auth_enabled !== 'false'
     : true;
   const emailVerificationEnabled = configs
-    ? configs.email_verification_enabled === 'true' &&
-      isEmailConfigured(configs)
+    ? configs.email_verification_enabled === 'true'
     : false;
   const appName = configs?.app_name || envConfigs.app_name;
   const appUrl = configs?.app_url || envConfigs.app_url;
@@ -297,22 +256,9 @@ export function getAuth(configs?: Record<string, string>) {
             if (!all) return;
 
             try {
-              await grantRoleForNewUser({
-                userId: createdUser.id,
-                configs: all,
-              });
+              await completeUserOnboarding({ user: createdUser, configs: all });
             } catch (error) {
-              console.error('[auth] grant default role failed', error);
-            }
-
-            try {
-              await grantForNewUser({
-                userId: createdUser.id,
-                userEmail: createdUser.email,
-                configs: all,
-              });
-            } catch (error) {
-              console.error('[auth] grant signup credits failed', error);
+              console.error('[auth] complete onboarding failed', error);
             }
           },
         },
@@ -327,7 +273,7 @@ export function getAuth(configs?: Record<string, string>) {
       autoSignIn: !emailVerificationEnabled,
       sendResetPassword: async ({ user, url }) => {
         const all = await getAllConfigs();
-        const emailCtx = getEmailProvider(all);
+        const emailCtx = getConfiguredEmailProvider(all);
         if (!emailCtx) {
           console.error(
             '[auth] sendResetPassword: No email provider configured'
@@ -357,6 +303,13 @@ export function getAuth(configs?: Record<string, string>) {
             sendOnSignIn: false,
             autoSignInAfterVerification: true,
             expiresIn: 60 * 60 * 24,
+            afterEmailVerification: async (verifiedUser: any) => {
+              const all = await getAllConfigs();
+              await completeUserOnboarding({
+                user: verifiedUser,
+                configs: all,
+              });
+            },
             sendVerificationEmail: async ({
               user,
               url,
@@ -365,48 +318,42 @@ export function getAuth(configs?: Record<string, string>) {
               url: string;
               token: string;
             }) => {
-              try {
-                const key = String(user?.email || '').toLowerCase();
-                const now = Date.now();
-                const last = recentVerificationEmailSentAt.get(key) || 0;
-                if (key && now - last < VERIFICATION_EMAIL_MIN_INTERVAL_MS) {
-                  return;
-                }
-                if (key) {
-                  recentVerificationEmailSentAt.set(key, now);
-                }
+              const key = String(user?.email || '').toLowerCase();
+              const now = Date.now();
+              const last = recentVerificationEmailSentAt.get(key) || 0;
+              if (key && now - last < VERIFICATION_EMAIL_MIN_INTERVAL_MS) {
+                return;
+              }
 
-                const all = await getAllConfigs();
-                const emailCtx = getEmailProvider(all);
-                if (!emailCtx) {
-                  console.error(
-                    '[auth] sendVerificationEmail: No email provider configured'
-                  );
-                  return;
-                }
-                const appName = all.app_name || envConfigs.app_name;
-                // Email clients don't render SVG <img>; only embed a raster logo,
-                // otherwise fall back to the text brand in the template.
-                const rawLogo = all.app_logo || '';
-                const logo = /\.svg(\?|#|$)/i.test(rawLogo) ? '' : rawLogo;
-                const logoUrl = logo.startsWith('http')
-                  ? logo
-                  : logo
-                    ? `${all.app_url || appUrl || ''}${logo.startsWith('/') ? '' : '/'}${logo}`
-                    : undefined;
-                const result = await emailCtx.provider.sendEmail({
-                  to: user.email,
-                  subject: `Verify your email - ${appName}`,
-                  react: VerifyEmail({ appName, logoUrl, url }),
+              const all = await getAllConfigs();
+              const emailCtx = getConfiguredEmailProvider(all);
+              if (!emailCtx) {
+                throw new APIError('SERVICE_UNAVAILABLE', {
+                  message: 'Email delivery is not configured.',
                 });
-                if (!result.success) {
-                  console.error(
-                    '[auth] sendVerificationEmail failed:',
-                    result.error
-                  );
-                }
-              } catch (e) {
-                console.error('[auth] sendVerificationEmail error:', e);
+              }
+              const appName = all.app_name || envConfigs.app_name;
+              // Email clients don't render SVG <img>; only embed a raster logo,
+              // otherwise fall back to the text brand in the template.
+              const rawLogo = all.app_logo || '';
+              const logo = /\.svg(\?|#|$)/i.test(rawLogo) ? '' : rawLogo;
+              const logoUrl = logo.startsWith('http')
+                ? logo
+                : logo
+                  ? `${all.app_url || appUrl || ''}${logo.startsWith('/') ? '' : '/'}${logo}`
+                  : undefined;
+              const result = await emailCtx.provider.sendEmail({
+                to: user.email,
+                subject: `Verify your email - ${appName}`,
+                react: VerifyEmail({ appName, logoUrl, url }),
+              });
+              if (!result.success) {
+                throw new APIError('SERVICE_UNAVAILABLE', {
+                  message: 'Verification email delivery failed.',
+                });
+              }
+              if (key) {
+                recentVerificationEmailSentAt.set(key, now);
               }
             },
           },

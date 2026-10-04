@@ -232,5 +232,12 @@ export async function grantRoleForNewUser(params: {
   const foundRole = await getRoleByName(roleName);
   if (!foundRole) return;
 
+  const [existing] = await db()
+    .select({ id: userRole.id })
+    .from(userRole)
+    .where(and(eq(userRole.userId, userId), eq(userRole.roleId, foundRole.id)))
+    .limit(1);
+  if (existing) return existing;
+
   await assignRoleToUser(userId, foundRole.id);
 }

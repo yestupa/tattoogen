@@ -727,6 +727,31 @@ export function getSettings(): Setting[] {
       tab: 'email',
       defaultValue: 'resend',
     },
+    {
+      name: 'operational_notification_email',
+      title: 'Operational notification email',
+      type: 'text',
+      placeholder: 'yestupaofficial@gmail.com',
+      group: 'email_general',
+      tab: 'email',
+      defaultValue: 'yestupaofficial@gmail.com',
+    },
+    {
+      name: 'signup_notification_enabled',
+      title: 'Notify after verified signup',
+      type: 'switch',
+      group: 'email_general',
+      tab: 'email',
+      defaultValue: 'true',
+    },
+    {
+      name: 'payment_notification_enabled',
+      title: 'Notify after successful payment',
+      type: 'switch',
+      group: 'email_general',
+      tab: 'email',
+      defaultValue: 'true',
+    },
 
     // ─── Email / Resend ──────────────────────────────────────────────
     {
