@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  useRouter as useTanStackRouter,
+} from '@tanstack/react-router';
 import { ArrowDown } from 'lucide-react';
 
 import { useRouter } from '@/core/i18n/navigation';
@@ -75,6 +78,7 @@ export const Route = createFileRoute('/(agent)/chat/$sessionId')({
 
 function ChatSessionPage() {
   const { sessionId } = Route.useParams();
+  const navigationRouter = useTanStackRouter();
   const router = useRouter();
   const routerRef = useRef(router);
   routerRef.current = router;
@@ -191,6 +195,11 @@ function ChatSessionPage() {
   useEffect(() => {
     let cancelled = false;
     const runAtRequest = getRun(sessionId);
+    const requestedPathname = navigationRouter.buildLocation({
+      to: '/chat/$sessionId',
+      params: { sessionId },
+      search,
+    }).pathname;
     (async () => {
       // Read, don't consume — the initial-turn effect below still needs it.
       const pendingTurn = (() => {
@@ -205,6 +214,14 @@ function ChatSessionPage() {
           `/api/agent/chat/${encodeURIComponent(sessionId)}`
         );
         if (cancelled) return;
+        // Navigation can change its target before this view is unmounted.
+        // Both pathnames use the router's locale rewrite; query/hash changes
+        // stay in this session, and a trailing slash does not change its identity.
+        if (
+          navigationRouter.latestLocation.pathname.replace(/\/$/, '') !==
+          requestedPathname.replace(/\/$/, '')
+        )
+          return;
         // A completed/failed turn is also newer than this request's snapshot.
         // Store snapshots change identity for every local run update.
         if (getRun(sessionId) !== runAtRequest) return;

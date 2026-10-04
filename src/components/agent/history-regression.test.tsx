@@ -24,6 +24,8 @@ const invoke = new Function(
   'seedRun',
   'storedToMessages',
   'getRun',
+  'navigationRouter',
+  'search',
   ts.transpile(`return (() => {${body}})();`)
 );
 const ids: string[] = [];
@@ -44,6 +46,12 @@ function request(pendingTurn = false) {
   );
   const replace = vi.fn(),
     setTitle = vi.fn();
+  const navigationRouter = {
+    latestLocation: { pathname: `/chat/${id}`, publicHref: `/chat/${id}` },
+    buildLocation: ({ params }: { params: { sessionId: string } }) => ({
+      pathname: `/chat/${params.sessionId}`,
+    }),
+  };
   const cleanup = invoke(
     id,
     apiGet,
@@ -53,7 +61,9 @@ function request(pendingTurn = false) {
     setTitle,
     runs.seedRun,
     storedToMessages,
-    snapshot
+    snapshot,
+    navigationRouter,
+    { preview: undefined, previewName: undefined, previewAlt: undefined }
   ) as () => void;
   const history: ChatHistoryData = {
     chat: { id, title: 'Old title', updatedAt: '2026-10-04' },
@@ -66,7 +76,17 @@ function request(pendingTurn = false) {
       },
     ],
   };
-  return { id, apiGet, replace, setTitle, cleanup, resolve, reject, history };
+  return {
+    id,
+    apiGet,
+    replace,
+    setTitle,
+    cleanup,
+    resolve,
+    reject,
+    history,
+    navigationRouter,
+  };
 }
 afterEach(() => {
   ids.forEach(runs.dropRun);
@@ -75,6 +95,50 @@ afterEach(() => {
 });
 
 describe('history snapshots cannot overwrite newer local runs', () => {
+  it.each(['?previewName=Example', '#history', '/'])(
+    'retains the same session with URL suffix %s',
+    async (suffix) => {
+      const r = request();
+      r.navigationRouter.latestLocation.publicHref += suffix;
+      if (suffix === '/') r.navigationRouter.latestLocation.pathname += suffix;
+      r.resolve(r.history);
+      await vi.waitFor(() =>
+        expect(snapshot(r.id).messages[0]?.content).toBe('Old persisted prompt')
+      );
+      expect(r.setTitle).toHaveBeenCalledWith('Old title');
+      expect(r.apiGet).toHaveBeenCalledTimes(1);
+    }
+  );
+  it.each([
+    { response: 'missing', target: '/library' },
+    { response: 'history', target: '/library' },
+    { response: 'missing', target: '/chat/next-session' },
+    { response: 'history', target: '/chat/next-session' },
+  ])(
+    'ignores $response after navigation targets $target before cleanup',
+    async ({ response, target }) => {
+      const r = request();
+      // Navigation has started, but the old component's cleanup has not run.
+      r.navigationRouter.latestLocation.pathname = target;
+      r.resolve(
+        response === 'missing' ? { chat: null, messages: [] } : r.history
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(r.replace).not.toHaveBeenCalled();
+      expect(r.setTitle).not.toHaveBeenCalled();
+      expect(runs.hasRun(r.id)).toBe(false);
+      expect(r.apiGet).toHaveBeenCalledTimes(1);
+    }
+  );
+  it('ignores an error response after navigation starts before cleanup', async () => {
+    const r = request();
+    r.navigationRouter.latestLocation.pathname = '/library';
+    r.reject(new Error('History failed'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(r.replace).not.toHaveBeenCalled();
+    expect(r.setTitle).not.toHaveBeenCalled();
+    expect(runs.hasRun(r.id)).toBe(false);
+  });
   it.each(['failed', 'successful'])(
     'retains a fast %s turn completed before history resolves',
     async (outcome) => {
