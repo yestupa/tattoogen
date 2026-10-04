@@ -9,23 +9,10 @@ import { md5 } from '@/lib/hash';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr } from '@/lib/resp';
 
-const extFromMime = (mimeType: string) => {
-  const map: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/jpg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-    'image/gif': 'gif',
-    'image/svg+xml': 'svg',
-    'image/avif': 'avif',
-    'image/heic': 'heic',
-    'image/heif': 'heif',
-  };
-  return map[mimeType] || '';
-};
+import { validateImageUpload } from './-image-upload';
 
-// Cap for the no-storage local-disk fallback (dev). Configurable via INLINE_IMAGE_MAX_KB.
-const INLINE_MAX_BYTES =
+// Apply the same cap to local and remote storage to bound memory and storage use.
+const MAX_IMAGE_BYTES =
   (Number(envConfigs.inline_image_max_kb) || 10240) * 1024;
 
 async function POST({ request }: { request: Request }) {
@@ -53,19 +40,18 @@ async function POST({ request }: { request: Request }) {
     }> = [];
 
     for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        return respErr(`File ${file.name} is not an image`);
+      if (file.size > MAX_IMAGE_BYTES) {
+        return respErr('Image exceeds the upload size limit');
       }
 
       const arrayBuffer = await file.arrayBuffer();
       const body = new Uint8Array(arrayBuffer);
+      const validation = validateImageUpload(file.type, body, MAX_IMAGE_BYTES);
+
+      if ('error' in validation) return respErr(validation.error);
 
       const digest = md5(body);
-      const ext =
-        (extFromMime(file.type) || file.name.split('.').pop() || 'bin').replace(
-          /[^a-zA-Z0-9]/g,
-          ''
-        ) || 'bin';
+      const ext = validation.extension;
       // R2Provider prepends its own uploadPath (default `uploads`), so the object
       // key is the bare filename. The local fallback uses `public/uploads/<file>`.
       const objectKey = `${digest}.${ext}`;
@@ -74,12 +60,6 @@ async function POST({ request }: { request: Request }) {
       // local URL. Avoids inlining a giant base64 data URL into DB columns (some
       // are varchar(255)). Configure R2 (admin → Storage) for production.
       if (!storage) {
-        if (body.length > INLINE_MAX_BYTES) {
-          const limitKb = Math.round(INLINE_MAX_BYTES / 1024);
-          return respErr(
-            `Image too large (${(body.length / 1024).toFixed(0)}KB > ${limitKb}KB). Configure storage or use a smaller image.`
-          );
-        }
         const dir = path.join(process.cwd(), 'public', 'uploads');
         await mkdir(dir, { recursive: true });
         await writeFile(path.join(dir, objectKey), body);
