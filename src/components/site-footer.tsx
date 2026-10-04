@@ -4,7 +4,6 @@ import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { cn } from '@/lib/utils';
 import { withUtmSource } from '@/lib/utm';
-import { BuiltWithShipAny } from '@/components/built-with-shipany';
 import { LocaleSelector } from '@/components/locale-selector';
 
 export interface FooterColumn {
@@ -28,7 +27,6 @@ export function SiteFooter({
   socials,
   copyright,
   languageLabel,
-  builtWithLabel,
   rightsReservedLabel,
 }: {
   tagline?: string;
@@ -36,7 +34,6 @@ export function SiteFooter({
   socials?: FooterSocial[];
   copyright?: string;
   languageLabel: string;
-  builtWithLabel: string;
   rightsReservedLabel: string;
 }) {
   const year = new Date().getFullYear();
@@ -146,9 +143,7 @@ export function SiteFooter({
           />
         </div>
 
-        {/* Bottom bar */}
-        <div className="border-border mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <BuiltWithShipAny label={builtWithLabel} />
+        <div className="border-border mt-6 flex justify-end border-t pt-5">
           <span className="text-muted-foreground text-sm">
             {copyright ?? (
               <>

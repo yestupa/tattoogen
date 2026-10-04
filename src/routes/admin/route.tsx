@@ -68,6 +68,10 @@ function AdminLayout() {
         { href: '/admin/posts', label: m['admin.nav.posts']() },
         { href: '/admin/chats', label: m['admin.nav.chats']() },
         { href: '/admin/tickets', label: m['admin.nav.tickets']() },
+        {
+          href: '/admin/contact-tickets',
+          label: m['admin.nav.contact_tickets'](),
+        },
       ],
     },
   ];
