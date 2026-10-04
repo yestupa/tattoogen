@@ -180,6 +180,36 @@ describe('authentication and root visual contracts', () => {
     }
   );
 
+  it.each([
+    {
+      route: 'sign-in',
+      autocomplete: { email: 1, 'current-password': 1 },
+    },
+    {
+      route: 'sign-up',
+      autocomplete: { name: 1, email: 1, 'new-password': 2 },
+    },
+    {
+      route: 'forgot-password',
+      autocomplete: { email: 1 },
+    },
+    {
+      route: 'reset-password',
+      autocomplete: { 'new-password': 2 },
+    },
+  ])(
+    'declares browser credential autocomplete semantics on $route',
+    ({ route, autocomplete }) => {
+      const source = readSource(`./(auth)/${route}.tsx`);
+
+      for (const [value, count] of Object.entries(autocomplete)) {
+        expect(
+          source.match(new RegExp(`autoComplete="${value}"`, 'g')) ?? []
+        ).toHaveLength(count);
+      }
+    }
+  );
+
   it.each(['NotFound', 'RootError'])(
     'uses PageState for the %s fallback',
     (name) => {

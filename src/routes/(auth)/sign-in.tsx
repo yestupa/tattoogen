@@ -224,6 +224,7 @@ function SignInPage() {
                       field={field}
                       label={m['common.sign.email_title']()}
                       type="email"
+                      autoComplete="email"
                       required
                       placeholder={m['common.sign.email_placeholder']()}
                     />
@@ -261,6 +262,7 @@ function SignInPage() {
                           id={field.name}
                           name={field.name}
                           type="password"
+                          autoComplete="current-password"
                           value={field.state.value}
                           onChange={(e) => field.handleChange(e.target.value)}
                           onBlur={field.handleBlur}

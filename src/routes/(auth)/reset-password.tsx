@@ -131,6 +131,7 @@ function ResetPasswordPage() {
                   field={field}
                   label={m['common.sign.new_password_title']()}
                   type="password"
+                  autoComplete="new-password"
                   required
                   placeholder={m['common.sign.new_password_placeholder']()}
                 />
@@ -142,6 +143,7 @@ function ResetPasswordPage() {
                   field={field}
                   label={m['common.sign.confirm_password_title']()}
                   type="password"
+                  autoComplete="new-password"
                   required
                   placeholder={m[
                     'common.sign.confirm_new_password_placeholder'

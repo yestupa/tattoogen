@@ -262,6 +262,7 @@ function SignUpPage() {
                       field={field}
                       label={m['common.sign.name_title']()}
                       type="text"
+                      autoComplete="name"
                       required
                       placeholder={m['common.sign.name_placeholder']()}
                     />
@@ -273,6 +274,7 @@ function SignUpPage() {
                       field={field}
                       label={m['common.sign.email_title']()}
                       type="email"
+                      autoComplete="email"
                       required
                       placeholder={m['common.sign.email_placeholder']()}
                     />
@@ -284,6 +286,7 @@ function SignUpPage() {
                       field={field}
                       label={m['common.sign.password_title']()}
                       type="password"
+                      autoComplete="new-password"
                       required
                       placeholder={m['common.sign.password_placeholder']()}
                     />
@@ -295,6 +298,7 @@ function SignUpPage() {
                       field={field}
                       label={m['common.sign.confirm_password_title']()}
                       type="password"
+                      autoComplete="new-password"
                       required
                       placeholder={m[
                         'common.sign.confirm_password_placeholder'

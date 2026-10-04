@@ -127,6 +127,7 @@ function ForgotPasswordPage() {
                   field={field}
                   label={m['common.sign.email_title']()}
                   type="email"
+                  autoComplete="email"
                   required
                   placeholder={m['common.sign.email_placeholder']()}
                 />
