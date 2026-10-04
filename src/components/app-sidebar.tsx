@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRouter as useTanStackRouter } from '@tanstack/react-router';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 
 import { Link, usePathname } from '@/core/i18n/navigation';
@@ -18,6 +19,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 
 export interface NavSubItem {
@@ -53,6 +55,21 @@ export function AppSidebar({
   footer?: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useTanStackRouter();
+  const { setOpenMobile } = useSidebar();
+  // Close only after navigation resolves, retaining Sheet Escape/focus behavior.
+  useEffect(
+    () =>
+      router.subscribe('onResolved', (event) => {
+        if (
+          event.fromLocation &&
+          event.fromLocation.href !== event.toLocation.href
+        ) {
+          setOpenMobile(false);
+        }
+      }),
+    [router, setOpenMobile]
+  );
 
   // Group nav items by their (static) group label.
   const groups: { label?: string; items: NavItem[] }[] = [];

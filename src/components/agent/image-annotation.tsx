@@ -472,11 +472,11 @@ export function ImageAnnotationEditor({
         </div>
       </div>
 
-      <div className="border-border flex shrink-0 items-center justify-between gap-3 border-t px-4 py-3">
+      <div className="border-border flex shrink-0 flex-col items-stretch gap-3 border-t px-4 py-3">
         <p className="text-muted-foreground min-w-0 text-xs">
           {m['agent.annotation.hint']()}
         </p>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             {m['agent.annotation.cancel']()}
           </Button>

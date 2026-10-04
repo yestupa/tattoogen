@@ -216,14 +216,14 @@ export function PromptLauncher({ className }: { className?: string }) {
         submitDisabled={(!value.trim() && !hasUploaded) || uploading}
         toolbarExtra={
           category && (
-            <span className="border-primary/30 bg-primary/10 text-primary inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs">
+            <span className="border-primary/30 bg-primary/10 text-primary inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs">
               <category.icon aria-hidden className="size-3.5" />
               <span className="max-w-[10rem] truncate">{category.title}</span>
               <button
                 type="button"
                 onClick={() => setCategoryKey(null)}
                 aria-label={m['landing.examples.clear']()}
-                className="hover:text-primary/70"
+                className="touch-target hover:text-primary/70 inline-flex items-center justify-center"
               >
                 <X aria-hidden className="size-3" />
               </button>
@@ -242,7 +242,7 @@ export function PromptLauncher({ className }: { className?: string }) {
               onClick={() => setCategoryKey(active ? null : item.key)}
               aria-pressed={active}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors',
+                'touch-target inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors',
                 active
                   ? 'border-primary/40 bg-primary/10 text-primary'
                   : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'

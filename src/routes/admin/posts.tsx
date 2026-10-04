@@ -73,7 +73,7 @@ const TABS = ['all', 'published', 'draft'] as const;
 type Tab = (typeof TABS)[number];
 
 const postSchema = z.object({
-  slug: z.string().min(1),
+  slug: z.string().trim().min(1),
   title: z.string().min(1),
   description: z.string(),
   content: z.string(),
@@ -136,7 +136,7 @@ function PostsPage() {
     defaultValues: emptyForm,
     validators: { onSubmit: postSchema },
     onSubmit: async ({ value }) => {
-      await createMutation.mutateAsync(value);
+      await createMutation.mutateAsync({ ...value, slug: value.slug.trim() });
     },
   });
 
@@ -145,7 +145,11 @@ function PostsPage() {
     validators: { onSubmit: postSchema },
     onSubmit: async ({ value }) => {
       if (!editingPost) return;
-      const body: Record<string, unknown> = { id: editingPost.id, ...value };
+      const body: Record<string, unknown> = {
+        id: editingPost.id,
+        ...value,
+        slug: value.slug.trim(),
+      };
       if (!body.content) delete body.content; // don't overwrite content if empty
       await editMutation.mutateAsync(body);
     },

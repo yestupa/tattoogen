@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { DataTable } from './data-table';
 
@@ -107,7 +108,66 @@ const pages = [
 ];
 const source = (path: string) => readFileSync(path, 'utf8');
 
+it.each(['categories', 'posts'])(
+  'normalizes %s slugs in validation and create/edit payloads',
+  async (name) => {
+    const text = source(`src/routes/admin/${name}.tsx`);
+    const schemaText = text.match(
+      /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
+    )![1];
+    const schema = new Function('z', `return ${schemaText}`)(z);
+    const value = {
+      slug: '  botanical  ',
+      title: 'Botanical',
+      description: '',
+      content: '',
+      categories: '',
+      authorName: '',
+      status: 'draft',
+    };
+    expect(schema.parse(value).slug).toBe('botanical');
+    expect(schema.safeParse({ ...value, slug: '   ' }).success).toBe(false);
+    for (const mode of ['create', 'edit']) {
+      const handler = text.match(
+        new RegExp(
+          `const ${mode}Form = useForm\\(\\{[\\s\\S]*?onSubmit: async \\(\\{ value \\}\\) => \\{([\\s\\S]*?)\\n    \\},`
+        )
+      )![1];
+      let payload: unknown;
+      const mutation = {
+        mutateAsync: async (body: unknown) => {
+          payload = body;
+        },
+      };
+      await new Function(
+        'value',
+        'createMutation',
+        'editMutation',
+        'editingCat',
+        'editingPost',
+        ts.transpile(`return (async () => { ${handler} })()`)
+      )(value, mutation, mutation, { id: 'cat' }, { id: 'post' });
+      expect(payload).toMatchObject({ slug: 'botanical', title: 'Botanical' });
+    }
+  }
+);
+
 function behavior(text: string) {
+  // Task9 approved normalization; all other request/payload wiring stays frozen.
+  text = text
+    .replace(
+      /editMutation\.mutateAsync\(\{\s*id: editingCat\.id,\s*\.\.\.value,\s*slug: value\.slug\.trim\(\),?\s*\}\)/g,
+      'editMutation.mutateAsync({ id: editingCat.id, ...value })'
+    )
+    .replace(
+      /const body: Record<string, unknown> = \{\s*id: editingPost\.id,\s*\.\.\.value,\s*slug: value\.slug\.trim\(\),?\s*\};/g,
+      'const body: Record<string, unknown> = { id: editingPost.id, ...value };'
+    )
+    .replace(/,\s*slug: value\.slug\.trim\(\),?/g, '')
+    .replace(
+      /createMutation\.mutateAsync\(\{\s*\.\.\.value\s*\}\)/g,
+      'createMutation.mutateAsync(value)'
+    );
   const file = ts.createSourceFile(
     'component.tsx',
     text,
@@ -142,6 +202,12 @@ function behavior(text: string) {
   visit(file);
   return found;
 }
+
+it('closes the mobile Sheet after resolved navigation, retaining native Sheet focus behavior', () => {
+  const sidebar = source('src/components/app-sidebar.tsx');
+  expect(sidebar).toContain("router.subscribe('onResolved', (event) =>");
+  expect(sidebar).not.toContain('onClick={() => setOpenMobile(false)}');
+});
 
 type CriticalSources = Record<'menu' | 'layout' | 'admin' | 'settings', string>;
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Menu, X } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
@@ -33,8 +33,11 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { data: session } = useSession();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const pathname = usePathname();
-  const user = session?.user;
+  // Session caches can resolve before hydration; match the anonymous SSR markup.
+  const user = hydrated ? session?.user : undefined;
 
   return (
     <header

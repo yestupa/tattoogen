@@ -67,7 +67,9 @@ export function AuthShell({
               </div>
             )}
           </header>
-          <div className="min-w-0">{children}</div>
+          <div className="min-w-0 [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11">
+            {children}
+          </div>
         </div>
       </div>
     </main>

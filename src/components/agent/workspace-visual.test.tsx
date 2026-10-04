@@ -8,6 +8,17 @@ const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
 
 describe('agent workspace presentation contract', () => {
+  it('loads persisted history once per session without depending on each new navigation wrapper', () => {
+    const route = source('../../routes/(agent)/chat/$sessionId.tsx');
+    const history = route
+      .split('// Load any persisted history')[1]
+      .split('const send = useCallback')[0];
+    expect(history).toContain('routerRef.current.replace');
+    expect(history).toContain('}, [sessionId]);');
+    expect(history).not.toContain('[sessionId, router]');
+    expect(history).toContain('if (cancelled) return;');
+    expect(history).toContain('seedRun(sessionId, storedToMessages(stored))');
+  });
   it('keeps the PageState default heading compatible', () => {
     const html = renderToStaticMarkup(
       <PageState title="Empty" description="Start a design" />
@@ -96,6 +107,7 @@ describe('agent workspace presentation contract', () => {
     expect(layout).toContain('min-height: 44px;');
     expect(layout).toContain('min-width: 44px;');
     const annotation = source('./image-annotation.tsx');
+    expect(annotation).toContain('flex shrink-0 flex-col items-stretch');
     expect(annotation).toContain('aria-label={option}');
     expect(annotation).toContain('aria-pressed={color === option}');
   });
@@ -147,6 +159,7 @@ describe('agent workspace presentation contract', () => {
 
   it('preserves launcher authentication, session handoff, examples and intrinsic image dimensions', () => {
     const launcher = source('./prompt-launcher.tsx');
+    expect(launcher.match(/touch-target/g)?.length).toBeGreaterThanOrEqual(2);
     for (const contract of [
       'if (!session?.user)',
       'agent:initial-turn:',

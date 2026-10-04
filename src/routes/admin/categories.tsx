@@ -49,7 +49,7 @@ interface Category {
 const PAGE_SIZE = 20;
 
 const categorySchema = z.object({
-  slug: z.string().min(1),
+  slug: z.string().trim().min(1),
   title: z.string().min(1),
   description: z.string(),
 });
@@ -92,7 +92,7 @@ function CategoriesPage() {
     defaultValues: emptyForm,
     validators: { onSubmit: categorySchema },
     onSubmit: async ({ value }) => {
-      await createMutation.mutateAsync(value);
+      await createMutation.mutateAsync({ ...value, slug: value.slug.trim() });
     },
   });
 
@@ -101,7 +101,11 @@ function CategoriesPage() {
     validators: { onSubmit: categorySchema },
     onSubmit: async ({ value }) => {
       if (!editingCat) return;
-      await editMutation.mutateAsync({ id: editingCat.id, ...value });
+      await editMutation.mutateAsync({
+        id: editingCat.id,
+        ...value,
+        slug: value.slug.trim(),
+      });
     },
   });
 

@@ -75,6 +75,8 @@ export const Route = createFileRoute('/(agent)/chat/$sessionId')({
 function ChatSessionPage() {
   const { sessionId } = Route.useParams();
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const search = Route.useSearch();
   const { setContent: setHeaderContent } = useAgentHeader();
   const {
@@ -202,7 +204,8 @@ function ChatSessionPage() {
         );
         if (cancelled) return;
         if (!data.chat) {
-          if (!pendingTurn && !hasRun(sessionId)) router.replace('/chat');
+          if (!pendingTurn && !hasRun(sessionId))
+            routerRef.current.replace('/chat');
           return;
         }
         if (data.chat.title) setTitle(data.chat.title);
@@ -217,7 +220,7 @@ function ChatSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, router]);
+  }, [sessionId]);
 
   const send = useCallback(
     (

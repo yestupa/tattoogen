@@ -1,12 +1,40 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AuthShell } from './auth-shell';
 import { BrandArtwork } from './brand-artwork';
 import { PageHeading } from './page-heading';
 import { PageState } from './page-state';
+import { SiteHeader } from './site-header';
+
+const cachedSession = vi.hoisted(() => ({
+  user: { name: 'Cached user', email: 'fixture@example.invalid' },
+}));
+vi.mock('@/core/auth/client', () => ({
+  useSession: () => ({ data: cachedSession }),
+}));
+vi.mock('@/core/i18n/navigation', () => ({
+  usePathname: () => '/',
+  Link: ({ href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props} />
+  ),
+}));
+vi.mock('./site-user-menu', () => ({
+  SiteUserMenu: () => <button>Cached user</button>,
+}));
+vi.mock('./theme-toggle', () => ({
+  ThemeToggle: () => <button>Theme</button>,
+}));
+vi.mock('./locale-selector', () => ({
+  LocaleSelector: () => <button>Locale</button>,
+}));
 
 describe('shared visual system components', () => {
+  it('renders the anonymous header on the first render even with a warm session cache', () => {
+    const html = renderToStaticMarkup(<SiteHeader />);
+    expect(html).toContain('href="/chat"');
+    expect(html).not.toContain('Cached user');
+  });
   it('renders the original tattoo artwork as decorative by default', () => {
     const html = renderToStaticMarkup(<BrandArtwork />);
     expect(html).toContain('data-brand-artwork="tattoo-generator"');
@@ -39,6 +67,8 @@ describe('shared visual system components', () => {
     expect(html).toContain('Private by design');
     expect(html).toContain('aria-label="Sign in"');
     expect(html).toContain('Continue');
+    expect(html).toContain('[&amp;_button]:min-h-11');
+    expect(html).toContain('[&amp;_input]:min-h-11');
   });
 
   it('renders reusable heading copy and an optional action', () => {
