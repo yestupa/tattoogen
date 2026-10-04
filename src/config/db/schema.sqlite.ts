@@ -6,7 +6,13 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 
 const table = sqliteTable;
 
@@ -700,3 +706,236 @@ export type InviteCode = typeof inviteCode.$inferSelect;
 export type NewInviteCode = typeof inviteCode.$inferInsert;
 export type UserInvite = typeof userInvite.$inferSelect;
 export type NewUserInvite = typeof userInvite.$inferInsert;
+
+// ─── Commerce operations ────────────────────────────────────────────────────
+
+export const pricingOverride = table(
+  'pricing_override',
+  {
+    productId: text('product_id').primaryKey(),
+    priceInCents: integer('price_in_cents').notNull(),
+    credits: integer('credits').notNull(),
+    creditsValidDays: integer('credits_valid_days').notNull(),
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    updatedBy: text('updated_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [index('idx_pricing_override_enabled').on(t.enabled)]
+);
+
+export const discount = table(
+  'discount',
+  {
+    id: text('id').primaryKey(),
+    internalName: text('internal_name').notNull(),
+    displayNameEn: text('display_name_en').notNull(),
+    displayNameZh: text('display_name_zh').notNull(),
+    percentage: integer('percentage').notNull(),
+    startsAt: integer('starts_at', { mode: 'timestamp_ms' }).notNull(),
+    endsAt: integer('ends_at', { mode: 'timestamp_ms' }).notNull(),
+    enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+    createdBy: text('created_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('idx_discount_active_window').on(t.enabled, t.startsAt, t.endsAt),
+  ]
+);
+
+export const discountProduct = table(
+  'discount_product',
+  {
+    id: text('id').primaryKey(),
+    discountId: text('discount_id')
+      .notNull()
+      .references(() => discount.id, { onDelete: 'cascade' }),
+    productId: text('product_id').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_discount_product').on(t.discountId, t.productId),
+    index('idx_discount_product_product').on(t.productId),
+  ]
+);
+
+// ─── Localized blog content ─────────────────────────────────────────────────
+
+export const postTranslation = table(
+  'post_translation',
+  {
+    id: text('id').primaryKey(),
+    postId: text('post_id')
+      .notNull()
+      .references(() => post.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    content: text('content').notNull(),
+    status: text('status').notNull().default('draft'),
+    publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_post_translation_locale_slug').on(t.locale, t.slug),
+    uniqueIndex('uq_post_translation_post_locale').on(t.postId, t.locale),
+    index('idx_post_translation_listing').on(t.postId, t.locale, t.status),
+  ]
+);
+
+// ─── Public contact tickets ─────────────────────────────────────────────────
+
+export const contactTicket = table(
+  'contact_ticket',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+    requesterName: text('requester_name').notNull(),
+    requesterEmail: text('requester_email').notNull(),
+    category: text('category').notNull(),
+    subject: text('subject').notNull(),
+    status: text('status').notNull().default('open'),
+    locale: text('locale').notNull().default('en'),
+    ipHash: text('ip_hash').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    index('idx_contact_ticket_status').on(t.status, t.createdAt),
+    index('idx_contact_ticket_email').on(t.requesterEmail),
+  ]
+);
+
+export const contactMessage = table(
+  'contact_message',
+  {
+    id: text('id').primaryKey(),
+    ticketId: text('ticket_id')
+      .notNull()
+      .references(() => contactTicket.id, { onDelete: 'cascade' }),
+    role: text('role').notNull().default('requester'),
+    content: text('content').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+  },
+  (t) => [index('idx_contact_message_ticket').on(t.ticketId, t.createdAt)]
+);
+
+// ─── FastClaw metering and notification delivery ────────────────────────────
+
+export const fastclawUserMapping = table(
+  'fastclaw_user_mapping',
+  {
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    externalId: text('external_id').notNull(),
+    fastclawUserId: text('fastclaw_user_id').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_fastclaw_mapping_external').on(t.externalId),
+    uniqueIndex('uq_fastclaw_mapping_remote').on(t.fastclawUserId),
+  ]
+);
+
+export const fastclawUsageCache = table(
+  'fastclaw_usage_cache',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    days: integer('days').notNull(),
+    totalsJson: text('totals_json').notNull(),
+    dailyJson: text('daily_json').notNull(),
+    fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_fastclaw_usage_user_days').on(t.userId, t.days),
+    index('idx_fastclaw_usage_fetched').on(t.fetchedAt),
+  ]
+);
+
+export const notificationEvent = table(
+  'notification_event',
+  {
+    id: text('id').primaryKey(),
+    eventKey: text('event_key').notNull(),
+    type: text('type').notNull(),
+    recipient: text('recipient').notNull(),
+    payloadJson: text('payload_json').notNull(),
+    status: text('status').notNull().default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    lastError: text('last_error'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+    sentAt: integer('sent_at', { mode: 'timestamp_ms' }),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_notification_event_key').on(t.eventKey),
+    index('idx_notification_delivery').on(t.status, t.createdAt),
+  ]
+);
+
+export type PricingOverride = typeof pricingOverride.$inferSelect;
+export type NewPricingOverride = typeof pricingOverride.$inferInsert;
+export type Discount = typeof discount.$inferSelect;
+export type NewDiscount = typeof discount.$inferInsert;
+export type DiscountProduct = typeof discountProduct.$inferSelect;
+export type NewDiscountProduct = typeof discountProduct.$inferInsert;
+export type PostTranslation = typeof postTranslation.$inferSelect;
+export type NewPostTranslation = typeof postTranslation.$inferInsert;
+export type ContactTicket = typeof contactTicket.$inferSelect;
+export type NewContactTicket = typeof contactTicket.$inferInsert;
+export type ContactMessage = typeof contactMessage.$inferSelect;
+export type NewContactMessage = typeof contactMessage.$inferInsert;
+export type FastclawUserMapping = typeof fastclawUserMapping.$inferSelect;
+export type NewFastclawUserMapping = typeof fastclawUserMapping.$inferInsert;
+export type FastclawUsageCache = typeof fastclawUsageCache.$inferSelect;
+export type NewFastclawUsageCache = typeof fastclawUsageCache.$inferInsert;
+export type NotificationEvent = typeof notificationEvent.$inferSelect;
+export type NewNotificationEvent = typeof notificationEvent.$inferInsert;

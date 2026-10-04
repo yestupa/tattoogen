@@ -14,6 +14,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from 'drizzle-orm/mysql-core';
 
@@ -566,3 +567,202 @@ export type NewTicketMessage = typeof ticketMessage.$inferInsert;
 
 // ─── Custom tables ───────────────────────────────────────────────────────────
 // Add your own tables below this line.
+
+// ─── Commerce operations ────────────────────────────────────────────────────
+
+export const pricingOverride = table(
+  'pricing_override',
+  {
+    productId: varchar191('product_id').primaryKey(),
+    priceInCents: int('price_in_cents').notNull(),
+    credits: int('credits').notNull(),
+    creditsValidDays: int('credits_valid_days').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    updatedBy: varchar191('updated_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [index('idx_pricing_override_enabled').on(t.enabled)]
+);
+
+export const discount = table(
+  'discount',
+  {
+    id: varchar191('id').primaryKey(),
+    internalName: varchar191('internal_name').notNull(),
+    displayNameEn: varchar191('display_name_en').notNull(),
+    displayNameZh: varchar191('display_name_zh').notNull(),
+    percentage: int('percentage').notNull(),
+    startsAt: timestamp('starts_at').notNull(),
+    endsAt: timestamp('ends_at').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdBy: varchar191('created_by').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    index('idx_discount_active_window').on(t.enabled, t.startsAt, t.endsAt),
+  ]
+);
+
+export const discountProduct = table(
+  'discount_product',
+  {
+    id: varchar191('id').primaryKey(),
+    discountId: varchar191('discount_id')
+      .notNull()
+      .references(() => discount.id, { onDelete: 'cascade' }),
+    productId: varchar191('product_id').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_discount_product').on(t.discountId, t.productId),
+    index('idx_discount_product_product').on(t.productId),
+  ]
+);
+
+// ─── Localized blog content ─────────────────────────────────────────────────
+
+export const postTranslation = table(
+  'post_translation',
+  {
+    id: varchar191('id').primaryKey(),
+    postId: varchar191('post_id')
+      .notNull()
+      .references(() => post.id, { onDelete: 'cascade' }),
+    locale: varchar('locale', { length: 20 }).notNull(),
+    slug: varchar191('slug').notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    content: longtext('content').notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('draft'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_post_translation_locale_slug').on(t.locale, t.slug),
+    uniqueIndex('uq_post_translation_post_locale').on(t.postId, t.locale),
+    index('idx_post_translation_listing').on(t.postId, t.locale, t.status),
+  ]
+);
+
+// ─── Public contact tickets ─────────────────────────────────────────────────
+
+export const contactTicket = table(
+  'contact_ticket',
+  {
+    id: varchar191('id').primaryKey(),
+    userId: varchar191('user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    requesterName: varchar191('requester_name').notNull(),
+    requesterEmail: varchar191('requester_email').notNull(),
+    category: varchar('category', { length: 50 }).notNull(),
+    subject: varchar('subject', { length: 255 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('open'),
+    locale: varchar('locale', { length: 20 }).notNull().default('en'),
+    ipHash: varchar191('ip_hash').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    index('idx_contact_ticket_status').on(t.status, t.createdAt),
+    index('idx_contact_ticket_email').on(t.requesterEmail),
+  ]
+);
+
+export const contactMessage = table(
+  'contact_message',
+  {
+    id: varchar191('id').primaryKey(),
+    ticketId: varchar191('ticket_id')
+      .notNull()
+      .references(() => contactTicket.id, { onDelete: 'cascade' }),
+    role: varchar('role', { length: 50 }).notNull().default('requester'),
+    content: longtext('content').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [index('idx_contact_message_ticket').on(t.ticketId, t.createdAt)]
+);
+
+// ─── FastClaw metering and notification delivery ────────────────────────────
+
+export const fastclawUserMapping = table(
+  'fastclaw_user_mapping',
+  {
+    userId: varchar191('user_id')
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    externalId: varchar191('external_id').notNull(),
+    fastclawUserId: varchar191('fastclaw_user_id').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_fastclaw_mapping_external').on(t.externalId),
+    uniqueIndex('uq_fastclaw_mapping_remote').on(t.fastclawUserId),
+  ]
+);
+
+export const fastclawUsageCache = table(
+  'fastclaw_usage_cache',
+  {
+    id: varchar191('id').primaryKey(),
+    userId: varchar191('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    days: int('days').notNull(),
+    totalsJson: longtext('totals_json').notNull(),
+    dailyJson: longtext('daily_json').notNull(),
+    fetchedAt: timestamp('fetched_at').defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_fastclaw_usage_user_days').on(t.userId, t.days),
+    index('idx_fastclaw_usage_fetched').on(t.fetchedAt),
+  ]
+);
+
+export const notificationEvent = table(
+  'notification_event',
+  {
+    id: varchar191('id').primaryKey(),
+    eventKey: varchar191('event_key').notNull(),
+    type: varchar('type', { length: 100 }).notNull(),
+    recipient: varchar191('recipient').notNull(),
+    payloadJson: longtext('payload_json').notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('pending'),
+    attempts: int('attempts').notNull().default(0),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    sentAt: timestamp('sent_at'),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('uq_notification_event_key').on(t.eventKey),
+    index('idx_notification_delivery').on(t.status, t.createdAt),
+  ]
+);
+
+export type PricingOverride = typeof pricingOverride.$inferSelect;
+export type NewPricingOverride = typeof pricingOverride.$inferInsert;
+export type Discount = typeof discount.$inferSelect;
+export type NewDiscount = typeof discount.$inferInsert;
+export type DiscountProduct = typeof discountProduct.$inferSelect;
+export type NewDiscountProduct = typeof discountProduct.$inferInsert;
+export type PostTranslation = typeof postTranslation.$inferSelect;
+export type NewPostTranslation = typeof postTranslation.$inferInsert;
+export type ContactTicket = typeof contactTicket.$inferSelect;
+export type NewContactTicket = typeof contactTicket.$inferInsert;
+export type ContactMessage = typeof contactMessage.$inferSelect;
+export type NewContactMessage = typeof contactMessage.$inferInsert;
+export type FastclawUserMapping = typeof fastclawUserMapping.$inferSelect;
+export type NewFastclawUserMapping = typeof fastclawUserMapping.$inferInsert;
+export type FastclawUsageCache = typeof fastclawUsageCache.$inferSelect;
+export type NewFastclawUsageCache = typeof fastclawUsageCache.$inferInsert;
+export type NotificationEvent = typeof notificationEvent.$inferSelect;
+export type NewNotificationEvent = typeof notificationEvent.$inferInsert;
