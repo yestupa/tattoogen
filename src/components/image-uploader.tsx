@@ -69,7 +69,7 @@ const uploadImageFile = async (file: File) => {
 export function ImageUploader({
   allowMultiple = false,
   maxImages = 1,
-  maxSizeMB = 10,
+  maxSizeMB = 2,
   title,
   emptyHint,
   className,

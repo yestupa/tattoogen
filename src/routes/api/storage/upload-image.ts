@@ -9,11 +9,17 @@ import { md5 } from '@/lib/hash';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr } from '@/lib/resp';
 
-import { validateImageUpload } from './-image-upload';
+import {
+  parseBoundedMultipartFormData,
+  prepareImageUploads,
+  uploadErrorResponse,
+} from './-image-upload';
 
 // Apply the same cap to local and remote storage to bound memory and storage use.
-const MAX_IMAGE_BYTES =
-  (Number(envConfigs.inline_image_max_kb) || 10240) * 1024;
+const MAX_IMAGE_BYTES = (Number(envConfigs.inline_image_max_kb) || 2048) * 1024;
+const MAX_IMAGE_FILES = 9;
+const MAX_AGGREGATE_IMAGE_BYTES = MAX_IMAGE_BYTES * MAX_IMAGE_FILES;
+const MAX_MULTIPART_BYTES = MAX_AGGREGATE_IMAGE_BYTES + 1024 * 1024;
 
 async function POST({ request }: { request: Request }) {
   const limited = enforceMinIntervalRateLimit(request, {
@@ -27,9 +33,15 @@ async function POST({ request }: { request: Request }) {
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) return respErr('Unauthorized');
 
-    const formData = await request.formData();
-    const files = formData.getAll('files') as File[];
-    if (!files.length) return respErr('No files provided');
+    const formData = await parseBoundedMultipartFormData(
+      request,
+      MAX_MULTIPART_BYTES
+    );
+    const uploads = await prepareImageUploads(formData, {
+      maxFiles: MAX_IMAGE_FILES,
+      maxFileBytes: MAX_IMAGE_BYTES,
+      maxAggregateBytes: MAX_AGGREGATE_IMAGE_BYTES,
+    });
 
     const storage = await getStorage();
     const uploadResults: Array<{
@@ -39,22 +51,11 @@ async function POST({ request }: { request: Request }) {
       deduped: boolean;
     }> = [];
 
-    for (const file of files) {
-      if (file.size > MAX_IMAGE_BYTES) {
-        return respErr('Image exceeds the upload size limit');
-      }
-
-      const arrayBuffer = await file.arrayBuffer();
-      const body = new Uint8Array(arrayBuffer);
-      const validation = validateImageUpload(file.type, body, MAX_IMAGE_BYTES);
-
-      if ('error' in validation) return respErr(validation.error);
-
+    for (const { file, body, extension } of uploads) {
       const digest = md5(body);
-      const ext = validation.extension;
       // R2Provider prepends its own uploadPath (default `uploads`), so the object
       // key is the bare filename. The local fallback uses `public/uploads/<file>`.
-      const objectKey = `${digest}.${ext}`;
+      const objectKey = `${digest}.${extension}`;
 
       // No storage configured → persist to public/uploads and return a short
       // local URL. Avoids inlining a giant base64 data URL into DB columns (some
@@ -109,9 +110,8 @@ async function POST({ request }: { request: Request }) {
       urls: uploadResults.map((r) => r.url),
       results: uploadResults,
     });
-  } catch (e: any) {
-    console.error('upload image failed:', e);
-    return respErr(e?.message || 'upload image failed');
+  } catch (error) {
+    return uploadErrorResponse(error);
   }
 }
 
