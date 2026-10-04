@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 import { useRouter as useTanStackRouter } from '@tanstack/react-router';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 
@@ -57,6 +57,22 @@ export function AppSidebar({
   const pathname = usePathname();
   const router = useTanStackRouter();
   const { setOpenMobile } = useSidebar();
+  function closeCurrentNavigation(event: MouseEvent<HTMLAnchorElement>) {
+    if (
+      event.button === 0 &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.shiftKey &&
+      event.currentTarget.target !== '_blank' &&
+      event.currentTarget.href === window.location.href
+    ) {
+      // The destination is already rendered; avoid a redundant navigation
+      // racing the link's preload while its mobile drawer is unmounted.
+      event.preventDefault();
+      setOpenMobile(false);
+    }
+  }
   // Close only after navigation resolves, retaining Sheet Escape/focus behavior.
   useEffect(
     () =>
@@ -152,6 +168,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <Link
               href={brandHref}
+              onClickCapture={closeCurrentNavigation}
               className="hover:bg-sidebar-accent focus-visible:ring-primary flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm outline-none focus-visible:ring-2"
             >
               <img
@@ -173,7 +190,10 @@ export function AppSidebar({
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <Link href={backNav.href}>
+                  <Link
+                    href={backNav.href}
+                    onClickCapture={closeCurrentNavigation}
+                  >
                     <SidebarMenuButton tooltip={backNav.label}>
                       <backNav.icon />
                       <span>{backNav.label}</span>
@@ -222,6 +242,7 @@ export function AppSidebar({
                               <SidebarMenuSubItem key={sub.href}>
                                 <SidebarMenuSubButton
                                   render={<Link href={sub.href} />}
+                                  onClickCapture={closeCurrentNavigation}
                                   isActive={isActiveHref(sub.href)}
                                 >
                                   <span>{sub.label}</span>
@@ -237,7 +258,10 @@ export function AppSidebar({
                   // Plain link.
                   return (
                     <SidebarMenuItem key={item.href}>
-                      <Link href={item.href}>
+                      <Link
+                        href={item.href}
+                        onClickCapture={closeCurrentNavigation}
+                      >
                         <SidebarMenuButton
                           tooltip={item.label}
                           isActive={isActiveHref(item.href)}
@@ -282,7 +306,12 @@ export function AppSidebar({
                       {button}
                     </a>
                   ) : (
-                    <Link href={item.href}>{button}</Link>
+                    <Link
+                      href={item.href}
+                      onClickCapture={closeCurrentNavigation}
+                    >
+                      {button}
+                    </Link>
                   )}
                 </SidebarMenuItem>
               );

@@ -16,6 +16,7 @@ import {
 } from '@/lib/agent-chat';
 import {
   dropRun,
+  getRun,
   hasRun,
   seedRun,
   startRun,
@@ -189,6 +190,7 @@ function ChatSessionPage() {
   // primary key, so send it back to a new chat.
   useEffect(() => {
     let cancelled = false;
+    const runAtRequest = getRun(sessionId);
     (async () => {
       // Read, don't consume — the initial-turn effect below still needs it.
       const pendingTurn = (() => {
@@ -203,6 +205,9 @@ function ChatSessionPage() {
           `/api/agent/chat/${encodeURIComponent(sessionId)}`
         );
         if (cancelled) return;
+        // A completed/failed turn is also newer than this request's snapshot.
+        // Store snapshots change identity for every local run update.
+        if (getRun(sessionId) !== runAtRequest) return;
         if (!data.chat) {
           if (!pendingTurn && !hasRun(sessionId))
             routerRef.current.replace('/chat');

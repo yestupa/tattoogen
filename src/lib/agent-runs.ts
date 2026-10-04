@@ -89,7 +89,7 @@ function updateMessages(
   emit(sessionId);
 }
 
-function getRun(sessionId: string): AgentRun {
+export function getRun(sessionId: string): AgentRun {
   return runs.get(sessionId) ?? EMPTY_RUN;
 }
 
