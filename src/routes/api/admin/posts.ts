@@ -3,7 +3,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { getAuth } from '@/core/auth';
 import * as postsService from '@/modules/posts/service';
 import { hasPermission } from '@/modules/rbac/service';
-import { requirePostSlug } from '@/lib/post-slug';
 import { respData, respErr, respOk, respPage } from '@/lib/resp';
 
 async function checkAdmin(request: Request) {
@@ -23,7 +22,7 @@ async function GET({ request }: { request: Request }) {
     // Single post (with content) — used by the editor
     const id = searchParams.get('id');
     if (id) {
-      const post = await postsService.getById(id);
+      const post = await postsService.getAdminPostById(id);
       if (!post) return respErr('Post not found');
       return respData(post);
     }
@@ -51,28 +50,13 @@ async function GET({ request }: { request: Request }) {
 async function POST({ request }: { request: Request }) {
   try {
     const session = await checkAdmin(request);
-    const {
-      slug,
-      title,
-      description,
+    const { image, categories, authorName, translations } =
+      await request.json();
+    const result = await postsService.createLocalized(session.user.id, {
       image,
-      content,
       categories,
       authorName,
-      status,
-    } = await request.json();
-    if (!title) return respErr('title is required');
-    const normalizedSlug = requirePostSlug(slug);
-    const result = await postsService.create({
-      userId: session.user.id,
-      slug: normalizedSlug,
-      title,
-      description,
-      image,
-      content,
-      categories,
-      authorName,
-      status,
+      translations: Array.isArray(translations) ? translations : [],
     });
     return respData(result);
   } catch (error: any) {
@@ -83,29 +67,14 @@ async function POST({ request }: { request: Request }) {
 async function PUT({ request }: { request: Request }) {
   try {
     await checkAdmin(request);
-    const {
-      id,
-      slug,
-      title,
-      description,
-      image,
-      content,
-      categories,
-      authorName,
-      status,
-    } = await request.json();
+    const { id, image, categories, authorName, translations } =
+      await request.json();
     if (!id) return respErr('ID is required');
-    const normalizedSlug =
-      slug === undefined ? undefined : requirePostSlug(slug);
-    const result = await postsService.update(id, {
-      slug: normalizedSlug,
-      title,
-      description,
+    const result = await postsService.updateLocalized(id, {
       image,
-      content,
       categories,
       authorName,
-      status,
+      translations: Array.isArray(translations) ? translations : [],
     });
     return respData(result);
   } catch (error: any) {

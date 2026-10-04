@@ -205,7 +205,9 @@ export async function createCheckout(params: {
       creditsValidDays: creditsValidDays ?? null,
       discountCode: discountCode || null,
       discountAmount: discountAmount || null,
-      discountCurrency: discountAmount ? paymentOrder.price.currency : null,
+      discountCurrency: discountAmount
+        ? paymentOrder.price?.currency || 'usd'
+        : null,
       paymentType: paymentOrder.type || 'one-time',
       paymentProvider: session.provider,
       paymentSessionId: session.checkoutInfo.sessionId,

@@ -1231,5 +1231,18 @@
   "admin.discounts.state_expired": "已结束",
   "admin.discounts.state_disabled": "已停用",
   "admin.discounts.delete_title": "删除折扣",
-  "admin.discounts.delete_description": "将永久删除这个折扣及其商品关联。"
+  "admin.discounts.delete_description": "将永久删除这个折扣及其商品关联。",
+  "admin.posts.bilingual_description": "分别管理英文和中文内容，每种语言都可以单独保存草稿或发布。",
+  "admin.posts.english_tab": "英文文章",
+  "admin.posts.chinese_tab": "中文文章",
+  "admin.posts.english_content": "英文内容只显示在默认语言博客。",
+  "admin.posts.chinese_content": "中文内容只显示在中文站点。",
+  "admin.posts.image_field": "封面图片网址",
+  "admin.posts.title_required": "填写这个语言的内容时，标题不能为空。",
+  "admin.posts.translation_required": "至少添加一篇英文或中文文章。",
+  "admin.posts.load_failed": "文章加载失败，请重试。",
+  "admin.posts.generate_chinese_draft": "使用 FastClaw 生成中文草稿",
+  "admin.posts.translation_source_required": "请先填写英文标题和正文。",
+  "admin.posts.translation_overwrite_confirm": "要覆盖现有中文草稿吗？",
+  "admin.posts.translation_generated": "中文草稿已生成，请检查后再发布。"
 }

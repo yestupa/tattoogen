@@ -2,57 +2,40 @@ import { createServerFn } from '@tanstack/react-start';
 
 import { isCanonicalPostSlug, normalizePostSlug } from '@/lib/post-slug';
 
-import {
-  getLocalPosts,
-  loadLocalPost,
-  mergePosts,
-  type BlogPost,
-  type BlogPostDetail,
-} from './index';
+import type { BlogPost, BlogPostDetail } from './index';
 
-// Database access stays behind server functions (dynamic import keeps
-// drizzle out of the client bundle), mirroring the analytics pattern.
-
-async function getDbPosts(): Promise<BlogPost[]> {
-  try {
-    const { listPublishedArticles } = await import('@/modules/posts/service');
-    const rows = await listPublishedArticles();
-    return rows
-      .filter((row) => isCanonicalPostSlug(row.slug))
-      .map((row) => ({
-        slug: row.slug,
-        title: row.title || row.slug,
-        description: row.description || '',
-        image: row.image || undefined,
-        createdAt: new Date(row.createdAt).toISOString(),
-        authorName: row.authorName || undefined,
-        authorImage: row.authorImage || undefined,
-        source: 'db' as const,
-      }));
-  } catch {
-    // Database not configured/reachable — local posts still render.
-    return [];
-  }
+function normalizeLocale(locale: string): 'en' | 'zh' {
+  return locale === 'zh' ? 'zh' : 'en';
 }
 
-/**
- * All blog posts: database posts merged with local MDX posts,
- * deduped by slug (database wins), newest first.
- */
 export const getBlogPostsFn = createServerFn()
   .inputValidator((data: { locale: string; limit?: number }) => data)
-  .handler(async ({ data }) => {
-    const dbPosts = await getDbPosts();
-    return mergePosts(dbPosts, getLocalPosts(data.locale), {
-      limit: data.limit,
-    });
+  .handler(async ({ data }): Promise<BlogPost[]> => {
+    try {
+      const { listPublishedArticles } = await import('@/modules/posts/service');
+      const locale = normalizeLocale(data.locale);
+      const rows = await listPublishedArticles({
+        locale,
+        limit: data.limit ?? 100,
+      });
+      return rows
+        .filter((row) => isCanonicalPostSlug(row.slug))
+        .map((row) => ({
+          slug: row.slug,
+          locale,
+          title: row.title || row.slug,
+          description: row.description || '',
+          image: row.image || undefined,
+          createdAt: new Date(row.createdAt || Date.now()).toISOString(),
+          authorName: row.authorName || undefined,
+          authorImage: row.authorImage || undefined,
+          source: 'db' as const,
+        }));
+    } catch {
+      return [];
+    }
   });
 
-/**
- * Single blog post by slug: database first, local MDX as fallback.
- * Local posts return meta only — the route component resolves the MDX
- * Content from the bundled glob map (components don't serialize).
- */
 export const getBlogPostFn = createServerFn()
   .inputValidator((data: { slug: string; locale: string }) => data)
   .handler(async ({ data }): Promise<BlogPostDetail | null> => {
@@ -60,35 +43,22 @@ export const getBlogPostFn = createServerFn()
     if (!isCanonicalPostSlug(slug)) return null;
     try {
       const { findPublishedBySlug } = await import('@/modules/posts/service');
-      const row = await findPublishedBySlug(slug);
-      if (row) {
-        return {
-          slug: row.slug,
-          title: row.title || row.slug,
-          description: row.description || '',
-          image: row.image || undefined,
-          createdAt: new Date(row.createdAt).toISOString(),
-          authorName: row.authorName || undefined,
-          authorImage: row.authorImage || undefined,
-          source: 'db',
-          content: row.content || '',
-        };
-      }
+      const locale = normalizeLocale(data.locale);
+      const row = await findPublishedBySlug(slug, locale);
+      if (!row) return null;
+      return {
+        slug: row.slug,
+        locale,
+        title: row.title || row.slug,
+        description: row.description || '',
+        image: row.image || undefined,
+        createdAt: new Date(row.publishedAt || row.createdAt).toISOString(),
+        authorName: row.authorName || undefined,
+        authorImage: row.authorImage || undefined,
+        source: 'db',
+        content: row.content || '',
+      };
     } catch {
-      // Database not configured/reachable — fall through to local posts.
+      return null;
     }
-
-    const mod = loadLocalPost(slug, data.locale);
-    if (!mod) return null;
-    const meta = mod.meta;
-    return {
-      slug,
-      title: meta.title,
-      description: meta.description,
-      image: meta.image,
-      createdAt: new Date(meta.created_at).toISOString(),
-      authorName: meta.author_name,
-      authorImage: meta.author_image,
-      source: 'local',
-    };
   });

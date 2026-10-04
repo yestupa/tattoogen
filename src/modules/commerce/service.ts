@@ -102,14 +102,18 @@ export async function listEffectiveProducts(
   const productIds = products.map((item) => item.productId);
   const database = db();
 
-  const overrides = productIds.length
-    ? await database
-        .select()
-        .from(pricingOverride)
-        .where(inArray(pricingOverride.productId, productIds))
-    : [];
+  const overrides: Array<typeof pricingOverride.$inferSelect> =
+    productIds.length
+      ? await database
+          .select()
+          .from(pricingOverride)
+          .where(inArray(pricingOverride.productId, productIds))
+      : [];
 
-  const activeDiscounts = productIds.length
+  const activeDiscounts: Array<{
+    productId: string;
+    discount: typeof discount.$inferSelect;
+  }> = productIds.length
     ? await database
         .select({
           productId: discountProduct.productId,
@@ -193,12 +197,12 @@ export async function savePricingOverride(
 
 export async function listDiscounts() {
   const database = db();
-  const rows = await database
+  const rows: Array<typeof discount.$inferSelect> = await database
     .select()
     .from(discount)
     .orderBy(desc(discount.startsAt), desc(discount.createdAt));
   if (!rows.length) return [];
-  const targets = await database
+  const targets: Array<typeof discountProduct.$inferSelect> = await database
     .select()
     .from(discountProduct)
     .where(
@@ -300,7 +304,7 @@ export async function removeDiscount(id: string) {
 
 export async function findDiscountOverlaps(input: DiscountInput) {
   const productIds = validateDiscountInput(input);
-  const rows = await db()
+  const rows: Array<{ productId: string; discountId: string }> = await db()
     .select({ productId: discountProduct.productId, discountId: discount.id })
     .from(discountProduct)
     .innerJoin(discount, eq(discountProduct.discountId, discount.id))

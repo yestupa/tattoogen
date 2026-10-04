@@ -3,15 +3,11 @@ import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(new URL('./posts.ts', import.meta.url), 'utf8');
 
-describe('admin post API slug boundary', () => {
-  it('validates and normalizes create and update slugs before the service call', () => {
-    expect(source).toContain(
-      "import { requirePostSlug } from '@/lib/post-slug'"
-    );
-    expect(source).toContain('const normalizedSlug = requirePostSlug(slug)');
-    expect(source).toContain(
-      'slug === undefined ? undefined : requirePostSlug(slug)'
-    );
-    expect(source.match(/slug: normalizedSlug/g)).toHaveLength(2);
+describe('admin post API localization boundary', () => {
+  it('passes the complete translation payload through the service boundary', () => {
+    expect(source).toContain('postsService.createLocalized');
+    expect(source).toContain('postsService.updateLocalized');
+    expect(source).toContain('Array.isArray(translations) ? translations : []');
+    expect(source).not.toContain('postsService.create({');
   });
 });

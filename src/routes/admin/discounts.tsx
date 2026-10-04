@@ -62,6 +62,13 @@ function emptyDiscount(): FormState {
   };
 }
 
+function discountStateLabel(state: string) {
+  if (state === 'active') return m['admin.discounts.state_active']();
+  if (state === 'upcoming') return m['admin.discounts.state_upcoming']();
+  if (state === 'expired') return m['admin.discounts.state_expired']();
+  return m['admin.discounts.state_disabled']();
+}
+
 function AdminDiscountsPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<FormState | null>(null);
@@ -149,9 +156,7 @@ function AdminDiscountsPage() {
                   <Badge
                     variant={item.state === 'active' ? 'default' : 'secondary'}
                   >
-                    {m[
-                      `admin.discounts.state_${item.state}` as keyof typeof m
-                    ]?.() ?? item.state}
+                    {discountStateLabel(item.state)}
                   </Badge>
                   <Badge variant="outline">{item.percentage}%</Badge>
                 </div>

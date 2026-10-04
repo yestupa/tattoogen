@@ -1231,5 +1231,18 @@
   "admin.discounts.state_expired": "Expired",
   "admin.discounts.state_disabled": "Disabled",
   "admin.discounts.delete_title": "Delete discount",
-  "admin.discounts.delete_description": "This permanently removes the discount and its product assignments."
+  "admin.discounts.delete_description": "This permanently removes the discount and its product assignments.",
+  "admin.posts.bilingual_description": "Manage English and Chinese independently. Each language can remain a draft or be published on its own.",
+  "admin.posts.english_tab": "English article",
+  "admin.posts.chinese_tab": "Chinese article",
+  "admin.posts.english_content": "English content appears on the default-language blog.",
+  "admin.posts.chinese_content": "Chinese content appears only under the Chinese-language site.",
+  "admin.posts.image_field": "Cover image URL",
+  "admin.posts.title_required": "A title is required when this language has content.",
+  "admin.posts.translation_required": "Add at least one English or Chinese article.",
+  "admin.posts.load_failed": "The article could not be loaded. Please try again.",
+  "admin.posts.generate_chinese_draft": "Generate Chinese draft with FastClaw",
+  "admin.posts.translation_source_required": "Add an English title and article body first.",
+  "admin.posts.translation_overwrite_confirm": "Replace the existing Chinese draft?",
+  "admin.posts.translation_generated": "Chinese draft generated. Review it before publishing."
 }

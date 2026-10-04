@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -17,7 +17,6 @@ import {
   apiGet,
   apiPost,
   apiPut,
-  pageQuery,
   type PageResult,
 } from '@/lib/api-client';
 import { isCanonicalPostSlug, normalizePostSlug } from '@/lib/post-slug';
@@ -38,7 +37,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
@@ -48,12 +46,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface Post {
+interface PostListItem {
   id: string;
   slug: string;
-  type: string;
-  title: string;
+  title: string | null;
   description: string | null;
   image: string | null;
   categories: string | null;
@@ -61,6 +59,19 @@ interface Post {
   status: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface TranslationRecord {
+  locale: 'en' | 'zh';
+  slug: string;
+  title: string;
+  description: string | null;
+  content: string;
+  status: string;
+}
+
+interface PostDetail extends PostListItem {
+  translations: Partial<Record<'en' | 'zh', TranslationRecord>>;
 }
 
 interface CategoryOption {
@@ -73,37 +84,111 @@ const PAGE_SIZE = 20;
 const TABS = ['all', 'published', 'draft'] as const;
 type Tab = (typeof TABS)[number];
 
-const postSchema = z.object({
-  slug: z
-    .string()
-    .transform(normalizePostSlug)
-    .pipe(
-      z
-        .string()
-        .min(1, {
-          error: () => m['common.validation.slug_required'](),
-        })
-        .refine(isCanonicalPostSlug, {
-          error: () => m['admin.posts.slug_invalid'](),
-        })
-    ),
-  title: z.string().min(1),
-  description: z.string(),
-  content: z.string(),
-  categories: z.string(),
-  authorName: z.string(),
-  status: z.string(),
-});
-type PostForm = z.infer<typeof postSchema>;
+const localizedPostSchema = z
+  .object({
+    image: z.string(),
+    categories: z.string(),
+    authorName: z.string(),
+    enSlug: z.string(),
+    enTitle: z.string(),
+    enDescription: z.string(),
+    enContent: z.string(),
+    enStatus: z.enum(['draft', 'published']),
+    zhSlug: z.string(),
+    zhTitle: z.string(),
+    zhDescription: z.string(),
+    zhContent: z.string(),
+    zhStatus: z.enum(['draft', 'published']),
+  })
+  .superRefine((value, context) => {
+    const locales = [
+      {
+        key: 'en',
+        slug: value.enSlug,
+        title: value.enTitle,
+        content: value.enContent,
+      },
+      {
+        key: 'zh',
+        slug: value.zhSlug,
+        title: value.zhTitle,
+        content: value.zhContent,
+      },
+    ] as const;
+    let completed = 0;
+    for (const locale of locales) {
+      const started = Boolean(
+        locale.slug.trim() || locale.title.trim() || locale.content.trim()
+      );
+      if (!started) continue;
+      completed += 1;
+      if (!isCanonicalPostSlug(normalizePostSlug(locale.slug))) {
+        context.addIssue({
+          code: 'custom',
+          path: [`${locale.key}Slug`],
+          message: m['admin.posts.slug_invalid'](),
+        });
+      }
+      if (!locale.title.trim()) {
+        context.addIssue({
+          code: 'custom',
+          path: [`${locale.key}Title`],
+          message: m['admin.posts.title_required'](),
+        });
+      }
+    }
+    if (!completed) {
+      context.addIssue({
+        code: 'custom',
+        path: ['enTitle'],
+        message: m['admin.posts.translation_required'](),
+      });
+    }
+  });
+
+type PostForm = z.infer<typeof localizedPostSchema>;
 const emptyForm: PostForm = {
-  slug: '',
-  title: '',
-  description: '',
-  content: '',
+  image: '',
   categories: '',
   authorName: '',
-  status: 'draft',
+  enSlug: '',
+  enTitle: '',
+  enDescription: '',
+  enContent: '',
+  enStatus: 'draft',
+  zhSlug: '',
+  zhTitle: '',
+  zhDescription: '',
+  zhContent: '',
+  zhStatus: 'draft',
 };
+
+function toPayload(value: PostForm) {
+  const translations = [
+    {
+      locale: 'en' as const,
+      slug: normalizePostSlug(value.enSlug),
+      title: value.enTitle.trim(),
+      description: value.enDescription,
+      content: value.enContent,
+      status: value.enStatus,
+    },
+    {
+      locale: 'zh' as const,
+      slug: normalizePostSlug(value.zhSlug),
+      title: value.zhTitle.trim(),
+      description: value.zhDescription,
+      content: value.zhContent,
+      status: value.zhStatus,
+    },
+  ].filter((item) => item.slug || item.title || item.content);
+  return {
+    image: value.image,
+    categories: value.categories,
+    authorName: value.authorName,
+    translations,
+  };
+}
 
 function PostsPage() {
   const queryClient = useQueryClient();
@@ -111,19 +196,16 @@ function PostsPage() {
   const [tab, setTab] = useState<Tab>('all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<Post | null>(null);
-  const [deletingPost, setDeletingPost] = useState<Post | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [loadingPostId, setLoadingPostId] = useState<string | null>(null);
+  const [deletingPost, setDeletingPost] = useState<PostListItem | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [tab, debouncedSearch]);
+  useEffect(() => setPage(1), [tab, debouncedSearch]);
 
   const categoriesQuery = useQuery({
     queryKey: ['admin-categories', 'options'],
@@ -140,156 +222,168 @@ function PostsPage() {
       });
       if (tab !== 'all') params.set('status', tab);
       if (debouncedSearch) params.set('search', debouncedSearch);
-      return apiGet<PageResult<Post>>(`/api/admin/posts?${params}`);
+      return apiGet<PageResult<PostListItem>>(`/api/admin/posts?${params}`);
     },
     placeholderData: keepPreviousData,
   });
 
-  const createForm = useForm({
+  const form = useForm({
     defaultValues: emptyForm,
-    validators: { onSubmit: postSchema },
-    onSubmit: async ({ value }) => {
-      await createMutation.mutateAsync({
-        ...value,
-        slug: normalizePostSlug(value.slug),
-      });
-    },
+    validators: { onSubmit: localizedPostSchema },
+    onSubmit: async ({ value }) => saveMutation.mutateAsync(value),
   });
 
-  const editForm = useForm({
-    defaultValues: emptyForm,
-    validators: { onSubmit: postSchema },
-    onSubmit: async ({ value }) => {
-      if (!editingPost) return;
-      const body: Record<string, unknown> = {
-        id: editingPost.id,
-        ...value,
-        slug: normalizePostSlug(value.slug),
-      };
-      if (!body.content) delete body.content; // don't overwrite content if empty
-      await editMutation.mutateAsync(body);
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (value: PostForm) => apiPost('/api/admin/posts', value),
+  const saveMutation = useMutation({
+    mutationFn: (value: PostForm) =>
+      editingPostId
+        ? apiPut('/api/admin/posts', {
+            id: editingPostId,
+            ...toPayload(value),
+          })
+        : apiPost('/api/admin/posts', toPayload(value)),
     onSuccess: () => {
-      toast.success(m['admin.posts.created']());
-      setCreateOpen(false);
-      createForm.reset();
+      toast.success(
+        editingPostId ? m['admin.posts.updated']() : m['admin.posts.created']()
+      );
+      setEditorOpen(false);
+      setEditingPostId(null);
+      form.reset();
       queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
     },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const editMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) =>
-      apiPut('/api/admin/posts', body),
-    onSuccess: () => {
-      toast.success(m['admin.posts.updated']());
-      setEditingPost(null);
-      editForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
-    },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiDelete(`/api/admin/posts?id=${id}`),
+    mutationFn: (id: string) =>
+      apiDelete(`/api/admin/posts?id=${encodeURIComponent(id)}`),
     onSuccess: () => {
       toast.success(m['admin.posts.deleted']());
       setDeletingPost(null);
       queryClient.invalidateQueries({ queryKey: ['admin-posts'] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
-  function openEdit(p: Post) {
-    editForm.reset({
-      slug: p.slug,
-      title: p.title,
-      description: p.description || '',
-      content: '',
-      categories: p.categories || '',
-      authorName: p.authorName || '',
-      status: p.status,
+  const translateMutation = useMutation({
+    mutationFn: (input: {
+      title: string;
+      description: string;
+      content: string;
+    }) =>
+      apiPost<{
+        title: string;
+        description: string;
+        content: string;
+      }>('/api/admin/posts/translate', input),
+    onSuccess: (translation) => {
+      form.setFieldValue('zhTitle', translation.title);
+      form.setFieldValue('zhDescription', translation.description);
+      form.setFieldValue('zhContent', translation.content);
+      form.setFieldValue('zhStatus', 'draft');
+      toast.success(m['admin.posts.translation_generated']());
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  function generateChineseDraft() {
+    const values = form.state.values;
+    if (!values.enTitle.trim() || !values.enContent.trim()) {
+      toast.error(m['admin.posts.translation_source_required']());
+      return;
+    }
+    if (
+      (values.zhTitle.trim() || values.zhContent.trim()) &&
+      !window.confirm(m['admin.posts.translation_overwrite_confirm']())
+    ) {
+      return;
+    }
+    translateMutation.mutate({
+      title: values.enTitle,
+      description: values.enDescription,
+      content: values.enContent,
     });
-    setEditingPost(p);
-    // list endpoint omits content — load it for the editor
-    apiGet<Post & { content: string | null }>(`/api/admin/posts?id=${p.id}`)
-      .then((post) => editForm.setFieldValue('content', post.content || ''))
-      .catch(() => {});
   }
 
-  const statusVariant = (s: string) => {
-    if (s === 'published') return 'default' as const;
-    if (s === 'draft') return 'secondary' as const;
-    return 'outline' as const;
-  };
+  function openCreate() {
+    setEditingPostId(null);
+    form.reset(emptyForm);
+    setEditorOpen(true);
+  }
 
-  const columns: Column<Post>[] = [
-    {
-      header: m['admin.posts.title_col'](),
-      cell: (p) => <span className="font-medium">{p.title}</span>,
-    },
-    {
-      header: m['admin.posts.slug_col'](),
-      cell: (p) => <span className="font-mono text-xs">{p.slug}</span>,
-    },
-    { header: m['admin.posts.author_col'](), cell: (p) => p.authorName || '—' },
-    {
-      header: m['admin.posts.status_col'](),
-      cell: (p) => <Badge variant={statusVariant(p.status)}>{p.status}</Badge>,
-    },
-    {
-      header: m['admin.posts.created_at'](),
-      cell: (p) => (
-        <span className="text-muted-foreground text-sm">
-          {formatDateTime(p.createdAt)}
-        </span>
-      ),
-    },
-    {
-      header: m['admin.posts.actions_col'](),
-      className: 'w-[80px]',
-      cell: (p) => (
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            aria-label={m['common.action.edit']()}
-            onClick={() => openEdit(p)}
-          >
-            <Pencil className="size-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            aria-label={m['common.action.delete']()}
-            onClick={() => setDeletingPost(p)}
-          >
-            <Trash2 className="size-3" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  async function openEdit(post: PostListItem) {
+    setLoadingPostId(post.id);
+    try {
+      const detail = await apiGet<PostDetail>(
+        `/api/admin/posts?id=${encodeURIComponent(post.id)}`
+      );
+      const en = detail.translations.en;
+      const zh = detail.translations.zh;
+      form.reset({
+        image: detail.image || '',
+        categories: detail.categories || '',
+        authorName: detail.authorName || '',
+        enSlug: en?.slug || '',
+        enTitle: en?.title || '',
+        enDescription: en?.description || '',
+        enContent: en?.content || '',
+        enStatus: en?.status === 'published' ? 'published' : 'draft',
+        zhSlug: zh?.slug || '',
+        zhTitle: zh?.title || '',
+        zhDescription: zh?.description || '',
+        zhContent: zh?.content || '',
+        zhStatus: zh?.status === 'published' ? 'published' : 'draft',
+      });
+      setEditingPostId(post.id);
+      setEditorOpen(true);
+    } catch (error: any) {
+      toast.error(error.message || m['admin.posts.load_failed']());
+    } finally {
+      setLoadingPostId(null);
+    }
+  }
 
-  function renderFields(form: typeof createForm) {
+  function renderTranslation(locale: 'en' | 'zh') {
+    const slugName = `${locale}Slug` as 'enSlug' | 'zhSlug';
+    const titleName = `${locale}Title` as 'enTitle' | 'zhTitle';
+    const descriptionName = `${locale}Description` as
+      | 'enDescription'
+      | 'zhDescription';
+    const contentName = `${locale}Content` as 'enContent' | 'zhContent';
+    const statusName = `${locale}Status` as 'enStatus' | 'zhStatus';
     return (
-      <div className="space-y-4 py-4">
-        <form.Field name="slug">
+      <TabsContent value={locale} className="space-y-4 pt-4">
+        <p className="text-muted-foreground text-sm">
+          {locale === 'en'
+            ? m['admin.posts.english_content']()
+            : m['admin.posts.chinese_content']()}
+        </p>
+        {locale === 'zh' && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={translateMutation.isPending}
+            onClick={generateChineseDraft}
+          >
+            {translateMutation.isPending && (
+              <Loader2 className="size-4 animate-spin" />
+            )}
+            {m['admin.posts.generate_chinese_draft']()}
+          </Button>
+        )}
+        <form.Field name={slugName}>
           {(field) => (
             <TextField
               field={field}
               label={m['admin.posts.slug_field']()}
-              placeholder={m['admin.posts.slug_placeholder']()}
+              placeholder={
+                locale === 'en'
+                  ? 'fine-line-tattoo-guide'
+                  : 'xi-xian-wen-shen-zhi-nan'
+              }
             />
           )}
         </form.Field>
-        <form.Field name="title">
+        <form.Field name={titleName}>
           {(field) => (
             <TextField
               field={field}
@@ -298,7 +392,7 @@ function PostsPage() {
             />
           )}
         </form.Field>
-        <form.Field name="description">
+        <form.Field name={descriptionName}>
           {(field) => (
             <TextField
               field={field}
@@ -307,59 +401,29 @@ function PostsPage() {
             />
           )}
         </form.Field>
-        <form.Field name="authorName">
-          {(field) => (
-            <TextField
-              field={field}
-              label={m['admin.posts.author_field']()}
-              placeholder={m['admin.posts.author_placeholder']()}
-            />
-          )}
-        </form.Field>
-        <form.Field name="categories">
-          {(field) => (
-            <div className="space-y-2">
-              <Label>{m['admin.posts.category_field']()}</Label>
-              <Select
-                items={categoryOptions.map((c) => ({
-                  label: c.title,
-                  value: c.id,
-                }))}
-                value={field.state.value || ''}
-                onValueChange={(v) => field.handleChange(v || '')}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={m['admin.posts.category_placeholder']()}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoryOptions.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </form.Field>
-        <form.Field name="status">
+        <form.Field name={statusName}>
           {(field) => (
             <div className="space-y-2">
               <Label>{m['admin.posts.status_field']()}</Label>
               <Select
                 items={[
-                  { label: m['admin.posts.status_draft'](), value: 'draft' },
+                  {
+                    label: m['admin.posts.status_draft'](),
+                    value: 'draft',
+                  },
                   {
                     label: m['admin.posts.status_published'](),
                     value: 'published',
                   },
                 ]}
-                value={field.state.value || 'draft'}
-                onValueChange={(v) => field.handleChange(v || 'draft')}
+                value={field.state.value}
+                onValueChange={(value) =>
+                  field.handleChange(
+                    (value || 'draft') as 'draft' | 'published'
+                  )
+                }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -374,87 +438,113 @@ function PostsPage() {
             </div>
           )}
         </form.Field>
-        <form.Field name="content">
+        <form.Field name={contentName}>
           {(field) => (
             <div className="space-y-2">
               <Label>{m['admin.posts.content_field']()}</Label>
               <RichTextEditor
                 uploadFailedLabel={m['common.upload.failed']()}
                 value={field.state.value}
-                onChange={(content) => field.handleChange(content)}
+                onChange={field.handleChange}
                 placeholder={m['admin.posts.content_placeholder']()}
               />
             </div>
           )}
         </form.Field>
-      </div>
+      </TabsContent>
     );
   }
 
+  const columns: Column<PostListItem>[] = [
+    {
+      header: m['admin.posts.title_col'](),
+      cell: (post) => <span className="font-medium">{post.title || '—'}</span>,
+    },
+    {
+      header: m['admin.posts.slug_col'](),
+      cell: (post) => <span className="font-mono text-xs">{post.slug}</span>,
+    },
+    {
+      header: m['admin.posts.author_col'](),
+      cell: (post) => post.authorName || '—',
+    },
+    {
+      header: m['admin.posts.status_col'](),
+      cell: (post) => (
+        <Badge variant={post.status === 'published' ? 'default' : 'secondary'}>
+          {post.status}
+        </Badge>
+      ),
+    },
+    {
+      header: m['admin.posts.created_at'](),
+      cell: (post) => (
+        <span className="text-muted-foreground text-sm">
+          {formatDateTime(post.createdAt)}
+        </span>
+      ),
+    },
+    {
+      header: m['admin.posts.actions_col'](),
+      className: 'w-[90px]',
+      cell: (post) => (
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            aria-label={m['common.action.edit']()}
+            disabled={loadingPostId === post.id}
+            onClick={() => openEdit(post)}
+          >
+            {loadingPostId === post.id ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Pencil className="size-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            aria-label={m['common.action.delete']()}
+            onClick={() => setDeletingPost(post)}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-7xl min-w-0 space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeading
-        className="[&_h1]:text-3xl [&_h1]:sm:text-3xl"
         title={m['admin.posts.title']()}
         description={m['admin.posts.description']()}
         action={
-          <>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger className="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors">
-                <Plus className="size-4" />
-                {m['admin.posts.create']()}
-              </DialogTrigger>
-              <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-3xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
-                <DialogHeader>
-                  <DialogTitle>{m['admin.posts.create_title']()}</DialogTitle>
-                  <DialogDescription>
-                    {m['admin.posts.create_description']()}
-                  </DialogDescription>
-                </DialogHeader>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    createForm.handleSubmit();
-                  }}
-                >
-                  {renderFields(createForm)}
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCreateOpen(false)}
-                    >
-                      {m['admin.posts.cancel']()}
-                    </Button>
-                    <Button type="submit" disabled={createMutation.isPending}>
-                      {m['admin.posts.save']()}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </>
+          <Button onClick={openCreate}>
+            <Plus className="size-4" />
+            {m['admin.posts.create']()}
+          </Button>
         }
       />
-
-      <div className="border-border flex gap-1 overflow-x-auto overflow-y-hidden border-b">
-        {TABS.map((tb) => (
+      <div className="border-border flex gap-1 overflow-x-auto border-b">
+        {TABS.map((item) => (
           <button
-            key={tb}
-            onClick={() => setTab(tb)}
+            key={item}
+            onClick={() => setTab(item)}
             className={cn(
-              '-mb-px border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors',
-              tab === tb
+              '-mb-px border-b-2 px-4 py-2 text-sm font-medium',
+              tab === item
                 ? 'border-primary text-foreground'
-                : 'text-muted-foreground hover:text-foreground border-transparent'
+                : 'text-muted-foreground border-transparent'
             )}
           >
-            {tDynamic(`admin.posts.tab_${tb}`)}
+            {tDynamic(`admin.posts.tab_${item}`)}
           </button>
         ))}
       </div>
-
       <Card>
         <CardContent>
           <DataTable
@@ -464,7 +554,7 @@ function PostsPage() {
             page={page}
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
-            rowKey={(p) => p.id}
+            rowKey={(post) => post.id}
             emptyText={m['admin.posts.no_data']()}
             search={search}
             onSearchChange={setSearch}
@@ -475,34 +565,106 @@ function PostsPage() {
         </CardContent>
       </Card>
 
-      <Dialog
-        open={!!editingPost}
-        onOpenChange={(v) => !v && setEditingPost(null)}
-      >
-        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-3xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{m['admin.posts.edit_title']()}</DialogTitle>
+            <DialogTitle>
+              {editingPostId
+                ? m['admin.posts.edit_title']()
+                : m['admin.posts.create_title']()}
+            </DialogTitle>
             <DialogDescription>
-              {m['admin.posts.edit_description']()}
+              {m['admin.posts.bilingual_description']()}
             </DialogDescription>
           </DialogHeader>
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              editForm.handleSubmit();
+            onSubmit={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              form.handleSubmit();
             }}
           >
-            {renderFields(editForm)}
-            <DialogFooter>
+            <div className="grid gap-4 py-4 sm:grid-cols-2">
+              <form.Field name="authorName">
+                {(field) => (
+                  <TextField
+                    field={field}
+                    label={m['admin.posts.author_field']()}
+                    placeholder={m['admin.posts.author_placeholder']()}
+                  />
+                )}
+              </form.Field>
+              <form.Field name="image">
+                {(field) => (
+                  <TextField
+                    field={field}
+                    label={m['admin.posts.image_field']()}
+                    placeholder="https://"
+                  />
+                )}
+              </form.Field>
+              <form.Field name="categories">
+                {(field) => {
+                  const selected = categoryOptions.find(
+                    (item) => item.id === field.state.value
+                  );
+                  return (
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>{m['admin.posts.category_field']()}</Label>
+                      <Select
+                        items={categoryOptions.map((item) => ({
+                          label: item.title,
+                          value: item.id,
+                        }))}
+                        value={field.state.value || ''}
+                        disabled={categoriesQuery.isLoading}
+                        onValueChange={(value) =>
+                          field.handleChange(value || '')
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={m[
+                              'admin.posts.category_placeholder'
+                            ]()}
+                          >
+                            {selected?.title}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryOptions.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                }}
+              </form.Field>
+            </div>
+            <Tabs defaultValue="en">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="en">
+                  {m['admin.posts.english_tab']()}
+                </TabsTrigger>
+                <TabsTrigger value="zh">
+                  {m['admin.posts.chinese_tab']()}
+                </TabsTrigger>
+              </TabsList>
+              {renderTranslation('en')}
+              {renderTranslation('zh')}
+            </Tabs>
+            <DialogFooter className="mt-6">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setEditingPost(null)}
+                onClick={() => setEditorOpen(false)}
               >
                 {m['admin.posts.cancel']()}
               </Button>
-              <Button type="submit" disabled={editMutation.isPending}>
+              <Button type="submit" disabled={saveMutation.isPending}>
                 {m['admin.posts.save']()}
               </Button>
             </DialogFooter>
@@ -512,9 +674,9 @@ function PostsPage() {
 
       <Dialog
         open={!!deletingPost}
-        onOpenChange={(v) => !v && setDeletingPost(null)}
+        onOpenChange={(open) => !open && setDeletingPost(null)}
       >
-        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{m['admin.posts.delete_title']()}</DialogTitle>
             <DialogDescription>

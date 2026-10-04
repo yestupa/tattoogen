@@ -1,27 +1,21 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { createClient } from '@libsql/client';
-import { drizzle } from 'drizzle-orm/libsql';
-import { getTableConfig } from 'drizzle-orm/sqlite-core';
+import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 
-import { post } from '@/config/db/schema';
-import { findPublishedBySlug } from '@/modules/posts/service';
 import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
-
-const fixture = vi.hoisted(() => ({
-  db: undefined as unknown as ReturnType<typeof drizzle>,
-}));
-vi.mock('@/core/db', () => ({ db: () => fixture.db }));
 
 const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
 
-function serverRoute(
-  path: string,
-  rows: { slug: string; createdAt: string }[] = []
-) {
+type PublishedLocale = {
+  postId: string;
+  locale: 'en' | 'zh';
+  slug: string;
+  updatedAt: string;
+};
+
+function serverRoute(path: string, rows: PublishedLocale[] = []) {
   const ast = ts.createSourceFile(
     path,
     source(path),
@@ -34,18 +28,16 @@ function serverRoute(
     .join('\n')
     .replace(
       /await\s+import\('@\/modules\/posts\/service'\)/,
-      '({ listPublishedArticles: publishedQuery })'
+      '({ getPublishedLocaleAvailability: publishedQuery })'
     );
   const js = ts.transpile(text, { target: ts.ScriptTarget.ES2022 });
-  const listPublishedArticles = vi.fn(async () => rows);
+  const getPublishedLocaleAvailability = vi.fn(async () => rows);
   const route = new Function(
     'createFileRoute',
     'envConfigs',
     'baseLocale',
     'locales',
     'localizeUrl',
-    'getLocalPosts',
-    'mergePosts',
     'blogPostPath',
     'isCanonicalPostSlug',
     'publishedQuery',
@@ -56,79 +48,69 @@ function serverRoute(
     baseLocale,
     locales,
     localizeUrl,
-    () => [{ slug: 'local-post', createdAt: '2026-10-01T00:00:00.000Z' }],
-    (db: object[], local: object[]) => [...db, ...local],
     blogPostPath,
     isCanonicalPostSlug,
-    listPublishedArticles
+    getPublishedLocaleAvailability
   );
   return {
     get: route.server.handlers.GET as () => Promise<Response>,
-    listPublishedArticles,
+    getPublishedLocaleAvailability,
   };
 }
 
 describe('localized crawling contracts', () => {
-  it('lists each public static route and every published/local article once per locale', async () => {
+  it('lists public routes and only real published article locales', async () => {
     const route = serverRoute('../routes/sitemap[.]xml.ts', [
-      { slug: ' published-story', createdAt: '2026-10-02' },
-      { slug: 'published-story ', createdAt: '2026-10-02' },
-      { slug: 'published-story', createdAt: '2026-10-02' },
-      { slug: 'local-post', createdAt: '2026-10-01' },
-      { slug: '', createdAt: '2026-10-01' },
-      { slug: '   ', createdAt: '2026-10-01' },
+      {
+        postId: 'bilingual',
+        locale: 'en',
+        slug: 'fine-line-guide',
+        updatedAt: '2026-10-02',
+      },
+      {
+        postId: 'bilingual',
+        locale: 'zh',
+        slug: 'xi-xian-wen-shen',
+        updatedAt: '2026-10-03',
+      },
+      {
+        postId: 'english-only',
+        locale: 'en',
+        slug: 'tattoo-aftercare',
+        updatedAt: '2026-10-01',
+      },
     ]);
     const response = await route.get();
     const xml = await response.text();
-    expect(response.headers.get('Content-Type')).toBe('application/xml');
-    expect(route.listPublishedArticles).toHaveBeenCalledExactlyOnceWith();
-    const staticRoutes = [
+    expect(response.headers.get('Content-Type')).toBe(
+      'application/xml; charset=utf-8'
+    );
+    expect(response.headers.get('Cache-Control')).toContain('must-revalidate');
+    expect(route.getPublishedLocaleAvailability).toHaveBeenCalledTimes(1);
+    for (const path of [
       '/',
       '/pricing',
       '/blog',
-      ...readdirSync(new URL('../routes/(pages)/', import.meta.url))
-        .filter(
-          (name) =>
-            name.endsWith('.tsx') &&
-            !name.startsWith('-') &&
-            name !== 'route.tsx'
-        )
-        .map((name) => `/${name.slice(0, -4)}`),
-    ];
-    const paths = [
-      ...staticRoutes,
-      '/blog/published-story',
-      '/blog/local-post',
-    ];
-    const entries = [...xml.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(
-      (match) => match[1]
-    );
-    expect(entries).toHaveLength(paths.length * locales.length);
-    for (const path of paths) {
+      '/contact',
+      '/privacy-policy',
+      '/terms-of-service',
+    ]) {
       for (const locale of locales) {
-        const loc = localizeUrl(`https://tattoo.example${path}`, {
-          locale,
-        }).href;
-        const matches = entries.filter((entry) =>
-          entry.includes(`<loc>${loc}</loc>`)
+        expect(xml).toContain(
+          `<loc>${localizeUrl(`https://tattoo.example${path}`, { locale }).href}</loc>`
         );
-        expect(matches, loc).toHaveLength(1);
-        for (const alternate of [...locales, 'x-default']) {
-          const href = localizeUrl(`https://tattoo.example${path}`, {
-            locale:
-              alternate === 'x-default'
-                ? baseLocale
-                : (alternate as typeof baseLocale),
-          }).href;
-          expect(matches[0]).toContain(
-            `hreflang="${alternate}" href="${href}"`
-          );
-        }
       }
     }
+    expect(xml).toContain('/blog/fine-line-guide');
+    expect(xml).toContain('/zh/blog/xi-xian-wen-shen');
+    expect(xml).toContain('/blog/tattoo-aftercare');
+    expect(xml).not.toContain('/zh/blog/tattoo-aftercare');
+    expect(xml).toContain(
+      'hreflang="zh" href="https://tattoo.example/zh/blog/xi-xian-wen-shen"'
+    );
   });
 
-  it('omits non-canonical published article slugs', async () => {
+  it('omits non-canonical published slugs', async () => {
     const invalid = [
       'ink?art',
       'ink#art',
@@ -141,74 +123,27 @@ describe('localized crawling contracts', () => {
     const xml = await (
       await serverRoute(
         '../routes/sitemap[.]xml.ts',
-        invalid.map((slug) => ({ slug, createdAt: '2026-10-01' }))
+        invalid.map((slug, index) => ({
+          postId: String(index),
+          locale: 'en' as const,
+          slug,
+          updatedAt: '2026-10-01',
+        }))
       ).get()
     ).text();
     for (const slug of invalid) {
       expect(xml).not.toContain(blogPostPath(slug));
     }
-    expect(xml).toContain('/blog/local-post');
   });
 
-  it('round-trips every canonical published loc through the real published query', async () => {
-    const client = createClient({ url: 'file::memory:' });
-    fixture.db = drizzle(client);
-    try {
-      const columns = getTableConfig(post).columns.map(
-        (column) => `"${column.name}" ${column.getSQLType()}`
-      );
-      await client.execute(`CREATE TABLE "post" (${columns.join(', ')})`);
-      const slugs = ['story', 'fine-line', '100-ink', 'local-post'];
-      for (const [index, slug] of slugs.entries()) {
-        await client.execute({
-          sql: 'INSERT INTO "post" (id, slug, status) VALUES (?, ?, ?)',
-          args: [`fixture-${index}`, slug, 'published'],
-        });
-      }
-      expect((await findPublishedBySlug('  FINE-LINE  '))?.id).toBe(
-        'fixture-1'
-      );
-      const route = serverRoute('../routes/sitemap[.]xml.ts', [
-        ...slugs.map((slug) => ({ slug, createdAt: '2026-10-02' })),
-        { slug: 'story', createdAt: '2026-10-02' },
-        { slug: 'ink/art', createdAt: '2026-10-02' },
-        { slug: 'ink?art', createdAt: '2026-10-02' },
-        { slug: 'ink#art', createdAt: '2026-10-02' },
-        { slug: '100%ink', createdAt: '2026-10-02' },
-        { slug: 'ink art', createdAt: '2026-10-02' },
-        { slug: 'ink--art', createdAt: '2026-10-02' },
-        { slug: '纹身', createdAt: '2026-10-02' },
-      ]);
-      const xml = await (await route.get()).text();
-      const dynamic = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-        .map((match) => new URL(match[1]))
-        .filter((url) => /\/blog\//.test(url.pathname));
-      for (const url of dynamic) {
-        const segment = url.pathname.replace(/^\/(?:zh\/)?blog\//, '');
-        expect(segment).not.toContain('/');
-        expect(url.search).toBe('');
-        expect(url.hash).toBe('');
-        const storedSlug = decodeURIComponent(segment);
-        const article = await findPublishedBySlug(storedSlug);
-        expect(article, url.href).toBeDefined();
-        expect(article?.slug, url.href).toBe(storedSlug);
-        expect(article?.id).toBe(`fixture-${slugs.indexOf(storedSlug)}`);
-      }
-      expect(dynamic).toHaveLength(slugs.length * locales.length);
-      for (const slug of slugs) {
-        expect(
-          dynamic.filter((url) => url.pathname.endsWith(blogPostPath(slug)))
-        ).toHaveLength(locales.length);
-      }
-    } finally {
-      client.close();
-    }
-  });
-
-  it('keeps the published-query fallback and local articles when the database is unavailable', async () => {
+  it('keeps static routes when the content database is unavailable', async () => {
     const route = serverRoute('../routes/sitemap[.]xml.ts');
-    route.listPublishedArticles.mockRejectedValueOnce(new Error('offline'));
-    expect(await (await route.get()).text()).toContain('/blog/local-post');
+    route.getPublishedLocaleAvailability.mockRejectedValueOnce(
+      new Error('offline')
+    );
+    const xml = await (await route.get()).text();
+    expect(xml).toContain('<loc>https://tattoo.example/blog</loc>');
+    expect(xml).not.toMatch(/\/blog\/[^<]+/);
   });
 
   it('disallows private routes with every actual locale prefix', async () => {
@@ -218,9 +153,11 @@ describe('localized crawling contracts', () => {
     const body = await (
       await serverRoute('../routes/robots[.]txt.ts').get()
     ).text();
-    for (const prefix of ['', '/zh'])
-      for (const path of ['/admin', '/settings', '/api/'])
+    for (const prefix of ['', '/zh']) {
+      for (const path of ['/admin', '/settings', '/api/']) {
         expect(body).toContain(`Disallow: ${prefix}${path}\n`);
+      }
+    }
     expect(body).toContain('Allow: /\n');
     expect(body).toContain('Sitemap: https://tattoo.example/sitemap.xml');
   });

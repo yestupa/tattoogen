@@ -1,9 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { envConfigs } from '@/config';
-import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
+import { blogPostPath } from '@/lib/post-slug';
 import { baseLocale } from '@/paraglide/runtime.js';
-import { getLocalPosts, mergePosts } from '@/content/posts';
 
 const STATIC_PAGES: { path: string; title: string; description: string }[] = [
   { path: '', title: 'Home', description: 'Landing page' },
@@ -17,23 +16,19 @@ export const Route = createFileRoute('/llms.txt')({
       GET: async () => {
         const { app_url, app_name, app_description } = envConfigs;
 
-        let posts = getLocalPosts(baseLocale);
+        let posts: Awaited<
+          ReturnType<
+            typeof import('@/modules/posts/service').listPublishedArticles
+          >
+        > = [];
         try {
           const { listPublishedArticles } =
             await import('@/modules/posts/service');
-          const rows = await listPublishedArticles().catch(() => []);
-          const dbPosts = rows
-            .filter((row) => isCanonicalPostSlug(row.slug))
-            .map((row) => ({
-              slug: row.slug,
-              title: row.title || row.slug,
-              description: row.description || '',
-              createdAt: new Date(row.createdAt).toISOString(),
-              source: 'db' as const,
-            }));
-          posts = mergePosts(dbPosts, posts);
+          posts = await listPublishedArticles({ locale: baseLocale }).catch(
+            () => []
+          );
         } catch {
-          // Database unreachable — local posts still listed.
+          // Database unreachable — keep the static page list available.
         }
 
         const lines: string[] = [
