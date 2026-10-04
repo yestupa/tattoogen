@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import type { ReactNode } from 'react';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import {
   createRootRoute,
@@ -14,12 +14,16 @@ import { ThemeProvider } from 'next-themes';
 
 import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
+import { blogPostPath } from '@/lib/post-slug';
 import { getQueryClient } from '@/lib/query-client';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
+import { Footer } from '@/blocks/footer';
+import { Header } from '@/blocks/header';
 import { Ads } from '@/components/analytics/ads';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 import { Plausible } from '@/components/analytics/plausible';
+import { BlogCard } from '@/components/blog-card';
 import { BrandArtwork } from '@/components/brand-artwork';
 import { CustomerService } from '@/components/customer-service';
 import { GoogleOneTap } from '@/components/google-one-tap';
@@ -27,6 +31,8 @@ import { PageState } from '@/components/page-state';
 import { SandboxPreviewBridge } from '@/components/sandbox-preview-bridge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
+import { formatPostDate } from '@/content/posts';
+import { getBlogPostsFn } from '@/content/posts/server';
 
 import '@fontsource-variable/inter';
 import '@fontsource/libre-baskerville/400.css';
@@ -170,26 +176,91 @@ function RootDocument({ children }: { children: ReactNode }) {
 }
 
 function NotFound() {
+  const locale = getLocale();
+  const postsQuery = useQuery({
+    queryKey: ['not-found-blog-recommendations', locale],
+    queryFn: () => getBlogPostsFn({ data: { locale, limit: 3 } }),
+    staleTime: 5 * 60 * 1000,
+  });
+  const posts = postsQuery.data ?? [];
+
   return (
-    <main className="bg-background text-foreground flex min-h-svh items-center justify-center px-4 py-8 sm:px-6">
-      <PageState
-        variant="not-found"
-        code="404"
-        artwork={<BrandArtwork />}
-        title={m['common.not_found.message']()}
-        description={m['common.not_found.description']()}
-        primaryAction={
-          <Link href="/chat" className={buttonVariants()}>
-            {m['common.not_found.start_creating']()}
-          </Link>
-        }
-        secondaryAction={
-          <Link href="/" className={buttonVariants({ variant: 'outline' })}>
-            {m['common.not_found.back_home']()}
-          </Link>
-        }
-      />
-    </main>
+    <div className="bg-background text-foreground flex min-h-svh flex-col">
+      <Header />
+      <main className="paper-texture flex-1 px-4 py-10 sm:px-6 sm:py-16">
+        <div className="mx-auto flex max-w-6xl flex-col gap-12">
+          <PageState
+            variant="not-found"
+            code="404"
+            artwork={<BrandArtwork />}
+            title={m['common.not_found.message']()}
+            description={m['common.not_found.description']()}
+            primaryAction={
+              <Link href="/chat" className={buttonVariants()}>
+                {m['common.not_found.start_creating']()}
+              </Link>
+            }
+            secondaryAction={
+              <Link href="/" className={buttonVariants({ variant: 'outline' })}>
+                {m['common.not_found.back_home']()}
+              </Link>
+            }
+          />
+
+          <section aria-labelledby="not-found-blog-title">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-primary text-xs font-semibold tracking-widest uppercase">
+                  {m['common.not_found.blog_eyebrow']()}
+                </p>
+                <h2
+                  id="not-found-blog-title"
+                  className="mt-2 font-serif text-3xl tracking-tight"
+                >
+                  {m['common.not_found.blog_title']()}
+                </h2>
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed sm:text-base">
+                  {m['common.not_found.blog_description']()}
+                </p>
+              </div>
+              <Link
+                href="/blog"
+                className={buttonVariants({ variant: 'outline' })}
+              >
+                {m['common.not_found.view_blog']()}
+              </Link>
+            </div>
+
+            {posts.length > 0 ? (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {posts.map((post) => (
+                  <BlogCard
+                    key={post.slug}
+                    href={blogPostPath(post.slug)}
+                    title={post.title}
+                    description={post.description}
+                    image={post.image}
+                    date={formatPostDate(post.createdAt, locale)}
+                    authorName={post.authorName}
+                    authorImage={post.authorImage}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-card rounded-card border px-6 py-8 sm:px-8">
+                <p className="font-serif text-xl">
+                  {m['common.not_found.blog_empty_title']()}
+                </p>
+                <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
+                  {m['common.not_found.blog_empty_description']()}
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }
 
