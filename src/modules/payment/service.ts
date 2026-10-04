@@ -135,6 +135,8 @@ export async function createCheckout(params: {
   planName?: string;
   credits?: number;
   creditsValidDays?: number;
+  discountCode?: string;
+  discountAmount?: number;
 }): Promise<CheckoutSession> {
   const {
     userId,
@@ -145,6 +147,8 @@ export async function createCheckout(params: {
     planName,
     credits,
     creditsValidDays,
+    discountCode,
+    discountAmount,
   } = params;
   const pm = await getPaymentManager();
   const orderNo = getUniSeq('ORD');
@@ -199,6 +203,9 @@ export async function createCheckout(params: {
       planName: planName || null,
       creditsAmount: credits ?? null,
       creditsValidDays: creditsValidDays ?? null,
+      discountCode: discountCode || null,
+      discountAmount: discountAmount || null,
+      discountCurrency: discountAmount ? paymentOrder.price.currency : null,
       paymentType: paymentOrder.type || 'one-time',
       paymentProvider: session.provider,
       paymentSessionId: session.checkoutInfo.sessionId,
@@ -325,8 +332,9 @@ async function handleCheckoutSuccess(session: any, provider: string) {
       invoiceUrl: paymentInfo?.invoiceUrl || null,
       paymentUserName: paymentInfo?.paymentUserName || null,
       paymentUserId: paymentInfo?.paymentUserId || null,
-      discountCode: paymentInfo?.discountCode || null,
-      discountAmount: paymentInfo?.discountAmount || null,
+      discountCode: paymentInfo?.discountCode || existingOrder.discountCode,
+      discountAmount:
+        paymentInfo?.discountAmount ?? existingOrder.discountAmount,
     };
 
     // Atomically update order + create subscription + grant credits

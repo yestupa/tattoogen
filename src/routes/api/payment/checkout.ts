@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
 import { getPricingProduct } from '@/config/pricing';
+import { getEffectiveProduct } from '@/modules/commerce/service';
 import { getAllConfigs } from '@/modules/config/service';
 import { createCheckout } from '@/modules/payment/service';
 import { getCurrentSubscription } from '@/modules/subscriptions/service';
@@ -48,8 +49,8 @@ async function POST({ request }: { request: Request }) {
 
     // Look up product in the authoritative server-side catalog.
     // We DO NOT trust price / credits / plan from the request body.
-    const product = getPricingProduct(product_id);
-    if (!product) {
+    const product = await getEffectiveProduct(product_id);
+    if (!product || !product.enabled) {
       return respErr('Unknown product');
     }
 
@@ -66,6 +67,14 @@ async function POST({ request }: { request: Request }) {
     // amount stored both come from the authoritative catalog.
     const configs = await getAllConfigs();
     const providerKey = payment_provider || configs.default_payment_provider;
+    if (
+      providerKey === 'creem' &&
+      product.priceInCents !== getPricingProduct(product_id)?.priceInCents
+    ) {
+      return respErr(
+        'Creem checkout is unavailable while a custom price or discount is active'
+      );
+    }
     const testAmountRaw = providerKey
       ? configs[`${providerKey}_test_amount`]
       : undefined;
@@ -88,6 +97,8 @@ async function POST({ request }: { request: Request }) {
       planName: product.planName,
       credits: product.credits,
       creditsValidDays: product.creditsValidDays,
+      discountCode: product.discount?.id,
+      discountAmount: product.basePriceInCents - product.priceInCents,
       paymentOrder: {
         productId: product.productId,
         price: { amount: chargeAmount, currency: product.currency },

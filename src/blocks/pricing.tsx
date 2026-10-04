@@ -28,18 +28,27 @@ const ALL_PROVIDERS: PaymentProvider[] = [
 interface TierConfig {
   key: string;
   name: string;
-  price: string;
-  /** Struck-through anchor shown next to the price. */
-  originalPrice: string;
   tagline: string;
   cta: string;
   popular?: boolean;
-  /** Credits granted per month (200 credits = US$1); the yearly plan grants
-   *  twelve of them. */
-  monthlyCredits: number;
-  /** Per-month price when paying yearly; the yearly charge is twelve of it. */
-  yearlyMonthlyPrice: number;
 }
+
+type PublicPricingProduct = {
+  productId: string;
+  productName: string;
+  planName: string;
+  basePriceInCents: number;
+  priceInCents: number;
+  currency: string;
+  credits: number;
+  creditsValidDays?: number;
+  plan?: { name: string; interval: string; intervalCount: number };
+  discount: {
+    percentage: number;
+    displayNameEn: string;
+    displayNameZh: string;
+  } | null;
+};
 
 /** Same for every tier — only the price and the credit grant differ. */
 function sharedFeatures(): string[] {
@@ -55,98 +64,82 @@ function getTiers(): TierConfig[] {
     {
       key: 'lite',
       name: m['landing.pricing.lite_name'](),
-      price: m['landing.pricing.lite_price'](),
-      originalPrice: m['landing.pricing.lite_original_price'](),
       tagline: m['landing.pricing.lite_tagline'](),
       cta: m['landing.pricing.lite_cta'](),
-      yearlyMonthlyPrice: 8.9,
-      monthlyCredits: 2_000,
     },
     {
       key: 'pro',
       name: m['landing.pricing.pro_name'](),
-      price: m['landing.pricing.pro_price'](),
-      originalPrice: m['landing.pricing.pro_original_price'](),
       tagline: m['landing.pricing.pro_tagline'](),
       cta: m['landing.pricing.pro_cta'](),
-      yearlyMonthlyPrice: 16.9,
       popular: true,
-      monthlyCredits: 4_800,
     },
     {
       key: 'ultra',
       name: m['landing.pricing.ultra_name'](),
-      price: m['landing.pricing.ultra_price'](),
-      originalPrice: m['landing.pricing.ultra_original_price'](),
       tagline: m['landing.pricing.ultra_tagline'](),
       cta: m['landing.pricing.ultra_cta'](),
-      yearlyMonthlyPrice: 32.9,
-      monthlyCredits: 10_000,
     },
   ];
 }
 
 function buildPlans(
   tiers: TierConfig[],
-  intervalSuffix: 'monthly' | 'yearly'
+  intervalSuffix: 'monthly' | 'yearly',
+  products: PublicPricingProduct[]
 ): PricingPlan[] {
   const yearly = intervalSuffix === 'yearly';
 
-  return tiers.map((tier) => {
-    // Yearly is quoted per month too, so the two tabs compare like for like:
-    // the monthly price is what's struck through, the note says what actually
-    // gets charged, and the badge names the discount.
-    const symbol = tier.price.replace(/[0-9.]/g, '');
-    const monthly = parseFloat(tier.price.replace(/[^0-9.]/g, ''));
-    const yearTotal = tier.yearlyMonthlyPrice * 12;
-    const savedPercent = Math.round(
-      (1 - tier.yearlyMonthlyPrice / monthly) * 100
+  return tiers.flatMap((tier) => {
+    const product = products.find(
+      (item) => item.productId === `${tier.key}_${intervalSuffix}`
     );
-    // Round to cents, then let Number drop the trailing zeros: 106.80 → 106.8,
-    // 96.00 → 96.
-    const money = (value: number) => `${symbol}${Number(value.toFixed(2))}`;
-
-    const credits = yearly ? tier.monthlyCredits * 12 : tier.monthlyCredits;
+    if (!product) return [];
+    const divisor = yearly ? 12 : 1;
+    const displayed = product.priceInCents / 100 / divisor;
+    const displayedBase = product.basePriceInCents / 100 / divisor;
+    const money = (value: number) => `$${Number(value.toFixed(2))}`;
 
     return {
       id: `${tier.key}-${intervalSuffix}`,
       name: tier.name,
       description: tier.tagline,
-      price: yearly ? money(tier.yearlyMonthlyPrice) : tier.price,
-      // Yearly is compared against paying month to month; monthly against the
-      // list price.
-      originalPrice: yearly ? tier.price : tier.originalPrice,
+      price: money(displayed),
+      originalPrice:
+        product.basePriceInCents !== product.priceInCents
+          ? money(displayedBase)
+          : undefined,
       priceNote: yearly
-        ? m['landing.pricing.billed_yearly']({ total: money(yearTotal) })
+        ? m['landing.pricing.billed_yearly']({
+            total: money(product.priceInCents / 100),
+          })
         : undefined,
       interval: m['landing.pricing.interval_month'](),
       featured: !!tier.popular,
-      badge: yearly
-        ? m['landing.pricing.save_percent']({ percent: savedPercent })
+      badge: product.discount
+        ? m['landing.pricing.save_percent']({
+            percent: product.discount.percentage,
+          })
         : tier.popular
           ? m['landing.pricing.popular']()
           : undefined,
       features: [
         yearly
           ? m['landing.pricing.credits_yearly']({
-              credits: credits.toLocaleString(),
+              credits: product.credits.toLocaleString(),
             })
           : m['landing.pricing.credits_monthly']({
-              credits: credits.toLocaleString(),
+              credits: product.credits.toLocaleString(),
             }),
         ...sharedFeatures(),
       ],
       buttonText: tier.cta,
-      productId: `${tier.key}_${intervalSuffix}`,
-      priceInCents: Math.round((yearly ? yearTotal : monthly) * 100),
-      currency: 'usd',
-      credits,
-      creditsValidDays: yearly ? 365 : 30,
-      plan: {
-        name: tier.name,
-        interval: yearly ? 'year' : 'month',
-        intervalCount: 1,
-      },
+      productId: product.productId,
+      priceInCents: product.priceInCents,
+      currency: product.currency,
+      credits: product.credits,
+      creditsValidDays: product.creditsValidDays,
+      plan: product.plan,
     } satisfies PricingPlan;
   });
 }
@@ -177,6 +170,10 @@ export function Pricing({
   });
 
   const { data: configsData } = usePublicConfig();
+  const pricingQuery = useQuery({
+    queryKey: ['public-pricing'],
+    queryFn: () => apiGet<PublicPricingProduct[]>('/api/pricing'),
+  });
   const configs = configsData ?? {};
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<PricingPlan | null>(null);
@@ -189,30 +186,34 @@ export function Pricing({
   );
 
   const tiers = getTiers();
+  const products = pricingQuery.data ?? [];
+  const yearlySavings = tiers.map((tier) => {
+    const monthly = products.find(
+      (item) => item.productId === `${tier.key}_monthly`
+    );
+    const yearly = products.find(
+      (item) => item.productId === `${tier.key}_yearly`
+    );
+    if (!monthly || !yearly || monthly.priceInCents <= 0) return 0;
+    return Math.round(
+      (1 - yearly.priceInCents / 12 / monthly.priceInCents) * 100
+    );
+  });
 
   const groups: PricingGroup[] = [
     {
       key: 'monthly',
       label: m['landing.pricing.monthly'](),
-      plans: buildPlans(tiers, 'monthly'),
+      plans: buildPlans(tiers, 'monthly', products),
     },
     {
       key: 'yearly',
       label: m['landing.pricing.yearly'](),
       // The best discount on offer — tiers differ, so it's "up to".
       badge: m['landing.pricing.save_up_to']({
-        percent: Math.max(
-          ...tiers.map((tier) =>
-            Math.round(
-              (1 -
-                tier.yearlyMonthlyPrice /
-                  parseFloat(tier.price.replace(/[^0-9.]/g, ''))) *
-                100
-            )
-          )
-        ),
+        percent: Math.max(0, ...yearlySavings),
       }),
-      plans: buildPlans(tiers, 'yearly'),
+      plans: buildPlans(tiers, 'yearly', products),
     },
   ];
 

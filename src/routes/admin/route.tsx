@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import {
+  BadgePercent,
   CreditCard,
   FolderOpen,
   Home,
@@ -49,6 +50,12 @@ function AdminLayout() {
         { href: '/admin/payments', label: m['admin.nav.payments']() },
         { href: '/admin/subscriptions', label: m['admin.nav.subscriptions']() },
         { href: '/admin/credits', label: m['admin.nav.credits']() },
+        { href: '/admin/pricing', label: m['admin.nav.pricing']() },
+        {
+          href: '/admin/discounts',
+          label: m['admin.nav.discounts'](),
+          icon: BadgePercent,
+        },
       ],
     },
     {

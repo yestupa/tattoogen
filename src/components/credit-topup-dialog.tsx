@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Coins } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { creditTopUps } from '@/config/pricing';
-import { apiPost } from '@/lib/api-client';
+import { apiGet, apiPost } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +16,15 @@ import {
 
 interface CheckoutResponse {
   checkout_url?: string;
+}
+
+interface TopUpProduct {
+  productId: string;
+  priceInCents: number;
+  basePriceInCents: number;
+  credits: number;
+  requiresSubscription?: boolean;
+  discount: { percentage: number } | null;
 }
 
 /**
@@ -35,6 +43,13 @@ export function CreditTopUpDialog({
   redirect?: string;
 }) {
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const productsQuery = useQuery({
+    queryKey: ['public-pricing'],
+    queryFn: () => apiGet<TopUpProduct[]>('/api/pricing'),
+  });
+  const creditTopUps = (productsQuery.data ?? []).filter(
+    (item) => item.requiresSubscription
+  );
 
   const checkout = useMutation({
     mutationFn: (productId: string) =>
@@ -77,6 +92,11 @@ export function CreditTopUpDialog({
                 <p className="font-semibold">
                   ${(pack.priceInCents / 100).toLocaleString()}
                 </p>
+                {pack.basePriceInCents !== pack.priceInCents && (
+                  <p className="text-muted-foreground text-xs line-through">
+                    ${(pack.basePriceInCents / 100).toLocaleString()}
+                  </p>
+                )}
                 <p className="text-muted-foreground text-sm">
                   {m['settings.credits.topup_credits']({
                     credits: pack.credits.toLocaleString(),
