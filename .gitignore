@@ -60,7 +60,8 @@ yarn-error.log*
 
 # database
 /data/
-/drizzle/
+# Keep generated schema.ts local, but version SQL migrations so Cloudflare D1
+# deployments and fresh environments apply the same database history.
 src/config/db/schema.ts
 
 # npm (project uses pnpm)
