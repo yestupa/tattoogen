@@ -360,6 +360,7 @@ it('normalizes post slug case in validation and both mutation payloads', async (
 });
 
 function behavior(text: string) {
+  text = text.replace(/\r\n?/g, '\n');
   // Approved slug normalization is removed before comparing unrelated wiring.
   text = text
     .replace(
@@ -417,6 +418,15 @@ function behavior(text: string) {
   visit(file);
   return found;
 }
+
+it.each(['src/routes/settings/billing.tsx', 'src/routes/admin/users.tsx'])(
+  'keeps behavior fingerprints stable across line endings in %s',
+  (path) => {
+    const lf = source(path).replace(/\r\n/g, '\n');
+    const crlf = lf.replace(/\n/g, '\r\n');
+    expect(behavior(crlf)).toEqual(behavior(lf));
+  }
+);
 
 it('closes the mobile Sheet after resolved navigation, retaining native Sheet focus behavior', () => {
   const sidebar = source('src/components/app-sidebar.tsx');
