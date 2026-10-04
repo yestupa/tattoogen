@@ -4,6 +4,7 @@ import {
   ImageUploadRequestError,
   parseBoundedMultipartFormData,
   prepareImageUploads,
+  storageUploadFailureResponse,
   uploadErrorResponse,
   validateImageUpload,
 } from './-image-upload';
@@ -213,5 +214,29 @@ describe('uploadErrorResponse', () => {
       message: 'Upload failed',
     });
     expect(logger).toHaveBeenCalledWith('upload image failed:', error);
+  });
+
+  it('keeps a provider result error out of the client response', async () => {
+    const providerError =
+      'R2 request failed at internal endpoint with credential metadata';
+    const logger = vi.fn();
+
+    const response = storageUploadFailureResponse(
+      {
+        provider: 'r2',
+        error: providerError,
+      },
+      'image-digest.png',
+      logger
+    );
+    const payload = await response.json();
+
+    expect(payload).toEqual({ code: -1, message: 'Upload failed' });
+    expect(JSON.stringify(payload)).not.toContain(providerError);
+    expect(logger).toHaveBeenCalledWith('storage upload failed:', {
+      provider: 'r2',
+      key: 'image-digest.png',
+      error: providerError,
+    });
   });
 });

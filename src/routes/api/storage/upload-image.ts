@@ -12,6 +12,7 @@ import { respData, respErr } from '@/lib/resp';
 import {
   parseBoundedMultipartFormData,
   prepareImageUploads,
+  storageUploadFailureResponse,
   uploadErrorResponse,
 } from './-image-upload';
 
@@ -95,7 +96,7 @@ async function POST({ request }: { request: Request }) {
       });
 
       if (!result.success || !result.url) {
-        return respErr(result.error || 'Upload failed');
+        return storageUploadFailureResponse(result, objectKey);
       }
 
       uploadResults.push({

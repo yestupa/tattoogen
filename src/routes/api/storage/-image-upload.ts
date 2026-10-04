@@ -214,3 +214,16 @@ export function uploadErrorResponse(
   logger('upload image failed:', error);
   return respErr('Upload failed');
 }
+
+export function storageUploadFailureResponse(
+  result: { provider?: string; error?: string },
+  key: string,
+  logger: (...args: unknown[]) => void = console.error
+): Response {
+  logger('storage upload failed:', {
+    provider: result.provider || 'unknown',
+    key,
+    error: result.error || 'Storage provider returned no upload URL',
+  });
+  return respErr('Upload failed');
+}
