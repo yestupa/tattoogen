@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { envConfigs } from '@/config';
+import { blogPostPath } from '@/lib/post-slug';
 import { m } from '@/paraglide/messages.js';
 import {
   baseLocale,
@@ -75,7 +76,7 @@ function BlogPage() {
               {posts.map((post) => (
                 <BlogCard
                   key={post.slug}
-                  href={`/blog/${post.slug}`}
+                  href={blogPostPath(post.slug)}
                   title={post.title}
                   description={post.description}
                   image={post.image}

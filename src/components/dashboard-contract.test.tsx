@@ -135,9 +135,22 @@ it.each(['categories', 'posts'])(
     const schemaText = text.match(
       /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
     )![1];
-    const schema = new Function('z', 'm', `return ${schemaText}`)(z, {
-      'common.validation.slug_required': () => 'Enter a non-empty slug',
-    });
+    const schema = new Function(
+      'z',
+      'm',
+      'normalizePostSlug',
+      'isCanonicalPostSlug',
+      `return ${schemaText}`
+    )(
+      z,
+      {
+        'common.validation.slug_required': () => 'Enter a non-empty slug',
+        'admin.posts.slug_invalid': () =>
+          'Use lowercase letters, numbers, and single hyphens only',
+      },
+      (value: string) => value.trim().toLowerCase(),
+      (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+    );
     const value = {
       slug: '  botanical  ',
       title: 'Botanical',
@@ -167,8 +180,16 @@ it.each(['categories', 'posts'])(
         'editMutation',
         'editingCat',
         'editingPost',
+        'normalizePostSlug',
         ts.transpile(`return (async () => { ${handler} })()`)
-      )(value, mutation, mutation, { id: 'cat' }, { id: 'post' });
+      )(
+        value,
+        mutation,
+        mutation,
+        { id: 'cat' },
+        { id: 'post' },
+        (slug: string) => slug.trim().toLowerCase()
+      );
       expect(payload).toMatchObject({ slug: 'botanical', title: 'Botanical' });
     }
   }
@@ -182,12 +203,27 @@ it.each(['categories', 'posts'])(
       /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
     )![1];
     let locale = 'en';
-    const schema = new Function('z', 'm', `return ${schemaText}`)(z, {
-      'common.validation.slug_required': () =>
-        JSON.parse(source(`messages/${locale}.json`))[
-          'common.validation.slug_required'
-        ],
-    });
+    const schema = new Function(
+      'z',
+      'm',
+      'normalizePostSlug',
+      'isCanonicalPostSlug',
+      `return ${schemaText}`
+    )(
+      z,
+      {
+        'common.validation.slug_required': () =>
+          JSON.parse(source(`messages/${locale}.json`))[
+            'common.validation.slug_required'
+          ],
+        'admin.posts.slug_invalid': () =>
+          JSON.parse(source(`messages/${locale}.json`))[
+            'admin.posts.slug_invalid'
+          ],
+      },
+      (value: string) => value.trim().toLowerCase(),
+      (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+    );
     for (const activeLocale of ['en', 'zh']) {
       locale = activeLocale;
       const result = schema.safeParse({
@@ -209,8 +245,122 @@ it.each(['categories', 'posts'])(
   }
 );
 
+it.each([
+  'tattoo style',
+  'tattoo--style',
+  'tattoo/style',
+  'tattoo?style',
+  'tattoo#style',
+  '100%tattoo',
+  '纹身',
+])('localizes the invalid post slug %s in both locales', (slug) => {
+  const text = source('src/routes/admin/posts.tsx');
+  const schemaText = text.match(
+    /const postSchema = (z\.object\(\{[\s\S]*?\}\));/
+  )![1];
+  let locale = 'en';
+  const schema = new Function(
+    'z',
+    'm',
+    'normalizePostSlug',
+    'isCanonicalPostSlug',
+    `return ${schemaText}`
+  )(
+    z,
+    {
+      'common.validation.slug_required': () =>
+        JSON.parse(source(`messages/${locale}.json`))[
+          'common.validation.slug_required'
+        ],
+      'admin.posts.slug_invalid': () =>
+        JSON.parse(source(`messages/${locale}.json`))[
+          'admin.posts.slug_invalid'
+        ],
+    },
+    (value: string) => value.trim().toLowerCase(),
+    (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+  );
+
+  for (const activeLocale of ['en', 'zh']) {
+    locale = activeLocale;
+    const result = schema.safeParse({
+      slug,
+      title: 'Tattoo',
+      description: '',
+      content: '',
+      categories: '',
+      authorName: '',
+      status: 'draft',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error.issues[0].message).toBe(
+      locale === 'en'
+        ? 'Use lowercase letters, numbers, and single hyphens only'
+        : '仅可使用小写英文字母、数字和单个连字符'
+    );
+  }
+});
+
+it('normalizes post slug case in validation and both mutation payloads', async () => {
+  const text = source('src/routes/admin/posts.tsx');
+  const schemaText = text.match(
+    /const postSchema = (z\.object\(\{[\s\S]*?\}\));/
+  )![1];
+  const schema = new Function(
+    'z',
+    'm',
+    'normalizePostSlug',
+    'isCanonicalPostSlug',
+    `return ${schemaText}`
+  )(
+    z,
+    {
+      'common.validation.slug_required': () => 'Enter a non-empty slug',
+      'admin.posts.slug_invalid': () =>
+        'Use lowercase letters, numbers, and single hyphens only',
+    },
+    (value: string) => value.trim().toLowerCase(),
+    (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+  );
+  const value = {
+    slug: '  Tattoo-Style-101  ',
+    title: 'Tattoo',
+    description: '',
+    content: '',
+    categories: '',
+    authorName: '',
+    status: 'draft',
+  };
+  expect(schema.parse(value).slug).toBe('tattoo-style-101');
+
+  for (const mode of ['create', 'edit']) {
+    const handler = text.match(
+      new RegExp(
+        `const ${mode}Form = useForm\\(\\{[\\s\\S]*?onSubmit: async \\(\\{ value \\}\\) => \\{([\\s\\S]*?)\\n    \\},`
+      )
+    )![1];
+    let payload: any;
+    const mutation = {
+      mutateAsync: async (body: unknown) => {
+        payload = body;
+      },
+    };
+    await new Function(
+      'value',
+      'createMutation',
+      'editMutation',
+      'editingPost',
+      'normalizePostSlug',
+      ts.transpile(`return (async () => { ${handler} })()`)
+    )(value, mutation, mutation, { id: 'post-1' }, (slug: string) =>
+      slug.trim().toLowerCase()
+    );
+    expect(payload.slug).toBe('tattoo-style-101');
+  }
+});
+
 function behavior(text: string) {
-  // Task9 approved normalization; all other request/payload wiring stays frozen.
+  // Approved slug normalization is removed before comparing unrelated wiring.
   text = text
     .replace(
       /editMutation\.mutateAsync\(\{\s*id: editingCat\.id,\s*\.\.\.value,\s*slug: value\.slug\.trim\(\),?\s*\}\)/g,
@@ -220,7 +370,15 @@ function behavior(text: string) {
       /const body: Record<string, unknown> = \{\s*id: editingPost\.id,\s*\.\.\.value,\s*slug: value\.slug\.trim\(\),?\s*\};/g,
       'const body: Record<string, unknown> = { id: editingPost.id, ...value };'
     )
+    .replace(
+      /const body: Record<string, unknown> = \{\s*id: editingPost\.id,\s*\.\.\.value,\s*slug: normalizePostSlug\(value\.slug\),?\s*\};/g,
+      'const body: Record<string, unknown> = { id: editingPost.id, ...value };'
+    )
     .replace(/,\s*slug: value\.slug\.trim\(\),?/g, '')
+    .replace(
+      /createMutation\.mutateAsync\(\{\s*\.\.\.value,\s*slug: normalizePostSlug\(value\.slug\),?\s*\}\)/g,
+      'createMutation.mutateAsync(value)'
+    )
     .replace(
       /createMutation\.mutateAsync\(\{\s*\.\.\.value\s*\}\)/g,
       'createMutation.mutateAsync(value)'

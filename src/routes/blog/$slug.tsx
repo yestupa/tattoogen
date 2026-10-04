@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
+import { blogPostPath } from '@/lib/post-slug';
 import { m } from '@/paraglide/messages.js';
 import {
   baseLocale,
@@ -32,7 +33,7 @@ export const Route = createFileRoute('/blog/$slug')({
     const { locale, post } = loaderData;
     const title = `${post.title} | ${envConfigs.app_name}`;
     const urlFor = (loc: typeof locale) =>
-      localizeUrl(new URL(`/blog/${post.slug}`, envConfigs.app_url), {
+      localizeUrl(new URL(blogPostPath(post.slug), envConfigs.app_url), {
         locale: loc,
       }).href;
     return {

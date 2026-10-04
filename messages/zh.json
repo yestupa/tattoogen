@@ -5,6 +5,7 @@
   "common.action.edit": "编辑",
   "common.action.delete": "删除",
   "common.validation.slug_required": "请填写有效标识",
+  "admin.posts.slug_invalid": "仅可使用小写英文字母、数字和单个连字符",
   "common.action.failed": "操作失败",
   "common.action.copy_failed": "复制失败",
   "common.select.placeholder": "请选择…",

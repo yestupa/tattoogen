@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { post } from '@/config/db/schema';
 import { findPublishedBySlug } from '@/modules/posts/service';
+import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 
 const fixture = vi.hoisted(() => ({
@@ -45,6 +46,8 @@ function serverRoute(
     'localizeUrl',
     'getLocalPosts',
     'mergePosts',
+    'blogPostPath',
+    'isCanonicalPostSlug',
     'publishedQuery',
     `${js}\nreturn Route;`
   )(
@@ -55,6 +58,8 @@ function serverRoute(
     localizeUrl,
     () => [{ slug: 'local-post', createdAt: '2026-10-01T00:00:00.000Z' }],
     (db: object[], local: object[]) => [...db, ...local],
+    blogPostPath,
+    isCanonicalPostSlug,
     listPublishedArticles
   );
   return {
@@ -92,7 +97,6 @@ describe('localized crawling contracts', () => {
     ];
     const paths = [
       ...staticRoutes,
-      '/blog/%20published-story',
       '/blog/published-story',
       '/blog/local-post',
     ];
@@ -124,17 +128,29 @@ describe('localized crawling contracts', () => {
     }
   });
 
-  it('escapes special characters in published article URLs', async () => {
+  it('omits non-canonical published article slugs', async () => {
+    const invalid = [
+      'ink?art',
+      'ink#art',
+      '100%ink',
+      'ink/art',
+      'ink art',
+      'ink--art',
+      '纹身',
+    ];
     const xml = await (
-      await serverRoute('../routes/sitemap[.]xml.ts', [
-        { slug: 'ink&art', createdAt: '2026-10-01' },
-      ]).get()
+      await serverRoute(
+        '../routes/sitemap[.]xml.ts',
+        invalid.map((slug) => ({ slug, createdAt: '2026-10-01' }))
+      ).get()
     ).text();
-    expect(xml).toContain('/blog/ink%26art');
-    expect(xml).not.toContain('/blog/ink&art');
+    for (const slug of invalid) {
+      expect(xml).not.toContain(blogPostPath(slug));
+    }
+    expect(xml).toContain('/blog/local-post');
   });
 
-  it('round-trips every published loc to its exact stored slug through the real published query', async () => {
+  it('round-trips every canonical published loc through the real published query', async () => {
     const client = createClient({ url: 'file::memory:' });
     fixture.db = drizzle(client);
     try {
@@ -142,42 +158,26 @@ describe('localized crawling contracts', () => {
         (column) => `"${column.name}" ${column.getSQLType()}`
       );
       await client.execute(`CREATE TABLE "post" (${columns.join(', ')})`);
-      const slugs = [
-        ' story',
-        'story',
-        'story ',
-        '纹身',
-        'ink&art',
-        'ink/art',
-        'ink?art',
-        'ink#art',
-        '100%ink',
-        'local-post',
-      ];
+      const slugs = ['story', 'fine-line', '100-ink', 'local-post'];
       for (const [index, slug] of slugs.entries()) {
         await client.execute({
           sql: 'INSERT INTO "post" (id, slug, status) VALUES (?, ?, ?)',
           args: [`fixture-${index}`, slug, 'published'],
         });
       }
-      const one = await (
-        await serverRoute('../routes/sitemap[.]xml.ts', [
-          { slug: slugs[0], createdAt: '2026-10-02' },
-        ]).get()
-      ).text();
-      const firstLoc = [...one.matchAll(/<loc>([^<]+)<\/loc>/g)]
-        .map((match) => new URL(match[1]))
-        .find((url) => /\/blog\//.test(url.pathname))!;
-      const firstParam = decodeURIComponent(
-        firstLoc.pathname.replace(/^\/(?:zh\/)?blog\//, '')
-      );
-      expect((await findPublishedBySlug(firstParam))?.id, firstLoc.href).toBe(
-        'fixture-0'
+      expect((await findPublishedBySlug('  FINE-LINE  '))?.id).toBe(
+        'fixture-1'
       );
       const route = serverRoute('../routes/sitemap[.]xml.ts', [
         ...slugs.map((slug) => ({ slug, createdAt: '2026-10-02' })),
         { slug: 'story', createdAt: '2026-10-02' },
-        { slug: ' \t ', createdAt: '2026-10-02' },
+        { slug: 'ink/art', createdAt: '2026-10-02' },
+        { slug: 'ink?art', createdAt: '2026-10-02' },
+        { slug: 'ink#art', createdAt: '2026-10-02' },
+        { slug: '100%ink', createdAt: '2026-10-02' },
+        { slug: 'ink art', createdAt: '2026-10-02' },
+        { slug: 'ink--art', createdAt: '2026-10-02' },
+        { slug: '纹身', createdAt: '2026-10-02' },
       ]);
       const xml = await (await route.get()).text();
       const dynamic = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
@@ -189,23 +189,16 @@ describe('localized crawling contracts', () => {
         expect(url.search).toBe('');
         expect(url.hash).toBe('');
         const storedSlug = decodeURIComponent(segment);
-        // Production HTTP probing confirmed that the current rewrite drops
-        // trailing whitespace before lookup. Keep that normalization in this
-        // contract so a direct service call cannot mask a wrong-record URL.
-        const param = storedSlug.trimEnd();
-        const article = await findPublishedBySlug(param);
+        const article = await findPublishedBySlug(storedSlug);
         expect(article, url.href).toBeDefined();
-        expect(article?.slug, url.href).toBe(param);
+        expect(article?.slug, url.href).toBe(storedSlug);
         expect(article?.id).toBe(`fixture-${slugs.indexOf(storedSlug)}`);
       }
-      expect(dynamic).toHaveLength(
-        slugs.filter((slug) => slug === slug.trimEnd()).length * locales.length
-      );
+      expect(dynamic).toHaveLength(slugs.length * locales.length);
       for (const slug of slugs) {
-        const encoded = encodeURIComponent(slug);
         expect(
-          dynamic.filter((url) => url.pathname.endsWith(`/blog/${encoded}`))
-        ).toHaveLength(slug === slug.trimEnd() ? locales.length : 0);
+          dynamic.filter((url) => url.pathname.endsWith(blogPostPath(slug)))
+        ).toHaveLength(locales.length);
       }
     } finally {
       client.close();

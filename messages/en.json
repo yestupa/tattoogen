@@ -5,6 +5,7 @@
   "common.action.edit": "Edit",
   "common.action.delete": "Delete",
   "common.validation.slug_required": "Enter a non-empty slug",
+  "admin.posts.slug_invalid": "Use lowercase letters, numbers, and single hyphens only",
   "common.action.failed": "Action failed",
   "common.action.copy_failed": "Copy failed",
   "common.select.placeholder": "Select…",

@@ -58,6 +58,29 @@ function htmlToMd(html: string): string {
   return turndown.turndown(html);
 }
 
+export async function uploadRichTextImage(
+  file: File,
+  uploadFailedLabel: string
+): Promise<string> {
+  const formData = new FormData();
+  formData.append('files', file);
+  const response = await fetch('/api/storage/upload-image', {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) throw new Error(uploadFailedLabel);
+
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(uploadFailedLabel);
+  }
+  const url = data?.data?.urls?.[0];
+  if (data.code !== 0 || !url) throw new Error(uploadFailedLabel);
+  return url as string;
+}
+
 function ToolbarButton({
   onClick,
   active,
@@ -292,19 +315,8 @@ export function RichTextEditor({
     if (!editor || !files?.length || uploadingRef.current) return;
     uploadingRef.current = true;
     try {
-      const formData = new FormData();
-      formData.append('files', files[0]);
-      const res = await fetch('/api/storage/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      const url = data?.data?.urls?.[0];
-      if (data.code === 0 && url) {
-        editor.chain().focus().setImage({ src: url }).run();
-      } else {
-        toast.error(data.message || uploadFailedLabel);
-      }
+      const url = await uploadRichTextImage(files[0], uploadFailedLabel);
+      editor.chain().focus().setImage({ src: url }).run();
     } catch {
       toast.error(uploadFailedLabel);
     } finally {

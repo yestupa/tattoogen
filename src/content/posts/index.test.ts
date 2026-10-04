@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
+import { isCanonicalPostSlug } from '@/lib/post-slug';
+
 const postsDir = fileURLToPath(new URL('.', import.meta.url));
 const indexSource = readFileSync(
   new URL('./index.ts', import.meta.url),
@@ -17,6 +19,7 @@ describe('bundled product blog posts', () => {
   it('uses tattoo-specific public slugs', () => {
     for (const slug of productSlugs) {
       expect(indexSource).toContain(`'${slug}'`);
+      expect(isCanonicalPostSlug(slug)).toBe(true);
     }
     expect(indexSource).not.toMatch(/what-is-shipany|blocks-vs-components/);
   });

@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
+import { blogPostPath } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { TextField } from '@/components/form-field';
 
@@ -119,6 +120,7 @@ function routeHead(
     'localizeUrl',
     'locales',
     'baseLocale',
+    'blogPostPath',
     'getLocale',
     'loaderData',
     'slug',
@@ -133,6 +135,7 @@ function routeHead(
     localizeUrl,
     locales,
     baseLocale,
+    blogPostPath,
     () => locale,
     {
       locale,
@@ -157,6 +160,29 @@ describe('public localized metadata', () => {
       expect(title).toContain('Tattoo Generator');
     }
   );
+
+  it('keeps a defensive post slug inside one encoded metadata path segment', () => {
+    const post = {
+      slug: 'ink/art?#% 纹身',
+      title: 'Tattoo Story',
+      description: 'A tattoo design story',
+    };
+    const head = routeHead('../routes/blog/$slug.tsx', 'en', post);
+    const expected =
+      'https://tattoo.example/blog/ink%2Fart%3F%23%25%20%E7%BA%B9%E8%BA%AB';
+    expect(
+      head.meta.find(
+        (meta: { property?: string }) => meta.property === 'og:url'
+      )?.content
+    ).toBe(expected);
+    expect(
+      head.links.find((link: { rel?: string }) => link.rel === 'canonical')
+        ?.href
+    ).toBe(expected);
+    expect(
+      head.links.every((link: { href: string }) => !new URL(link.href).search)
+    ).toBe(true);
+  });
   const routes = [
     ['../routes/index.tsx', '/'],
     ['../routes/pricing.tsx', '/pricing'],
@@ -569,7 +595,7 @@ describe('reviewed fallback branches', () => {
       '../components/rich-text-editor.tsx',
       'common.upload.failed',
       '上传失败',
-      2,
+      1,
     ],
     ['../blocks/pricing.tsx', 'landing.pricing.checkout_failed', '结账失败', 2],
     ['../routes/settings/tickets.tsx', 'common.action.failed', '操作失败', 4],

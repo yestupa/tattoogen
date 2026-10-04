@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
+import { blogPostPath } from '@/lib/post-slug';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { BlogCard } from '@/components/blog-card';
@@ -26,7 +27,7 @@ export function Blog({ posts = [] }: { posts?: BlogPost[] } = {}) {
           {posts.map((post) => (
             <BlogCard
               key={post.slug}
-              href={`/blog/${post.slug}`}
+              href={blogPostPath(post.slug)}
               title={post.title}
               description={post.description}
               image={post.image}

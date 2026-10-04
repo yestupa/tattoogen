@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { envConfigs } from '@/config';
+import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { getLocalPosts, mergePosts } from '@/content/posts';
 
@@ -37,12 +38,6 @@ function escapeXml(value: string): string {
         "'": '&apos;',
       })[character]!
   );
-}
-
-function isAddressableSlug(slug: string): boolean {
-  // The current route rewrite drops trailing whitespace, making those URLs
-  // ambiguous. Omit them without changing persisted slugs or article queries.
-  return slug.trim().length > 0 && slug === slug.trimEnd();
 }
 
 function entryXml(e: Entry, locale: (typeof locales)[number]): string {
@@ -83,7 +78,7 @@ export const Route = createFileRoute('/sitemap.xml')({
             await import('@/modules/posts/service');
           const rows = await listPublishedArticles().catch(() => []);
           const dbPosts = rows
-            .filter((row) => isAddressableSlug(row.slug))
+            .filter((row) => isCanonicalPostSlug(row.slug))
             .map((row) => ({
               slug: row.slug,
               title: row.title || row.slug,
@@ -93,9 +88,9 @@ export const Route = createFileRoute('/sitemap.xml')({
             }));
           const posts = mergePosts(dbPosts, getLocalPosts(baseLocale));
           for (const post of posts) {
-            if (!isAddressableSlug(post.slug)) continue;
+            if (!isCanonicalPostSlug(post.slug)) continue;
             entries.push({
-              path: `/blog/${encodeURIComponent(post.slug)}`,
+              path: blogPostPath(post.slug),
               lastModified: post.createdAt,
               changeFrequency: 'monthly',
               priority: 0.6,
@@ -104,9 +99,9 @@ export const Route = createFileRoute('/sitemap.xml')({
         } catch {
           // Database unreachable — static paths + local posts still listed.
           for (const post of getLocalPosts(baseLocale)) {
-            if (!isAddressableSlug(post.slug)) continue;
+            if (!isCanonicalPostSlug(post.slug)) continue;
             entries.push({
-              path: `/blog/${encodeURIComponent(post.slug)}`,
+              path: blogPostPath(post.slug),
               lastModified: post.createdAt,
               changeFrequency: 'monthly',
               priority: 0.6,

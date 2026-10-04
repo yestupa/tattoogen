@@ -1,5 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 
+import { isCanonicalPostSlug, normalizePostSlug } from '@/lib/post-slug';
+
 import {
   getLocalPosts,
   loadLocalPost,
@@ -15,16 +17,18 @@ async function getDbPosts(): Promise<BlogPost[]> {
   try {
     const { listPublishedArticles } = await import('@/modules/posts/service');
     const rows = await listPublishedArticles();
-    return rows.map((row) => ({
-      slug: row.slug,
-      title: row.title || row.slug,
-      description: row.description || '',
-      image: row.image || undefined,
-      createdAt: new Date(row.createdAt).toISOString(),
-      authorName: row.authorName || undefined,
-      authorImage: row.authorImage || undefined,
-      source: 'db' as const,
-    }));
+    return rows
+      .filter((row) => isCanonicalPostSlug(row.slug))
+      .map((row) => ({
+        slug: row.slug,
+        title: row.title || row.slug,
+        description: row.description || '',
+        image: row.image || undefined,
+        createdAt: new Date(row.createdAt).toISOString(),
+        authorName: row.authorName || undefined,
+        authorImage: row.authorImage || undefined,
+        source: 'db' as const,
+      }));
   } catch {
     // Database not configured/reachable — local posts still render.
     return [];
@@ -52,9 +56,11 @@ export const getBlogPostsFn = createServerFn()
 export const getBlogPostFn = createServerFn()
   .inputValidator((data: { slug: string; locale: string }) => data)
   .handler(async ({ data }): Promise<BlogPostDetail | null> => {
+    const slug = normalizePostSlug(data.slug);
+    if (!isCanonicalPostSlug(slug)) return null;
     try {
       const { findPublishedBySlug } = await import('@/modules/posts/service');
-      const row = await findPublishedBySlug(data.slug);
+      const row = await findPublishedBySlug(slug);
       if (row) {
         return {
           slug: row.slug,
@@ -72,11 +78,11 @@ export const getBlogPostFn = createServerFn()
       // Database not configured/reachable — fall through to local posts.
     }
 
-    const mod = loadLocalPost(data.slug, data.locale);
+    const mod = loadLocalPost(slug, data.locale);
     if (!mod) return null;
     const meta = mod.meta;
     return {
-      slug: data.slug,
+      slug,
       title: meta.title,
       description: meta.description,
       image: meta.image,

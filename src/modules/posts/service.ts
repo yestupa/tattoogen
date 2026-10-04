@@ -3,6 +3,7 @@ import { and, count, desc, eq, like, or, type SQL } from 'drizzle-orm';
 import { db } from '@/core/db';
 import { post } from '@/config/db/schema';
 import { getUuid } from '@/lib/hash';
+import { requirePostSlug } from '@/lib/post-slug';
 
 export enum PostType {
   ARTICLE = 'article',
@@ -110,14 +111,12 @@ export async function listPublishedArticles(
 export async function findPublishedBySlug(
   slug: string
 ): Promise<Post | undefined> {
+  const normalizedSlug = requirePostSlug(slug);
   const [result] = await db()
     .select()
     .from(post)
     .where(
-      and(
-        eq(post.slug, slug.toLowerCase()),
-        eq(post.status, PostStatus.PUBLISHED)
-      )
+      and(eq(post.slug, normalizedSlug), eq(post.status, PostStatus.PUBLISHED))
     )
     .limit(1);
   return result;
@@ -143,10 +142,11 @@ export async function create(data: {
   authorName?: string;
   status?: string;
 }) {
+  const slug = requirePostSlug(data.slug);
   const newPost: NewPost = {
     id: getUuid(),
     userId: data.userId,
-    slug: data.slug.toLowerCase(),
+    slug,
     type: PostType.ARTICLE,
     title: data.title,
     description: data.description || '',
@@ -174,7 +174,7 @@ export async function update(
   }
 ) {
   const updateData: any = { ...data };
-  if (updateData.slug) updateData.slug = updateData.slug.toLowerCase();
+  if (data.slug !== undefined) updateData.slug = requirePostSlug(data.slug);
   const [result] = await db()
     .update(post)
     .set(updateData)

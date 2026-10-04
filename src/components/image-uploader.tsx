@@ -43,7 +43,7 @@ const formatBytes = (bytes?: number) => {
   return `${mb.toFixed(2)} MB`;
 };
 
-const uploadImageFile = async (file: File) => {
+export const uploadImageFile = async (file: File) => {
   const formData = new FormData();
   formData.append('files', file);
 
@@ -53,14 +53,17 @@ const uploadImageFile = async (file: File) => {
   });
 
   if (!response.ok) {
-    throw new Error(
-      m['common.upload.failed_status']({ status: response.status })
-    );
+    throw new Error(m['common.upload.failed']());
   }
 
-  const result = await response.json();
+  let result: any;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error(m['common.upload.failed']());
+  }
   if (result.code !== 0 || !result.data?.urls?.length) {
-    throw new Error(result.message || m['common.upload.failed']());
+    throw new Error(m['common.upload.failed']());
   }
 
   return result.data.urls[0] as string;
@@ -207,11 +210,7 @@ export function ImageUploader({
         })
         .catch((error: any) => {
           console.error('Upload failed:', error);
-          toast.error(
-            error?.message
-              ? m['common.upload.failed_detail']({ message: error.message })
-              : m['common.upload.failed']()
-          );
+          toast.error(m['common.upload.failed']());
           setItems((prev) =>
             prev.map((item) => {
               if (item.id !== id) return item;
@@ -334,11 +333,7 @@ export function ImageUploader({
           );
         } catch (error: any) {
           console.error('Upload failed:', error);
-          toast.error(
-            error?.message
-              ? m['common.upload.failed_detail']({ message: error.message })
-              : m['common.upload.failed']()
-          );
+          toast.error(m['common.upload.failed']());
           setItems((prev) =>
             prev.map((current) => {
               if (current.id !== item.id) return current;

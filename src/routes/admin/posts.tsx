@@ -20,6 +20,7 @@ import {
   pageQuery,
   type PageResult,
 } from '@/lib/api-client';
+import { isCanonicalPostSlug, normalizePostSlug } from '@/lib/post-slug';
 import { formatDateTime } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
@@ -75,10 +76,17 @@ type Tab = (typeof TABS)[number];
 const postSchema = z.object({
   slug: z
     .string()
-    .trim()
-    .min(1, {
-      error: () => m['common.validation.slug_required'](),
-    }),
+    .transform(normalizePostSlug)
+    .pipe(
+      z
+        .string()
+        .min(1, {
+          error: () => m['common.validation.slug_required'](),
+        })
+        .refine(isCanonicalPostSlug, {
+          error: () => m['admin.posts.slug_invalid'](),
+        })
+    ),
   title: z.string().min(1),
   description: z.string(),
   content: z.string(),
@@ -141,7 +149,10 @@ function PostsPage() {
     defaultValues: emptyForm,
     validators: { onSubmit: postSchema },
     onSubmit: async ({ value }) => {
-      await createMutation.mutateAsync({ ...value, slug: value.slug.trim() });
+      await createMutation.mutateAsync({
+        ...value,
+        slug: normalizePostSlug(value.slug),
+      });
     },
   });
 
@@ -153,7 +164,7 @@ function PostsPage() {
       const body: Record<string, unknown> = {
         id: editingPost.id,
         ...value,
-        slug: value.slug.trim(),
+        slug: normalizePostSlug(value.slug),
       };
       if (!body.content) delete body.content; // don't overwrite content if empty
       await editMutation.mutateAsync(body);

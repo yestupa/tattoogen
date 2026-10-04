@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { getAuth } from '@/core/auth';
 import * as postsService from '@/modules/posts/service';
 import { hasPermission } from '@/modules/rbac/service';
+import { requirePostSlug } from '@/lib/post-slug';
 import { respData, respErr, respOk, respPage } from '@/lib/resp';
 
 async function checkAdmin(request: Request) {
@@ -60,10 +61,11 @@ async function POST({ request }: { request: Request }) {
       authorName,
       status,
     } = await request.json();
-    if (!slug || !title) return respErr('slug and title are required');
+    if (!title) return respErr('title is required');
+    const normalizedSlug = requirePostSlug(slug);
     const result = await postsService.create({
       userId: session.user.id,
-      slug,
+      slug: normalizedSlug,
       title,
       description,
       image,
@@ -93,8 +95,10 @@ async function PUT({ request }: { request: Request }) {
       status,
     } = await request.json();
     if (!id) return respErr('ID is required');
+    const normalizedSlug =
+      slug === undefined ? undefined : requirePostSlug(slug);
     const result = await postsService.update(id, {
-      slug,
+      slug: normalizedSlug,
       title,
       description,
       image,

@@ -1,3 +1,5 @@
+import { m } from '@/paraglide/messages.js';
+
 // Mint a new chat session id in the `s-<ts_ms>-<rand6>` format
 // (e.g. `s-1777280106721-q5mzjc`). The same id is used as the chat row id,
 // the open-agent-sdk session id, and the per-session workspace directory
@@ -38,11 +40,18 @@ export async function uploadChatImage(file: File): Promise<string> {
     method: 'POST',
     body: formData,
   });
-  if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+  if (!res.ok) {
+    throw new Error(m['common.upload.failed_status']({ status: res.status }));
+  }
 
-  const json = await res.json();
+  let json: any;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(m['common.upload.failed']());
+  }
   if (json.code !== 0 || !json.data?.urls?.[0]) {
-    throw new Error(json.message || 'Upload failed');
+    throw new Error(m['common.upload.failed']());
   }
   return json.data.urls[0] as string;
 }
