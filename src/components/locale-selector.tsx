@@ -2,7 +2,12 @@ import { Check, ChevronDown, Globe, Languages } from 'lucide-react';
 
 import { localeNames } from '@/config/locale';
 import { cn } from '@/lib/utils';
-import { getLocale, locales, setLocale } from '@/paraglide/runtime.js';
+import {
+  getLocale,
+  locales,
+  localizeUrl,
+  setLocale,
+} from '@/paraglide/runtime.js';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,16 +19,28 @@ export function LocaleSelector({
   variant = 'icon',
   className,
   label,
+  localeHrefs,
 }: {
   variant?: 'icon' | 'pill';
   className?: string;
   label: string;
+  localeHrefs?: Partial<Record<(typeof locales)[number], string>>;
 }) {
   const locale = getLocale();
 
-  function handleSwitch(newLocale: string) {
+  function handleSwitch(newLocale: (typeof locales)[number]) {
+    const alternateHref = localeHrefs?.[newLocale];
+    if (alternateHref && typeof window !== 'undefined') {
+      setLocale(newLocale, { reload: false });
+      const destination = localizeUrl(
+        new URL(alternateHref, window.location.origin),
+        { locale: newLocale }
+      ).href;
+      window.location.assign(destination);
+      return;
+    }
     // Writes the locale cookie and reloads on the localized URL.
-    setLocale(newLocale as typeof locale);
+    setLocale(newLocale);
   }
 
   return (

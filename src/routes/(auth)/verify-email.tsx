@@ -58,6 +58,7 @@ function VerifyEmailPage() {
   const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
   const [paramsReady, setParamsReady] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initialSendFailed, setInitialSendFailed] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const lastSessionCheckAtRef = useRef(0);
 
@@ -70,19 +71,22 @@ function VerifyEmailPage() {
     setEmail(e);
     setCallbackUrl(cb);
     setParamsReady(true);
+    setInitialSendFailed(sent === '0');
 
     if (sent === '1') {
       if (getCooldownRemainingSeconds(e) === 0) {
         markSentNow(e);
       }
       setCooldownSeconds(getCooldownRemainingSeconds(e));
+    } else {
+      setCooldownSeconds(getCooldownRemainingSeconds(e));
+    }
+    if (sent !== null) {
       try {
         const url = new URL(window.location.href);
         url.searchParams.delete('sent');
         window.history.replaceState({}, '', url.toString());
       } catch {}
-    } else {
-      setCooldownSeconds(getCooldownRemainingSeconds(e));
     }
   }, []);
 
@@ -195,6 +199,7 @@ function VerifyEmailPage() {
         );
         return;
       }
+      setInitialSendFailed(false);
       markSentNow(email);
       setCooldownSeconds(getCooldownRemainingSeconds(email));
     } catch (e: any) {
@@ -242,6 +247,14 @@ function VerifyEmailPage() {
         </Link>
       }
     >
+      {initialSendFailed && (
+        <div
+          role="alert"
+          className="border-destructive/30 bg-destructive/5 text-destructive mb-4 rounded-xl border px-4 py-3 text-sm leading-relaxed"
+        >
+          {m['common.sign.verify_email_initial_send_failed']()}
+        </div>
+      )}
       <div className="grid gap-3">
         <Button
           type="button"

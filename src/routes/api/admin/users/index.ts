@@ -83,9 +83,10 @@ async function DELETE({ request }: { request: Request }) {
       return respErr('Forbidden');
     }
 
-    const { searchParams } = new URL(request.url);
-    const targetId = searchParams.get('id')?.trim() || '';
-    const confirmationEmail = searchParams.get('email')?.trim() || '';
+    const body = await request.json().catch(() => ({}));
+    const targetId = typeof body.id === 'string' ? body.id.trim() : '';
+    const confirmationEmail =
+      typeof body.email === 'string' ? body.email.trim() : '';
     if (!targetId || !confirmationEmail) {
       return respErr('User ID and email confirmation are required');
     }

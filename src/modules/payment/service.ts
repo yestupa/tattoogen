@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { db } from '@/core/db';
 import {
@@ -28,7 +28,7 @@ import {
   type NewSubscription,
   type UpdateSubscription,
 } from '@/modules/subscriptions/service';
-import { getSnowId, getUniSeq, getUuid } from '@/lib/hash';
+import { getSnowId, getUniSeq, getUuid, md5 } from '@/lib/hash';
 
 // --- Order types ---
 
@@ -351,8 +351,22 @@ async function handleCheckoutSuccess(session: any, provider: string) {
         paymentInfo?.discountAmount ?? existingOrder.discountAmount,
     };
 
-    // Atomically update order + create subscription + grant credits
-    await db().transaction(async (tx: any) => {
+    // Atomically claim the order before creating a subscription or granting
+    // credits. Concurrent callbacks can observe the same pre-transaction
+    // state, but only one conditional update can claim the payable row.
+    const processed = await db().transaction(async (tx: any) => {
+      const claimed = await tx
+        .update(order)
+        .set({ status: OrderStatus.PAID })
+        .where(
+          and(
+            eq(order.id, existingOrder.id),
+            inArray(order.status, [OrderStatus.CREATED, OrderStatus.PENDING])
+          )
+        )
+        .returning({ id: order.id });
+      if (!claimed.length) return false;
+
       // 1. Create subscription if applicable
       if (subscriptionInfo && session.subscriptionId) {
         const subNo = getSnowId();
@@ -424,12 +438,26 @@ async function handleCheckoutSuccess(session: any, provider: string) {
         .update(order)
         .set(orderUpdate)
         .where(eq(order.id, existingOrder.id));
+      return true;
     });
 
-    await notifyPaymentSuccess({
-      ...existingOrder,
-      ...orderUpdate,
-    }).catch((error) => {
+    const notificationPayment = processed
+      ? { ...existingOrder, ...orderUpdate }
+      : (
+          await db()
+            .select()
+            .from(order)
+            .where(
+              and(
+                eq(order.id, existingOrder.id),
+                eq(order.status, OrderStatus.PAID)
+              )
+            )
+            .limit(1)
+        )[0];
+    if (!notificationPayment) return;
+
+    await notifyPaymentSuccess(notificationPayment).catch((error) => {
       console.error('[payment] operational notification failed', error);
     });
   } else if (
@@ -470,98 +498,129 @@ export async function handleSubscriptionRenewal(
   if (session.paymentStatus !== PaymentStatus.SUCCESS) return;
 
   const paymentInfo = session.paymentInfo;
+  const providerTransactionId =
+    typeof paymentInfo?.transactionId === 'string'
+      ? paymentInfo.transactionId.trim()
+      : '';
+  const renewalTransactionId =
+    providerTransactionId ||
+    `renewal:${md5(
+      JSON.stringify({
+        provider,
+        subscriptionId: session.subscriptionId,
+        currentPeriodStart: subscriptionInfo.currentPeriodStart,
+        currentPeriodEnd: subscriptionInfo.currentPeriodEnd,
+      })
+    )}`;
 
   // Idempotency: drop duplicate renewals for the same provider transaction.
-  if (paymentInfo?.transactionId) {
-    const [dup] = await db()
-      .select()
-      .from(order)
-      .where(
-        and(
-          eq(order.transactionId, paymentInfo.transactionId),
-          eq(order.paymentProvider, provider)
-        )
+  const [dup] = await db()
+    .select()
+    .from(order)
+    .where(
+      and(
+        eq(order.transactionId, renewalTransactionId),
+        eq(order.paymentProvider, provider)
       )
-      .limit(1);
-    if (dup) {
-      await notifyPaymentSuccess(dup).catch((error) => {
-        console.error('[payment] renewal notification failed', error);
-      });
-      return;
-    }
+    )
+    .limit(1);
+  if (dup) {
+    await notifyPaymentSuccess(dup).catch((error) => {
+      console.error('[payment] renewal notification failed', error);
+    });
+    return;
   }
 
   const renewalOrderNo = getSnowId();
 
-  await db().transaction(async (tx: any) => {
-    // 1. Update subscription period
-    await tx
-      .update(subscription)
-      .set({
-        currentPeriodStart: subscriptionInfo.currentPeriodStart,
-        currentPeriodEnd: subscriptionInfo.currentPeriodEnd,
-      })
-      .where(eq(subscription.subscriptionNo, existingSub.subscriptionNo));
+  try {
+    await db().transaction(async (tx: any) => {
+      // 1. Update subscription period
+      await tx
+        .update(subscription)
+        .set({
+          currentPeriodStart: subscriptionInfo.currentPeriodStart,
+          currentPeriodEnd: subscriptionInfo.currentPeriodEnd,
+        })
+        .where(eq(subscription.subscriptionNo, existingSub.subscriptionNo));
 
-    // 2. Create renewal order
-    await tx.insert(order).values({
-      id: getUuid(),
-      orderNo: renewalOrderNo,
-      userId: existingSub.userId,
-      userEmail: existingSub.userEmail || '',
-      status: OrderStatus.PAID,
-      amount: existingSub.amount,
-      currency: existingSub.currency,
-      productId: existingSub.productId || '',
-      paymentType: 'renew',
-      paymentInterval: existingSub.interval || '',
-      paymentProvider: provider,
-      checkoutInfo: '',
-      description: 'Subscription Renewal',
-      productName: existingSub.productName || '',
-      planName: existingSub.planName || '',
-      creditsAmount: existingSub.creditsAmount,
-      creditsValidDays: existingSub.creditsValidDays,
-      paymentProductId: existingSub.paymentProductId || '',
-      paymentResult: JSON.stringify(session.paymentResult),
-      paymentAmount: paymentInfo?.paymentAmount,
-      paymentCurrency: paymentInfo?.paymentCurrency,
-      paymentEmail: paymentInfo?.paymentEmail,
-      paidAt: paymentInfo?.paidAt || new Date(),
-      invoiceId: paymentInfo?.invoiceId,
-      invoiceUrl: paymentInfo?.invoiceUrl,
-      subscriptionNo: existingSub.subscriptionNo,
-      subscriptionId: session.subscriptionId,
-      transactionId: paymentInfo?.transactionId,
-      paymentUserName: paymentInfo?.paymentUserName,
-      paymentUserId: paymentInfo?.paymentUserId,
-    });
-
-    // 3. Grant credits for renewal
-    if (existingSub.creditsAmount && existingSub.creditsAmount > 0) {
-      const credits = existingSub.creditsAmount;
-      const expiresAt = calculateCreditExpirationTime({
-        creditsValidDays: existingSub.creditsValidDays || 0,
-        currentPeriodEnd: subscriptionInfo.currentPeriodEnd,
-      });
-
-      await tx.insert(credit).values({
+      // 2. Create renewal order. The provider/transaction unique index is the
+      // final guard when duplicate callbacks race past the read above.
+      await tx.insert(order).values({
         id: getUuid(),
+        orderNo: renewalOrderNo,
         userId: existingSub.userId,
         userEmail: existingSub.userEmail || '',
-        orderNo: renewalOrderNo,
+        status: OrderStatus.PAID,
+        amount: existingSub.amount,
+        currency: existingSub.currency,
+        productId: existingSub.productId || '',
+        paymentType: 'renew',
+        paymentInterval: existingSub.interval || '',
+        paymentProvider: provider,
+        checkoutInfo: '',
+        description: 'Subscription Renewal',
+        productName: existingSub.productName || '',
+        planName: existingSub.planName || '',
+        creditsAmount: existingSub.creditsAmount,
+        creditsValidDays: existingSub.creditsValidDays,
+        paymentProductId: existingSub.paymentProductId || '',
+        paymentResult: JSON.stringify(session.paymentResult),
+        paymentAmount: paymentInfo?.paymentAmount,
+        paymentCurrency: paymentInfo?.paymentCurrency,
+        paymentEmail: paymentInfo?.paymentEmail,
+        paidAt: paymentInfo?.paidAt || new Date(),
+        invoiceId: paymentInfo?.invoiceId,
+        invoiceUrl: paymentInfo?.invoiceUrl,
         subscriptionNo: existingSub.subscriptionNo,
-        transactionNo: getSnowId(),
-        transactionType: 'grant',
-        transactionScene: 'renewal',
-        credits,
-        remainingCredits: credits,
-        description: 'Grant credit',
-        expiresAt,
-        status: 'active',
+        subscriptionId: session.subscriptionId,
+        transactionId: renewalTransactionId,
+        paymentUserName: paymentInfo?.paymentUserName,
+        paymentUserId: paymentInfo?.paymentUserId,
       });
-    }
-  });
+
+      // 3. Grant credits for renewal
+      if (existingSub.creditsAmount && existingSub.creditsAmount > 0) {
+        const credits = existingSub.creditsAmount;
+        const expiresAt = calculateCreditExpirationTime({
+          creditsValidDays: existingSub.creditsValidDays || 0,
+          currentPeriodEnd: subscriptionInfo.currentPeriodEnd,
+        });
+
+        await tx.insert(credit).values({
+          id: getUuid(),
+          userId: existingSub.userId,
+          userEmail: existingSub.userEmail || '',
+          orderNo: renewalOrderNo,
+          subscriptionNo: existingSub.subscriptionNo,
+          transactionNo: getSnowId(),
+          transactionType: 'grant',
+          transactionScene: 'renewal',
+          credits,
+          remainingCredits: credits,
+          description: 'Grant credit',
+          expiresAt,
+          status: 'active',
+        });
+      }
+    });
+  } catch (error) {
+    const [raced] = await db()
+      .select()
+      .from(order)
+      .where(
+        and(
+          eq(order.transactionId, renewalTransactionId),
+          eq(order.paymentProvider, provider)
+        )
+      )
+      .limit(1);
+    if (!raced) throw error;
+    await notifyPaymentSuccess(raced).catch((notificationError) => {
+      console.error('[payment] renewal notification failed', notificationError);
+    });
+    return;
+  }
 
   await notifyPaymentSuccess({
     orderNo: renewalOrderNo,

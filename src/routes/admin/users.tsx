@@ -203,9 +203,10 @@ function UsersPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (target: User) =>
-      apiDelete(
-        `/api/admin/users?id=${encodeURIComponent(target.id)}&email=${encodeURIComponent(deleteConfirmation.trim())}`
-      ),
+      apiDelete('/api/admin/users', {
+        id: target.id,
+        email: deleteConfirmation.trim(),
+      }),
     onSuccess: () => {
       toast.success(m['admin.users.deleted']());
       setDeletingUser(null);
@@ -495,7 +496,7 @@ function UsersPage() {
           }
         }}
       >
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11">
           <DialogHeader>
             <DialogTitle>{m['admin.users.delete_title']()}</DialogTitle>
             <DialogDescription>

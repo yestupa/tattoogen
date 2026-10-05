@@ -43,15 +43,15 @@ describe('post slug contract', () => {
   });
 
   it.each([
-    '../blocks/blog.tsx',
-    '../routes/blog/index.tsx',
-    '../routes/blog/$slug.tsx',
-    '../routes/sitemap[.]xml.ts',
-    '../routes/llms[.]txt.ts',
-    '../routes/llms-full[.]txt.ts',
-  ])('uses the shared encoded path in %s', (path) => {
+    ['../blocks/blog.tsx', 'blogPostPath(post.slug)'],
+    ['../routes/blog/index.tsx', 'blogPostPath(post.slug)'],
+    ['../routes/blog/$slug.tsx', 'blogPostPath(slug)'],
+    ['../routes/sitemap[.]xml.ts', 'blogPostPath(item.slug)'],
+    ['../routes/llms[.]txt.ts', 'blogPostPath(post.slug)'],
+    ['../routes/llms-full[.]txt.ts', 'blogPostPath(post.slug)'],
+  ])('uses the shared encoded path in %s', (path, call) => {
     const source = readFileSync(new URL(path, import.meta.url), 'utf8');
     expect(source).toContain("from '@/lib/post-slug'");
-    expect(source).toContain('blogPostPath(post.slug)');
+    expect(source).toContain(call);
   });
 });

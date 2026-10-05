@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
+import { buildBlogLocalePaths } from './index';
+
 const serverSource = readFileSync(
   new URL('./server.ts', import.meta.url),
   'utf8'
@@ -11,6 +13,25 @@ const homeSource = readFileSync(
 );
 
 describe('database-backed bilingual blog', () => {
+  it('maps each available translation to its own localized slug', () => {
+    expect(
+      buildBlogLocalePaths({
+        en: 'fine-line-tattoo-guide',
+        zh: 'xi-xian-wen-shen-zhi-nan',
+      })
+    ).toEqual({
+      en: '/blog/fine-line-tattoo-guide',
+      zh: '/blog/xi-xian-wen-shen-zhi-nan',
+    });
+  });
+
+  it('falls back to the localized blog index when a translation is missing', () => {
+    expect(buildBlogLocalePaths({ en: 'english-only' })).toEqual({
+      en: '/blog/english-only',
+      zh: '/blog',
+    });
+  });
+
   it('removes the bundled template articles', () => {
     for (const slug of [
       'design-a-tattoo-with-ai',

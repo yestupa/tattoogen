@@ -61,8 +61,8 @@ async function POST({ request }: { request: Request }) {
       ipHash,
     });
     return respData({ reference: row.id });
-  } catch (error: any) {
-    return respErr(error.message || 'Internal error', { status: 500 });
+  } catch {
+    return respErr('Unable to submit ticket', { status: 500 });
   }
 }
 

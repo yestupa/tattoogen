@@ -30,10 +30,12 @@ async function GET() {
           : null,
       }));
     return respData(products, {
-      headers: { 'Cache-Control': 'public, max-age=60, s-maxage=60' },
+      headers: {
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+      },
     });
-  } catch (error: any) {
-    return respErr(error.message || 'Unable to load pricing');
+  } catch {
+    return respErr('Unable to load pricing');
   }
 }
 

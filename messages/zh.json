@@ -83,6 +83,7 @@
   "common.sign.verify_email_tip": "完成验证后，请点击「继续」按钮。",
   "common.sign.verify_email_not_verified_yet": "尚未完成验证，请先前往邮箱点击验证链接。",
   "common.sign.verify_email_send_failed": "发送验证邮件失败",
+  "common.sign.verify_email_initial_send_failed": "首次验证邮件未能发送，请点击下方按钮重新发送。如仍然失败，请提交支持工单。",
   "common.sign.verify_email_email_required": "邮箱不能为空",
   "common.sign.resend_verification": "重新发送验证邮件",
   "common.sign.resend_verification_countdown": "{seconds} 秒后可重新发送",

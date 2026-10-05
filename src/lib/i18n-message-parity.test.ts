@@ -76,7 +76,12 @@ function legalMeta(slug: string, locale: 'en' | 'zh') {
 function routeHead(
   path: string,
   locale: 'en' | 'zh',
-  post?: object,
+  post?: {
+    slug: string;
+    title: string;
+    description: string;
+    alternateSlugs?: Partial<Record<'en' | 'zh', string>>;
+  },
   slug?: string
 ) {
   const text = source(path);
@@ -114,6 +119,15 @@ function routeHead(
         ),
     ])
   );
+  const loaderPost = post
+    ? {
+        ...post,
+        alternateSlugs: post.alternateSlugs ?? {
+          en: post.slug,
+          zh: post.slug,
+        },
+      }
+    : undefined;
   return new Function(
     'envConfigs',
     'm',
@@ -139,7 +153,7 @@ function routeHead(
     () => locale,
     {
       locale,
-      post,
+      post: loaderPost,
       title: dictionaries[locale]['landing.pricing.title'],
       description: dictionaries[locale]['landing.pricing.description'],
       meta: slug ? legalMeta(slug, locale) : undefined,

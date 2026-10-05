@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { validateUserDeletion } from './deletion';
@@ -35,5 +36,19 @@ describe('admin user deletion policy', () => {
     expect(
       validateUserDeletion({ ...base, confirmationEmail: 'wrong@example.com' })
     ).toMatch(/email confirmation/i);
+  });
+
+  it('keeps the confirmation email out of the request URL', () => {
+    const route = readFileSync(
+      new URL('../../routes/api/admin/users/index.ts', import.meta.url),
+      'utf8'
+    );
+    const page = readFileSync(
+      new URL('../../routes/admin/users.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(route).toContain('await request.json()');
+    expect(route).not.toContain("searchParams.get('email')");
+    expect(page).toContain("apiDelete('/api/admin/users', {");
   });
 });

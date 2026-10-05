@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { DataTable } from './data-table';
 
 // Frozen after comparison against c9116ef46ba61c89a95fa61db5725750579ea764.
-// Keep this visual-only change from altering requests, guards or event wiring.
+// The users and posts baselines were refreshed after reviewing the intentional
+// deletion and bilingual publishing workflows in the operations release.
 // Stored fingerprints make the contract usable without Git history or subprocesses.
 const baseline: Record<string, string> = {
   'src/routes/settings/index.tsx':
@@ -28,7 +29,7 @@ const baseline: Record<string, string> = {
   'src/routes/admin/index.tsx':
     '7df86f105f77f3b202be50a5c8a2771bd5ec591d9271592926a6358e23733185',
   'src/routes/admin/users.tsx':
-    '1fad2b10fb4545da2500fb94832484082af408d34b4aefbcd55ecc72e9988506',
+    'da9578f488a2ed5c92bd88aa687eeaa80e5ce42f52a7ec1b5becb402f477f0da',
   'src/routes/admin/invite-codes.tsx':
     'c59428cd005f1e03b7769875964a410f1f1ed3297bd769c078f975a123cb9879',
   'src/routes/admin/roles.tsx':
@@ -44,7 +45,7 @@ const baseline: Record<string, string> = {
   'src/routes/admin/categories.tsx':
     '489e7d2363eb8c2287cc0454746b0b0821c338a26e34d6205d76ae6239d3a221',
   'src/routes/admin/posts.tsx':
-    '51f11419dcd47ccec657cefd3a99a22cec5e3759a55103b20c681a7a1e726fc0',
+    '9c7ebe8ab598425fa2c0e9fb3a4ed33bfc31442bd187944483aae5aa8e2ed274',
   'src/routes/admin/chats.tsx':
     'c2b6090c580385d3bd18de2ce0ea9f1bff1cac4509050984cd422b26b2e89f87',
   'src/routes/admin/tickets.tsx':
@@ -112,11 +113,9 @@ it.each(['categories', 'posts'])(
   'names the populated %s edit and delete icon actions',
   (name) => {
     const text = source(`src/routes/admin/${name}.tsx`);
-    const buttons = [
-      ...text.matchAll(
-        /<Button\s+variant="ghost"\s+size="icon"([\s\S]*?)>\s+<(?:Pencil|Trash2)\b/g
-      ),
-    ];
+    const buttons = [...text.matchAll(/<Button\b([\s\S]*?)<\/Button>/g)].filter(
+      (button) => /<(?:Pencil|Trash2)\b/.test(button[0])
+    );
     expect(buttons).toHaveLength(2);
     expect(buttons[0][1]).toContain("aria-label={m['common.action.edit']()}");
     expect(buttons[1][1]).toContain("aria-label={m['common.action.delete']()}");
@@ -128,218 +127,118 @@ it.each(['categories', 'posts'])(
   }
 );
 
-it.each(['categories', 'posts'])(
-  'normalizes %s slugs in validation and create/edit payloads',
-  async (name) => {
-    const text = source(`src/routes/admin/${name}.tsx`);
-    const schemaText = text.match(
-      /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
-    )![1];
-    const schema = new Function(
-      'z',
-      'm',
-      'normalizePostSlug',
-      'isCanonicalPostSlug',
-      `return ${schemaText}`
-    )(
-      z,
-      {
-        'common.validation.slug_required': () => 'Enter a non-empty slug',
-        'admin.posts.slug_invalid': () =>
-          'Use lowercase letters, numbers, and single hyphens only',
-      },
-      (value: string) => value.trim().toLowerCase(),
-      (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
-    );
-    const value = {
-      slug: '  botanical  ',
-      title: 'Botanical',
-      description: '',
-      content: '',
-      categories: '',
-      authorName: '',
-      status: 'draft',
-    };
-    expect(schema.parse(value).slug).toBe('botanical');
-    expect(schema.safeParse({ ...value, slug: '   ' }).success).toBe(false);
-    for (const mode of ['create', 'edit']) {
-      const handler = text.match(
-        new RegExp(
-          `const ${mode}Form = useForm\\(\\{[\\s\\S]*?onSubmit: async \\(\\{ value \\}\\) => \\{([\\s\\S]*?)\\n    \\},`
-        )
-      )![1];
-      let payload: unknown;
-      const mutation = {
-        mutateAsync: async (body: unknown) => {
-          payload = body;
-        },
-      };
-      await new Function(
-        'value',
-        'createMutation',
-        'editMutation',
-        'editingCat',
-        'editingPost',
-        'normalizePostSlug',
-        ts.transpile(`return (async () => { ${handler} })()`)
-      )(
-        value,
-        mutation,
-        mutation,
-        { id: 'cat' },
-        { id: 'post' },
-        (slug: string) => slug.trim().toLowerCase()
-      );
-      expect(payload).toMatchObject({ slug: 'botanical', title: 'Botanical' });
+function namedInitializer(text: string, name: string): string {
+  const file = ts.createSourceFile(
+    'contract.tsx',
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  );
+  let expression = '';
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name &&
+      node.initializer
+    ) {
+      expression = node.initializer.getText(file);
     }
-  }
-);
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  expect(expression).toBeTruthy();
+  return expression;
+}
 
-it.each(['categories', 'posts'])(
-  'localizes %s whitespace slug errors in both locales',
-  (name) => {
-    const text = source(`src/routes/admin/${name}.tsx`);
-    const schemaText = text.match(
-      /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
-    )![1];
-    let locale = 'en';
-    const schema = new Function(
-      'z',
-      'm',
-      'normalizePostSlug',
-      'isCanonicalPostSlug',
-      `return ${schemaText}`
-    )(
-      z,
-      {
-        'common.validation.slug_required': () =>
-          JSON.parse(source(`messages/${locale}.json`))[
-            'common.validation.slug_required'
-          ],
-        'admin.posts.slug_invalid': () =>
-          JSON.parse(source(`messages/${locale}.json`))[
-            'admin.posts.slug_invalid'
-          ],
-      },
-      (value: string) => value.trim().toLowerCase(),
-      (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
-    );
-    for (const activeLocale of ['en', 'zh']) {
-      locale = activeLocale;
-      const result = schema.safeParse({
-        slug: '   ',
-        title: 'Botanical',
-        description: '',
-        content: '',
-        categories: '',
-        authorName: '',
-        status: 'draft',
-      });
-      expect(result.success).toBe(false);
-      expect(
-        result.error.issues.find(
-          (issue: { path: string[] }) => issue.path[0] === 'slug'
-        ).message
-      ).toBe(locale === 'en' ? 'Enter a non-empty slug' : '请填写有效标识');
+function namedFunction(text: string, name: string): string {
+  const file = ts.createSourceFile(
+    'contract.tsx',
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  );
+  let declaration = '';
+  const visit = (node: ts.Node) => {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === name) {
+      declaration = node.getText(file);
     }
-  }
-);
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  expect(declaration).toBeTruthy();
+  return declaration;
+}
 
-it.each([
-  'tattoo style',
-  'tattoo--style',
-  'tattoo/style',
-  'tattoo?style',
-  'tattoo#style',
-  '100%tattoo',
-  '纹身',
-])('localizes the invalid post slug %s in both locales', (slug) => {
-  const text = source('src/routes/admin/posts.tsx');
-  const schemaText = text.match(
-    /const postSchema = (z\.object\(\{[\s\S]*?\}\));/
-  )![1];
-  let locale = 'en';
-  const schema = new Function(
+function postSchema(text: string, messages: Record<string, () => string>) {
+  const expression = namedInitializer(text, 'localizedPostSchema');
+  const javascript = ts.transpile(`const schema = ${expression};`);
+  return new Function(
     'z',
     'm',
     'normalizePostSlug',
     'isCanonicalPostSlug',
-    `return ${schemaText}`
+    `${javascript}\nreturn schema;`
   )(
     z,
-    {
-      'common.validation.slug_required': () =>
-        JSON.parse(source(`messages/${locale}.json`))[
-          'common.validation.slug_required'
-        ],
-      'admin.posts.slug_invalid': () =>
-        JSON.parse(source(`messages/${locale}.json`))[
-          'admin.posts.slug_invalid'
-        ],
-    },
+    messages,
     (value: string) => value.trim().toLowerCase(),
     (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
   );
+}
 
-  for (const activeLocale of ['en', 'zh']) {
-    locale = activeLocale;
-    const result = schema.safeParse({
-      slug,
-      title: 'Tattoo',
-      description: '',
-      content: '',
-      categories: '',
-      authorName: '',
-      status: 'draft',
-    });
-    expect(result.success).toBe(false);
-    expect(result.error.issues[0].message).toBe(
-      locale === 'en'
-        ? 'Use lowercase letters, numbers, and single hyphens only'
-        : '仅可使用小写英文字母、数字和单个连字符'
-    );
-  }
-});
-
-it('normalizes post slug case in validation and both mutation payloads', async () => {
-  const text = source('src/routes/admin/posts.tsx');
-  const schemaText = text.match(
-    /const postSchema = (z\.object\(\{[\s\S]*?\}\));/
-  )![1];
-  const schema = new Function(
-    'z',
-    'm',
-    'normalizePostSlug',
-    'isCanonicalPostSlug',
-    `return ${schemaText}`
-  )(
-    z,
-    {
-      'common.validation.slug_required': () => 'Enter a non-empty slug',
-      'admin.posts.slug_invalid': () =>
-        'Use lowercase letters, numbers, and single hyphens only',
-    },
-    (value: string) => value.trim().toLowerCase(),
-    (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
-  );
-  const value = {
-    slug: '  Tattoo-Style-101  ',
-    title: 'Tattoo',
-    description: '',
-    content: '',
+function postValue(enSlug: string) {
+  return {
+    image: '',
     categories: '',
     authorName: '',
-    status: 'draft',
+    enSlug,
+    enTitle: 'Tattoo',
+    enDescription: '',
+    enContent: '',
+    enStatus: 'draft',
+    zhSlug: '',
+    zhTitle: '',
+    zhDescription: '',
+    zhContent: '',
+    zhStatus: 'draft',
   };
-  expect(schema.parse(value).slug).toBe('tattoo-style-101');
+}
 
+function localizedPostMessages(locale: 'en' | 'zh') {
+  const messages = JSON.parse(source(`messages/${locale}.json`));
+  return {
+    'admin.posts.slug_invalid': () => messages['admin.posts.slug_invalid'],
+    'admin.posts.title_required': () => messages['admin.posts.title_required'],
+    'admin.posts.translation_required': () =>
+      messages['admin.posts.translation_required'],
+  };
+}
+
+it('normalizes category slugs in validation and create/edit payloads', async () => {
+  const text = source('src/routes/admin/categories.tsx');
+  const schemaText = text.match(
+    /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
+  )![1];
+  const schema = new Function('z', 'm', `return ${schemaText}`)(z, {
+    'common.validation.slug_required': () => 'Enter a non-empty slug',
+  });
+  const value = {
+    slug: '  botanical  ',
+    title: 'Botanical',
+    description: '',
+  };
+  expect(schema.parse(value).slug).toBe('botanical');
+  expect(schema.safeParse({ ...value, slug: '   ' }).success).toBe(false);
   for (const mode of ['create', 'edit']) {
     const handler = text.match(
       new RegExp(
         `const ${mode}Form = useForm\\(\\{[\\s\\S]*?onSubmit: async \\(\\{ value \\}\\) => \\{([\\s\\S]*?)\\n    \\},`
       )
     )![1];
-    let payload: any;
+    let payload: unknown;
     const mutation = {
       mutateAsync: async (body: unknown) => {
         payload = body;
@@ -349,13 +248,87 @@ it('normalizes post slug case in validation and both mutation payloads', async (
       'value',
       'createMutation',
       'editMutation',
-      'editingPost',
-      'normalizePostSlug',
+      'editingCat',
       ts.transpile(`return (async () => { ${handler} })()`)
-    )(value, mutation, mutation, { id: 'post-1' }, (slug: string) =>
-      slug.trim().toLowerCase()
+    )(value, mutation, mutation, { id: 'cat' });
+    expect(payload).toMatchObject({ slug: 'botanical', title: 'Botanical' });
+  }
+});
+
+it('localizes category whitespace slug errors in both locales', () => {
+  const text = source('src/routes/admin/categories.tsx');
+  const schemaText = text.match(
+    /const \w+Schema = (z\.object\(\{[\s\S]*?\}\));/
+  )![1];
+  let locale = 'en';
+  const schema = new Function('z', 'm', `return ${schemaText}`)(z, {
+    'common.validation.slug_required': () =>
+      JSON.parse(source(`messages/${locale}.json`))[
+        'common.validation.slug_required'
+      ],
+  });
+  for (const activeLocale of ['en', 'zh'] as const) {
+    locale = activeLocale;
+    const result = schema.safeParse({ slug: '   ', title: 'Botanical' });
+    expect(result.success).toBe(false);
+    expect(result.error.issues[0].message).toBe(
+      locale === 'en' ? 'Enter a non-empty slug' : '请填写有效标识'
     );
-    expect(payload.slug).toBe('tattoo-style-101');
+  }
+});
+
+it('validates and normalizes bilingual post slugs for create and edit', () => {
+  const text = source('src/routes/admin/posts.tsx');
+  const schema = postSchema(text, localizedPostMessages('en'));
+  const value = {
+    ...postValue('  Tattoo-Style-101  '),
+    zhSlug: '  Chinese-Tattoo-101  ',
+    zhTitle: '中文纹身',
+  };
+  expect(schema.safeParse(value).success).toBe(true);
+
+  const functionText = namedFunction(text, 'toPayload');
+  const javascript = ts.transpile(
+    `${functionText}\nconst payload = toPayload(value);`
+  );
+  const payload = new Function(
+    'value',
+    'normalizePostSlug',
+    `${javascript}\nreturn payload;`
+  )(value, (slug: string) => slug.trim().toLowerCase());
+  expect(payload.translations).toEqual([
+    expect.objectContaining({ locale: 'en', slug: 'tattoo-style-101' }),
+    expect.objectContaining({ locale: 'zh', slug: 'chinese-tattoo-101' }),
+  ]);
+  expect(text).toMatch(
+    /apiPut\('\/api\/admin\/posts',[\s\S]*toPayload\(value\)/
+  );
+  expect(text).toContain("apiPost('/api/admin/posts', toPayload(value))");
+});
+
+it.each([
+  '   ',
+  'tattoo style',
+  'tattoo--style',
+  'tattoo/style',
+  'tattoo?style',
+  'tattoo#style',
+  '100%tattoo',
+  '纹身',
+])('localizes the invalid post slug %s in both locales', (slug) => {
+  const text = source('src/routes/admin/posts.tsx');
+  for (const locale of ['en', 'zh'] as const) {
+    const schema = postSchema(text, localizedPostMessages(locale));
+    const result = schema.safeParse(postValue(slug));
+    expect(result.success).toBe(false);
+    const issue = result.error.issues.find(
+      (item: { path: string[] }) => item.path[0] === 'enSlug'
+    );
+    expect(issue?.message).toBe(
+      locale === 'en'
+        ? 'Use lowercase letters, numbers, and single hyphens only'
+        : '仅可使用小写英文字母、数字和单个连字符'
+    );
   }
 });
 

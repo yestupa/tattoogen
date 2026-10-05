@@ -42,10 +42,12 @@ export const getBlogPostFn = createServerFn()
     const slug = normalizePostSlug(data.slug);
     if (!isCanonicalPostSlug(slug)) return null;
     try {
-      const { findPublishedBySlug } = await import('@/modules/posts/service');
+      const { findPublishedBySlug, getPublishedTranslationSlugs } =
+        await import('@/modules/posts/service');
       const locale = normalizeLocale(data.locale);
       const row = await findPublishedBySlug(slug, locale);
       if (!row) return null;
+      const translated = await getPublishedTranslationSlugs(row.id);
       return {
         slug: row.slug,
         locale,
@@ -57,6 +59,9 @@ export const getBlogPostFn = createServerFn()
         authorImage: row.authorImage || undefined,
         source: 'db',
         content: row.content || '',
+        alternateSlugs: Object.fromEntries(
+          translated.map((item) => [item.locale, item.slug])
+        ),
       };
     } catch {
       return null;

@@ -14,7 +14,7 @@ import {
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { MarkdownContent } from '@/components/markdown-content';
-import { formatPostDate } from '@/content/posts';
+import { buildBlogLocalePaths, formatPostDate } from '@/content/posts';
 import { getBlogPostFn } from '@/content/posts/server';
 
 export const Route = createFileRoute('/blog/$slug')({
@@ -30,10 +30,17 @@ export const Route = createFileRoute('/blog/$slug')({
     if (!loaderData) return {};
     const { locale, post } = loaderData;
     const title = `${post.title} | ${envConfigs.app_name}`;
-    const urlFor = (loc: typeof locale) =>
-      localizeUrl(new URL(blogPostPath(post.slug), envConfigs.app_url), {
+    const alternateSlugs = post.alternateSlugs ?? { [locale]: post.slug };
+    const translatedLocales = locales.filter((loc) => alternateSlugs[loc]);
+    const urlFor = (loc: typeof locale) => {
+      const slug = alternateSlugs[loc] || post.slug;
+      return localizeUrl(new URL(blogPostPath(slug), envConfigs.app_url), {
         locale: loc,
       }).href;
+    };
+    const fallbackLocale = alternateSlugs[baseLocale]
+      ? baseLocale
+      : translatedLocales[0] || locale;
     return {
       meta: [
         { title },
@@ -47,12 +54,16 @@ export const Route = createFileRoute('/blog/$slug')({
       ],
       links: [
         { rel: 'canonical', href: urlFor(locale) },
-        ...locales.map((loc) => ({
+        ...translatedLocales.map((loc) => ({
           rel: 'alternate',
           hrefLang: loc,
           href: urlFor(loc),
         })),
-        { rel: 'alternate', hrefLang: 'x-default', href: urlFor(baseLocale) },
+        {
+          rel: 'alternate',
+          hrefLang: 'x-default',
+          href: urlFor(fallbackLocale),
+        },
       ],
     };
   },
@@ -61,10 +72,11 @@ export const Route = createFileRoute('/blog/$slug')({
 
 function BlogPostPage() {
   const { locale, post } = Route.useLoaderData();
+  const localeHrefs = buildBlogLocalePaths(post.alternateSlugs);
 
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
-      <Header />
+      <Header localeHrefs={localeHrefs} />
       <main className="paper-texture flex-1 px-4 py-12 sm:px-6 sm:py-16">
         <article className="border-border bg-card shadow-soft rounded-shell mx-auto max-w-3xl border p-6 sm:p-10 [&_pre]:max-w-full [&_pre]:overflow-x-auto">
           <Link

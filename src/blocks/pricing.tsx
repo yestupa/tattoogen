@@ -5,7 +5,9 @@ import { toast } from 'sonner';
 import { useSession } from '@/core/auth/client';
 import { useRouter } from '@/core/i18n/navigation';
 import { apiGet, apiPost } from '@/lib/api-client';
+import { getDiscountDisplayName } from '@/lib/discount-label';
 import { m } from '@/paraglide/messages.js';
+import { getLocale } from '@/paraglide/runtime.js';
 import { usePublicConfig } from '@/hooks/use-public-config';
 import {
   PaymentProviderModal,
@@ -117,9 +119,11 @@ function buildPlans(
       interval: m['landing.pricing.interval_month'](),
       featured: !!tier.popular,
       badge: product.discount
-        ? m['landing.pricing.save_percent']({
+        ? `${getDiscountDisplayName(product.discount, getLocale())} · ${m[
+            'landing.pricing.save_percent'
+          ]({
             percent: product.discount.percentage,
-          })
+          })}`
         : tier.popular
           ? m['landing.pricing.popular']()
           : undefined,

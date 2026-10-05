@@ -15,6 +15,13 @@
       "when": 1791131362195,
       "tag": "0001_operations_release",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791134038631,
+      "tag": "0002_payment_idempotency",
+      "breakpoints": true
     }
   ]
 }

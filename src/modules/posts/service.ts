@@ -122,6 +122,7 @@ export async function listPublishedArticles(
     .where(
       and(
         eq(post.type, PostType.ARTICLE),
+        eq(post.status, PostStatus.PUBLISHED),
         eq(postTranslation.locale, locale),
         eq(postTranslation.status, PostStatus.PUBLISHED)
       )
@@ -157,6 +158,7 @@ export async function findPublishedBySlug(
     .innerJoin(postTranslation, eq(postTranslation.postId, post.id))
     .where(
       and(
+        eq(post.status, PostStatus.PUBLISHED),
         eq(postTranslation.slug, normalizedSlug),
         eq(postTranslation.locale, locale),
         eq(postTranslation.status, PostStatus.PUBLISHED)
@@ -164,6 +166,28 @@ export async function findPublishedBySlug(
     )
     .limit(1);
   return result;
+}
+
+export async function getPublishedTranslationSlugs(
+  postId: string
+): Promise<Array<{ locale: 'en' | 'zh'; slug: string }>> {
+  const rows = await db()
+    .select({
+      locale: postTranslation.locale,
+      slug: postTranslation.slug,
+    })
+    .from(postTranslation)
+    .where(
+      and(
+        eq(postTranslation.postId, postId),
+        inArray(postTranslation.locale, ['en', 'zh']),
+        eq(postTranslation.status, PostStatus.PUBLISHED)
+      )
+    );
+  return rows.filter(
+    (row: { locale: string; slug: string }) =>
+      row.locale === 'en' || row.locale === 'zh'
+  ) as Array<{ locale: 'en' | 'zh'; slug: string }>;
 }
 
 function normalizeTranslations(inputs: TranslationInput[]) {
@@ -277,6 +301,14 @@ export async function updateLocalized(id: string, input: LocalizedPostInput) {
     const existingByLocale = new Map(
       existing.map((row: any) => [row.locale, row])
     );
+    const incomingLocales = new Set(translations.map((item) => item.locale));
+    for (const current of existing) {
+      if (!incomingLocales.has(current.locale as PostLocale)) {
+        await tx
+          .delete(postTranslation)
+          .where(eq(postTranslation.id, current.id));
+      }
+    }
     for (const item of translations) {
       const current: any = existingByLocale.get(item.locale);
       const values = {
@@ -317,9 +349,11 @@ export async function getPublishedLocaleAvailability() {
       slug: postTranslation.slug,
       updatedAt: postTranslation.updatedAt,
     })
-    .from(postTranslation)
+    .from(post)
+    .innerJoin(postTranslation, eq(postTranslation.postId, post.id))
     .where(
       and(
+        eq(post.status, PostStatus.PUBLISHED),
         inArray(postTranslation.locale, ['en', 'zh']),
         eq(postTranslation.status, PostStatus.PUBLISHED)
       )
@@ -388,8 +422,18 @@ export async function update(
 }
 
 export async function remove(id: string) {
-  await db()
-    .update(post)
-    .set({ status: PostStatus.ARCHIVED })
-    .where(eq(post.id, id));
+  await db().transaction(async (tx: any) => {
+    await tx
+      .update(post)
+      .set({ status: PostStatus.ARCHIVED, updatedAt: new Date() })
+      .where(eq(post.id, id));
+    await tx
+      .update(postTranslation)
+      .set({
+        status: PostStatus.ARCHIVED,
+        publishedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(postTranslation.postId, id));
+  });
 }

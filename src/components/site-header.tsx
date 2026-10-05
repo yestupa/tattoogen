@@ -29,7 +29,13 @@ function isActiveHref(pathname: string, href: string) {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
-export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
+export function SiteHeader({
+  navLinks,
+  localeHrefs,
+}: {
+  navLinks?: NavLink[];
+  localeHrefs?: Partial<Record<'en' | 'zh', string>>;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { data: session } = useSession();
@@ -103,6 +109,7 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
           <LocaleSelector
             label={m['common.nav.switch_language']()}
             className="touch-target"
+            localeHrefs={localeHrefs}
           />
           <ThemeToggle label={m['common.nav.toggle_theme']()} />
           {user ? (
@@ -186,6 +193,7 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
             <LocaleSelector
               label={m['common.nav.switch_language']()}
               className="touch-target"
+              localeHrefs={localeHrefs}
             />
             <ThemeToggle label={m['common.nav.toggle_theme']()} />
             <div className="flex-1" />

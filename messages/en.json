@@ -83,6 +83,7 @@
   "common.sign.verify_email_tip": "After verifying, click \"Continue\".",
   "common.sign.verify_email_not_verified_yet": "Not verified yet. Please click the link in your email first.",
   "common.sign.verify_email_send_failed": "Failed to send verification email",
+  "common.sign.verify_email_initial_send_failed": "We could not send the first verification email. Use the resend button below. If it still fails, submit a support ticket.",
   "common.sign.verify_email_email_required": "Email is required",
   "common.sign.resend_verification": "Resend verification email",
   "common.sign.resend_verification_countdown": "Resend in {seconds}s",

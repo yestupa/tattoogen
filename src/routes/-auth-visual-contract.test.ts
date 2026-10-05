@@ -58,6 +58,7 @@ const authRoutes = [
       'checkSessionAndRedirect',
       'handleResend',
       'handleContinue',
+      'initialSendFailed',
       'safeDecodeCallbackUrl',
       'visibilitychange',
     ],

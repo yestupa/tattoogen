@@ -7,6 +7,7 @@ import {
   readFastClawEvents,
   resolveFastClawConfig,
 } from '@/modules/agent/fastclaw';
+import { ensureFastClawUser } from '@/modules/agent/usage';
 import { getAllConfigs } from '@/modules/config/service';
 import { hasPermission } from '@/modules/rbac/service';
 import { getUuid } from '@/lib/hash';
@@ -50,6 +51,11 @@ async function POST({ request }: { request: Request }) {
     const input = inputSchema.parse(await request.json());
     const config = resolveFastClawConfig(await getAllConfigs());
     if (!config) return respErr('FastClaw is not configured');
+    await ensureFastClawUser({
+      config,
+      userId: session.user.id,
+      displayName: session.user.name,
+    });
     const instruction = [
       'Translate the following tattoo-industry article into natural Simplified Chinese.',
       'Preserve Markdown or HTML structure, URLs, product names, and factual meaning.',

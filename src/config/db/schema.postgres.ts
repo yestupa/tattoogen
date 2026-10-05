@@ -225,7 +225,7 @@ export const order = table(
       table.status,
       table.paymentType
     ),
-    index('idx_order_transaction_provider').on(
+    uniqueIndex('uq_order_transaction_provider').on(
       table.transactionId,
       table.paymentProvider
     ),

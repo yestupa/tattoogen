@@ -4,7 +4,9 @@ import { Coins } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { apiGet, apiPost } from '@/lib/api-client';
+import { getDiscountDisplayName } from '@/lib/discount-label';
 import { m } from '@/paraglide/messages.js';
+import { getLocale } from '@/paraglide/runtime.js';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,7 +26,11 @@ interface TopUpProduct {
   basePriceInCents: number;
   credits: number;
   requiresSubscription?: boolean;
-  discount: { percentage: number } | null;
+  discount: {
+    percentage: number;
+    displayNameEn: string;
+    displayNameZh: string;
+  } | null;
 }
 
 /**
@@ -95,6 +101,14 @@ export function CreditTopUpDialog({
                 {pack.basePriceInCents !== pack.priceInCents && (
                   <p className="text-muted-foreground text-xs line-through">
                     ${(pack.basePriceInCents / 100).toLocaleString()}
+                  </p>
+                )}
+                {pack.discount && (
+                  <p className="text-primary text-xs font-medium">
+                    {getDiscountDisplayName(pack.discount, getLocale())} ·{' '}
+                    {m['landing.pricing.save_percent']({
+                      percent: pack.discount.percentage,
+                    })}
                   </p>
                 )}
                 <p className="text-muted-foreground text-sm">

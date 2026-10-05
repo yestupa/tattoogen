@@ -5,7 +5,8 @@
  * Any price, credits, or plan info sent by the client is IGNORED — only the
  * product_id is honored, and everything else is looked up here.
  *
- * To change pricing, edit this file and redeploy. Admin UI cannot alter prices.
+ * These values are the safe fallback. Admin pricing overrides can change the
+ * price, Credit grant, validity period, and availability without a redeploy.
  */
 
 import { PaymentInterval, PaymentType } from '@/core/payment/types';

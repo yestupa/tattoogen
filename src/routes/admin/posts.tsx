@@ -276,6 +276,10 @@ function PostsPage() {
         content: string;
       }>('/api/admin/posts/translate', input),
     onSuccess: (translation) => {
+      const values = form.state.values;
+      if (!values.zhSlug.trim() && values.enSlug.trim()) {
+        form.setFieldValue('zhSlug', normalizePostSlug(values.enSlug));
+      }
       form.setFieldValue('zhTitle', translation.title);
       form.setFieldValue('zhDescription', translation.description);
       form.setFieldValue('zhContent', translation.content);
@@ -566,7 +570,7 @@ function PostsPage() {
       </Card>
 
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
+        <DialogContent className="max-h-[92vh] overflow-y-auto rounded-2xl sm:max-w-4xl [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           <DialogHeader>
             <DialogTitle>
               {editingPostId
@@ -676,7 +680,7 @@ function PostsPage() {
         open={!!deletingPost}
         onOpenChange={(open) => !open && setDeletingPost(null)}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl [&_button]:min-h-11 [&_button]:min-w-11">
           <DialogHeader>
             <DialogTitle>{m['admin.posts.delete_title']()}</DialogTitle>
             <DialogDescription>

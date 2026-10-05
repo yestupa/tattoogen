@@ -60,8 +60,11 @@ export const apiPut = <T = void>(url: string, body?: unknown) =>
 export const apiPatch = <T = void>(url: string, body?: unknown) =>
   request<T>(url, { method: 'PATCH', body: JSON.stringify(body) });
 
-export const apiDelete = <T = void>(url: string) =>
-  request<T>(url, { method: 'DELETE' });
+export const apiDelete = <T = void>(url: string, body?: unknown) =>
+  request<T>(url, {
+    method: 'DELETE',
+    body: body == null ? undefined : JSON.stringify(body),
+  });
 
 // Query-string builder for paginated list endpoints.
 export function pageQuery(base: string, p: PageParams) {
