@@ -183,14 +183,18 @@ function NotFound() {
   const posts = postsQuery.data ?? [];
 
   return (
-    <div className="bg-background text-foreground flex min-h-svh flex-col">
+    <div className="bg-ink-bg text-ink-fg flex min-h-svh flex-col">
       <Header />
-      <main className="paper-texture flex-1 px-4 py-10 sm:px-6 sm:py-16">
-        <div className="mx-auto flex max-w-6xl flex-col gap-12">
+      <main className="flex-1">
+        <section
+          data-not-found-hero
+          className="section-ink paper-texture px-4 py-12 sm:px-6 sm:py-20"
+        >
           <PageState
             variant="not-found"
             code="404"
             artwork={<BrandArtwork />}
+            className="paper-ui border-paper-line bg-paper-panel shadow-[0_32px_90px_-48px_rgba(0,0,0,0.95)]"
             title={m['common.not_found.message']()}
             description={m['common.not_found.description']()}
             primaryAction={
@@ -204,16 +208,21 @@ function NotFound() {
               </Link>
             }
           />
+        </section>
 
-          <section aria-labelledby="not-found-blog-title">
+        <section
+          className="section-paper paper-texture px-4 py-16 sm:px-6 sm:py-24"
+          aria-labelledby="not-found-blog-title"
+        >
+          <div className="section-shell">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
-                <p className="text-primary text-xs font-semibold tracking-widest uppercase">
+                <p className="eyebrow-vermilion">
                   {m['common.not_found.blog_eyebrow']()}
                 </p>
                 <h2
                   id="not-found-blog-title"
-                  className="mt-2 font-serif text-3xl tracking-tight"
+                  className="font-display mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl"
                 >
                   {m['common.not_found.blog_title']()}
                 </h2>
@@ -254,8 +263,8 @@ function NotFound() {
                 </p>
               </div>
             )}
-          </section>
-        </div>
+          </div>
+        </section>
       </main>
       <Footer />
     </div>
@@ -274,10 +283,11 @@ function RootError({ error, reset }: ErrorComponentProps) {
     (status === undefined || status === 408 || status === 429 || status >= 500);
 
   return (
-    <main className="bg-background text-foreground flex min-h-svh items-center justify-center px-4 py-8 sm:px-6">
+    <main className="section-ink paper-texture flex min-h-svh items-center justify-center px-4 py-8 sm:px-6">
       <PageState
         variant="error"
         artwork={<BrandArtwork />}
+        className="paper-ui border-paper-line bg-paper-panel shadow-[0_32px_90px_-48px_rgba(0,0,0,0.95)]"
         title={m['common.error.title']()}
         description={m['common.state.request_failed']()}
         detail={

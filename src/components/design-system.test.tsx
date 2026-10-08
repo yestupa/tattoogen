@@ -71,6 +71,19 @@ describe('shared visual system components', () => {
     expect(html).toContain('[&amp;_input]:min-h-11');
   });
 
+  it('renders authentication on an ink canvas with a paper form surface', () => {
+    const html = renderToStaticMarkup(
+      <AuthShell eyebrow="Tattoo Generator" title="Welcome back">
+        <form aria-label="Sign in" />
+      </AuthShell>
+    );
+
+    expect(html).toContain('section-ink');
+    expect(html).toContain('paper-ui');
+    expect(html).toContain('eyebrow-vermilion');
+    expect(html).toContain('font-display');
+  });
+
   it('renders reusable heading copy and an optional action', () => {
     const html = renderToStaticMarkup(
       <PageHeading
@@ -104,6 +117,7 @@ describe('shared visual system components', () => {
     expect(html).toContain('Check the address');
     expect(html).toContain('Home');
     expect(html).toContain('Back');
+    expect(html).toContain('font-display');
   });
 
   it('announces loading while preserving readable status copy', () => {

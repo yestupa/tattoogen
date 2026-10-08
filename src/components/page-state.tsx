@@ -56,7 +56,7 @@ export function PageState({
   return (
     <section
       className={cn(
-        'bg-card text-card-foreground mx-auto flex w-full max-w-3xl min-w-0 flex-col items-center rounded-3xl border px-6 py-12 text-center sm:px-10 sm:py-16',
+        'paper-ui border-paper-line bg-paper-panel text-paper-fg mx-auto flex w-full max-w-3xl min-w-0 flex-col items-center rounded-[1.5rem] border px-6 py-12 text-center shadow-[0_24px_70px_-48px_rgba(17,17,16,0.55)] sm:px-10 sm:py-16',
         className
       )}
     >
@@ -82,7 +82,7 @@ export function PageState({
             {code}
           </p>
         )}
-        <Heading className="font-serif text-3xl tracking-tight text-balance sm:text-4xl">
+        <Heading className="font-display text-3xl leading-tight font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
           {title}
         </Heading>
         <div className="text-muted-foreground mx-auto max-w-xl text-sm leading-relaxed text-pretty sm:text-base">

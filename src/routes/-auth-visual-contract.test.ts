@@ -228,6 +228,29 @@ describe('authentication and root visual contracts', () => {
     }
   );
 
+  it('presents the 404 as an ink hero followed by paper recommendations', () => {
+    const source = readSource('./__root.tsx');
+    const notFound = source
+      .split('function NotFound()')[1]
+      ?.split('\nfunction RootError')[0];
+
+    expect(notFound).toContain('data-not-found-hero');
+    expect(notFound).toContain('section-ink');
+    expect(notFound).toContain('section-paper');
+    expect(notFound).toContain('href="/chat"');
+    expect(notFound).toContain('href="/blog"');
+    expect(notFound).toContain('not-found-blog-recommendations');
+  });
+
+  it('renders unexpected failures on the same ink canvas', () => {
+    const source = readSource('./__root.tsx');
+    const rootError = source.split('function RootError')[1];
+
+    expect(rootError).toContain('section-ink');
+    expect(rootError).toContain('paper-ui');
+    expect(rootError).toContain('onClick={reset}');
+  });
+
   it.each(['en', 'zh'])(
     'provides matched auth and page-state copy in %s',
     (locale) => {
