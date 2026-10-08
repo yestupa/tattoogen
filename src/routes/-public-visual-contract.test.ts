@@ -39,13 +39,18 @@ describe('public visual contracts', () => {
       [...main.matchAll(/<([A-Z]\w*)\b/g)].map((match) => match[1])
     ).toEqual([
       'Hero',
-      'ModelsStrip',
-      'Features',
-      'Gallery',
       'Stats',
+      'StartWays',
+      'Workbench',
+      'Features',
+      'Steps',
+      'Gallery',
+      'TryOn',
+      'Studio',
+      'Reviews',
       'Pricing',
-      'FAQ',
       'Blog',
+      'FAQ',
       'CTA',
     ]);
     expect(home.match(/<main\b/g)).toHaveLength(1);

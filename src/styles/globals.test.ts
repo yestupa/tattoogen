@@ -60,33 +60,41 @@ function darkHex(name: string): string | undefined {
 }
 
 describe('tattoo generator visual tokens', () => {
-  it('uses the approved warm paper and violet light palette', () => {
+  it('uses the approved warm paper and ink light palette', () => {
     for (const [name, color] of Object.entries({
-      background: '#fbf8f3',
-      card: '#fffdfc',
-      foreground: '#171827',
-      'muted-foreground': '#676779',
-      primary: '#7137f2',
-      'primary-hover': '#5f28d8',
-      secondary: '#f1eaff',
-      border: '#e6e0d8',
+      background: '#faf8f4',
+      card: '#ffffff',
+      foreground: '#211f1b',
+      'muted-foreground': '#6f6a5f',
+      primary: '#171613',
+      'primary-hover': '#2c2b27',
+      secondary: '#f1ede5',
+      border: '#e5e0d4',
     })) {
       expect(light).toMatch(new RegExp(`--${name}:\\s*${color}\\s*;`));
     }
   });
 
-  it('uses the approved dark surfaces and violet palette', () => {
+  it('uses the approved dark ink palette', () => {
     for (const [name, color] of Object.entries({
-      background: '#17151c',
-      card: '#211e28',
-      secondary: '#2a2632',
-      foreground: '#f5f1ea',
-      'muted-foreground': '#aaa3b4',
-      primary: '#9668ff',
-      border: '#393441',
+      background: '#111110',
+      card: '#1a1a18',
+      secondary: '#211f1b',
+      foreground: '#f4f0e8',
+      'muted-foreground': '#9b9488',
+      primary: '#e9e2d2',
+      border: '#2c2b27',
     })) {
       expect(dark).toMatch(new RegExp(`--${name}:\\s*${color}\\s*;`));
     }
+  });
+
+  it('exposes the approved reference anchors and display family', () => {
+    expect(css).toMatch(/--ink-bg:\s*#111110\s*;/);
+    expect(css).toMatch(/--ink-panel:\s*#1a1a18\s*;/);
+    expect(css).toMatch(/--paper-bg:\s*#faf8f4\s*;/);
+    expect(css).toMatch(/--vermilion:\s*#a83e2c\s*;/);
+    expect(css).toMatch(/--font-display:\s*'archivo variable'/);
   });
 
   it('maintains readable primary text contrast on dark cards', () => {
@@ -149,11 +157,11 @@ describe('tattoo generator visual tokens', () => {
     expect(touchTarget).toMatch(/min-height:\s*(44px|2\.75rem)\s*;/);
   });
 
-  it('provides reusable soft and panel shadows and local paper texture', () => {
-    expect(css).toMatch(/--shadow-soft:\s*var\(--warm-violet-shadow-soft\)/);
-    expect(css).toMatch(/--shadow-panel:\s*var\(--warm-violet-shadow-panel\)/);
-    expect(css).toMatch(/--warm-violet-shadow-soft:\s*[^;]*color-mix\(/);
-    expect(css).toMatch(/--warm-violet-shadow-panel:\s*[^;]*color-mix\(/);
+  it('provides reusable ink shadows and local paper texture', () => {
+    expect(css).toMatch(/--shadow-soft:\s*var\(--ink-shadow-soft\)/);
+    expect(css).toMatch(/--shadow-panel:\s*var\(--ink-shadow-panel\)/);
+    expect(css).toMatch(/--ink-shadow-soft:\s*[^;]*color-mix\(/);
+    expect(css).toMatch(/--ink-shadow-panel:\s*[^;]*color-mix\(/);
     const texture = css.match(/\.paper-texture\s*\{([^}]+)\}/)?.[1];
     expect(texture).toMatch(/background-image:[\s\S]*gradient\(/);
     expect(texture).not.toMatch(/url\(|data:/);
