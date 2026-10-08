@@ -313,6 +313,21 @@
     text-transform: uppercase;
   }
 
+  .landing-hero-launcher {
+    --foreground: var(--paper-fg);
+    --muted-foreground: var(--paper-muted);
+    --card: var(--paper-panel);
+    --background: var(--paper-bg);
+    --border: var(--paper-line);
+    --primary: var(--ink-bg);
+    --primary-foreground: var(--ink-fg);
+    --secondary: #f1ede5;
+    --secondary-foreground: var(--paper-fg);
+    --accent: #f1ede5;
+    --accent-foreground: var(--paper-fg);
+    --ring: var(--vermilion);
+  }
+
   .touch-target {
     min-width: 44px;
     min-height: 44px;

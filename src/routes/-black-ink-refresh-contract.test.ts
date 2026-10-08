@@ -48,4 +48,20 @@ describe('black ink site refresh contracts', () => {
     expect(root).not.toContain('@fontsource/libre-baskerville');
     expect(packageJson).not.toContain('"@fontsource/libre-baskerville"');
   });
+
+  it('keeps every new story block local, translated, and surface-aware', () => {
+    for (const block of [
+      'start-ways',
+      'workbench',
+      'steps',
+      'try-on',
+      'studio',
+      'reviews',
+    ]) {
+      const text = source(`../blocks/${block}.tsx`);
+      expect(text).toMatch(/section-(?:ink|paper)/);
+      expect(text).toContain('@/paraglide/messages.js');
+      expect(text).not.toMatch(/https?:\/\//);
+    }
+  });
 });

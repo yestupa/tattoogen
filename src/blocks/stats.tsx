@@ -21,14 +21,17 @@ export function Stats() {
   ];
 
   return (
-    <section className="px-4 py-12 sm:px-6 sm:py-16">
-      <div className="border-border bg-secondary/40 rounded-shell mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-10 border p-6 sm:grid-cols-4 sm:p-10">
+    <section className="section-ink border-ink-line border-y px-4 sm:px-6">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 sm:grid-cols-4">
         {items.map((s) => (
-          <div key={s.label} className="text-center">
-            <div className="text-primary font-serif text-3xl tracking-tight sm:text-4xl">
+          <div
+            key={s.label}
+            className="border-ink-line flex min-h-36 flex-col justify-center border-b px-4 py-7 text-center odd:border-r sm:min-h-40 sm:border-r sm:border-b-0 sm:last:border-r-0"
+          >
+            <div className="text-vermilion font-display text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">
               {s.value}
             </div>
-            <div className="text-muted-foreground mt-2 text-sm leading-snug">
+            <div className="text-ink-muted mt-3 text-xs leading-snug tracking-[0.08em] uppercase sm:text-sm">
               {s.label}
             </div>
           </div>

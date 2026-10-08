@@ -6,12 +6,26 @@ import { m } from '@/paraglide/messages.js';
 import { BrandArtwork } from '@/components/brand-artwork';
 import { buttonVariants } from '@/components/ui/button';
 
-// Original artwork studies, explicitly labelled as illustrative prompts.
-const swatches = [
-  'bg-background',
-  'bg-secondary/40',
-  'bg-muted',
-  'bg-secondary/70',
+const artworkStyles = [
+  'bg-[#f0e9dc] [&_svg]:rotate-[-7deg]',
+  'bg-[#e7ddd0] [&_svg]:scale-90',
+  'bg-[#f7f2e8] [&_svg]:rotate-[5deg]',
+  'bg-[#d9cbbb] [&_svg]:scale-110',
+  'bg-[#eee7dc] [&_svg]:-translate-x-3',
+  'bg-[#e3d8ca] [&_svg]:rotate-[-3deg]',
+  'bg-[#f5efe5] [&_svg]:translate-x-3',
+  'bg-[#ddd0c1] [&_svg]:scale-95',
+];
+
+const artworkLayouts = [
+  'sm:col-span-2 sm:row-span-2',
+  '',
+  '',
+  'sm:row-span-2',
+  '',
+  'sm:col-span-2',
+  '',
+  '',
 ];
 
 export function Gallery() {
@@ -27,49 +41,48 @@ export function Gallery() {
   ];
 
   return (
-    <section id="gallery" className="px-4 py-16 sm:px-6 sm:py-24">
-      <div className="mx-auto max-w-6xl">
+    <section id="gallery" className="section-paper px-4 py-20 sm:px-6 sm:py-28">
+      <div className="section-shell">
         <div className="text-center">
-          <p className="text-primary text-xs font-medium tracking-[0.18em] uppercase">
-            {m['landing.gallery.eyebrow']()}
-          </p>
-          <h2 className="mx-auto mt-4 max-w-2xl font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
+          <p className="eyebrow-vermilion">{m['landing.gallery.eyebrow']()}</p>
+          <h2 className="font-display mx-auto mt-4 max-w-3xl text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
             {m['landing.gallery.title']()}
           </h2>
-          <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-base">
+          <p className="text-paper-muted mx-auto mt-5 max-w-2xl text-base leading-7 sm:text-lg">
             {m['landing.gallery.description']()}
           </p>
         </div>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((prompt, i) => (
+        <div className="mt-12 grid auto-rows-[16rem] gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {items.map((prompt, index) => (
             <article
-              key={i}
-              className="border-border bg-card shadow-soft rounded-card overflow-hidden border"
+              key={prompt}
+              className={cn(
+                'group border-paper-line bg-paper-panel relative overflow-hidden rounded-[1.1rem] border',
+                artworkLayouts[index]
+              )}
             >
               <div
                 className={cn(
-                  'paper-texture relative flex aspect-[4/5] w-full items-center justify-center',
-                  swatches[i % swatches.length]
+                  'paper-texture absolute inset-0 flex items-center justify-center',
+                  artworkStyles[index]
                 )}
               >
                 <BrandArtwork
-                  className={cn(
-                    'text-foreground h-full w-auto max-w-full p-5',
-                    i % 2 === 1 && 'rotate-6'
-                  )}
+                  label={prompt}
+                  className="text-paper-fg h-full w-auto max-w-full p-5 transition-transform duration-500 group-hover:scale-[1.03]"
                 />
               </div>
-              <div className="p-4">
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  &ldquo;{prompt}&rdquo;
+              <div className="absolute right-3 bottom-3 left-3 rounded-xl border border-white/35 bg-black/72 p-3 backdrop-blur-sm">
+                <p className="line-clamp-2 text-xs leading-5 text-white/80">
+                  {prompt}
                 </p>
               </div>
             </article>
           ))}
         </div>
 
-        <p className="text-muted-foreground mt-5 text-center text-xs leading-relaxed">
+        <p className="text-paper-muted mt-5 text-center text-xs leading-relaxed">
           {m['landing.gallery.sample_note']()}
         </p>
         <div className="mt-10 flex justify-center">
@@ -77,7 +90,7 @@ export function Gallery() {
             href="/chat"
             className={cn(
               buttonVariants({ variant: 'outline', size: 'lg' }),
-              'touch-target gap-2 rounded-full px-6'
+              'touch-target border-paper-fg text-paper-fg hover:bg-paper-fg hover:text-paper-bg gap-2 rounded-full bg-transparent px-6'
             )}
           >
             {m['landing.gallery.view_all']()}

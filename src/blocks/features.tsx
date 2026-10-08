@@ -27,42 +27,54 @@ export function Features() {
   ];
 
   return (
-    <section id="features" className="px-4 py-16 sm:px-6 sm:py-24">
-      <div className="mx-auto max-w-6xl">
-        <div className="max-w-2xl">
-          <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
-            {m['landing.features.eyebrow']()}
-          </p>
-          <h2 className="mt-4 font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
-            {m['landing.features.title']()}
-          </h2>
-          <p className="text-muted-foreground mt-5 leading-7">
+    <section
+      id="features"
+      className="section-paper px-4 py-20 sm:px-6 sm:py-28"
+    >
+      <div className="section-shell">
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+          <div>
+            <p className="eyebrow-vermilion">
+              {m['landing.features.eyebrow']()}
+            </p>
+            <h2 className="font-display mt-4 text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
+              {m['landing.features.title']()}
+            </h2>
+          </div>
+          <p className="text-paper-muted max-w-2xl text-base leading-7 sm:text-lg lg:justify-self-end">
             {m['landing.features.description']()}
           </p>
         </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item) => (
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((item, index) => (
             <article
               key={item.title}
-              className="border-border bg-card shadow-soft rounded-card min-w-0 border p-6"
+              className="border-paper-line bg-paper-panel min-w-0 rounded-[1.25rem] border p-6 transition-transform hover:-translate-y-1"
             >
-              <div className="bg-secondary text-primary flex size-11 items-center justify-center rounded-xl">
-                <item.icon aria-hidden className="size-5" />
+              <div className="flex items-center justify-between">
+                <div className="bg-paper-fg text-paper-bg flex size-11 items-center justify-center rounded-full">
+                  <item.icon aria-hidden className="size-5" />
+                </div>
+                <span className="text-paper-muted font-display text-xs font-semibold">
+                  0{index + 1}
+                </span>
               </div>
-              <h3 className="mt-6 text-lg leading-snug font-semibold">
+              <h3 className="font-display mt-8 text-xl leading-snug font-semibold tracking-[-0.03em]">
                 {item.title}
               </h3>
-              <p className="text-muted-foreground mt-3 text-sm leading-6">
+              <p className="text-paper-muted mt-3 text-sm leading-6">
                 {item.description}
               </p>
             </article>
           ))}
         </div>
-        <div className="border-border bg-secondary/40 rounded-shell mt-6 grid gap-5 border p-6 sm:grid-cols-2 sm:p-8">
-          <p className="bg-card text-foreground rounded-card px-5 py-4 text-sm leading-6">
+
+        <div className="border-paper-line bg-paper-panel mt-5 grid gap-px overflow-hidden rounded-[1.25rem] border sm:grid-cols-2">
+          <p className="bg-paper-panel px-6 py-5 text-sm leading-6 font-medium">
             {m['landing.features.preview_prompt']()}
           </p>
-          <p className="text-secondary-foreground flex items-center text-sm leading-6">
+          <p className="text-paper-muted bg-[#f3efe7] px-6 py-5 text-sm leading-6">
             {m['landing.features.preview_reply']()}
           </p>
         </div>
