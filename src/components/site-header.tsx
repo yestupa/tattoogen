@@ -24,6 +24,7 @@ const isExternalHref = (href: string) => /^https?:\/\//.test(href);
 
 /** Exact match, or a prefix match for nested routes (`/chat/<id>`). */
 function isActiveHref(pathname: string, href: string) {
+  if (href.includes('#')) return false;
   const path = href.split(/[?#]/)[0];
   if (!path.startsWith('/') || path === '/') return pathname === path;
   return pathname === path || pathname.startsWith(`${path}/`);

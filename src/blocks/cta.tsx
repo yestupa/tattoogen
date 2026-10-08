@@ -7,13 +7,17 @@ import { buttonVariants } from '@/components/ui/button';
 
 export function CTA() {
   return (
-    <section className="px-4 py-16 sm:px-6 sm:py-24">
-      <div className="border-border from-secondary via-card to-card shadow-panel rounded-shell relative mx-auto max-w-6xl overflow-hidden border bg-gradient-to-br px-6 py-16 text-center sm:px-12 sm:py-20">
-        <div className="relative">
-          <h2 className="text-foreground font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
+    <section className="section-ink border-ink-line border-t px-4 py-20 sm:px-6 sm:py-28">
+      <div className="section-shell">
+        <div className="border-ink-line bg-ink-panel relative overflow-hidden rounded-[1.5rem] border px-6 py-16 text-center sm:px-12 sm:py-24">
+          <span
+            aria-hidden
+            className="bg-vermilion absolute top-0 left-1/2 h-px w-28 -translate-x-1/2"
+          />
+          <h2 className="font-display text-4xl leading-[0.94] font-semibold tracking-[-0.055em] text-balance sm:text-5xl lg:text-7xl">
             {m['landing.cta.title']()}
           </h2>
-          <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-base sm:text-lg">
+          <p className="text-ink-muted mx-auto mt-5 max-w-xl text-base leading-7 sm:text-lg">
             {m['landing.cta.subtitle']()}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -21,7 +25,7 @@ export function CTA() {
               href="/chat"
               className={cn(
                 buttonVariants({ size: 'lg' }),
-                'touch-target gap-2 rounded-full px-7'
+                'touch-target bg-ink-fg text-ink-bg gap-2 rounded-full px-7 shadow-none hover:bg-white'
               )}
             >
               {m['landing.cta.primary']()}
@@ -31,7 +35,7 @@ export function CTA() {
               href="#pricing"
               className={cn(
                 buttonVariants({ variant: 'outline', size: 'lg' }),
-                'touch-target rounded-full px-7'
+                'touch-target border-ink-line text-ink-fg hover:bg-ink-fg hover:text-ink-bg rounded-full bg-transparent px-7'
               )}
             >
               {m['landing.cta.secondary']()}

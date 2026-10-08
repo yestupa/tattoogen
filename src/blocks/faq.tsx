@@ -22,19 +22,17 @@ export function FAQ() {
   return (
     <section
       id="faq"
-      className="border-border border-t px-4 py-16 sm:px-6 sm:py-24"
+      className="section-paper border-paper-line border-t px-4 py-20 sm:px-6 sm:py-28"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="section-shell">
         <div className="text-center">
-          <p className="text-primary text-xs font-medium tracking-[0.18em] uppercase">
-            {m['landing.faq.eyebrow']()}
-          </p>
-          <h2 className="mt-4 font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
+          <p className="eyebrow-vermilion">{m['landing.faq.eyebrow']()}</p>
+          <h2 className="font-display mx-auto mt-4 max-w-3xl text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
             {m['landing.faq.title']()}
           </h2>
         </div>
 
-        <ul className="divide-border border-border bg-card rounded-card mx-auto mt-10 max-w-3xl divide-y border">
+        <ul className="divide-paper-line border-paper-line bg-paper-panel mx-auto mt-12 max-w-4xl divide-y rounded-[1.25rem] border">
           {items.map((item, i) => {
             const isOpen = open === i;
             return (
@@ -44,12 +42,12 @@ export function FAQ() {
                   onClick={() => setOpen(isOpen ? null : i)}
                   aria-expanded={isOpen}
                   aria-controls={`public-faq-${i}`}
-                  className="touch-target hover:bg-accent/40 flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition-colors"
+                  className="touch-target flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition-colors hover:bg-[#f5f1e8] sm:px-7 sm:py-6"
                 >
-                  <span className="text-foreground text-sm font-medium sm:text-base">
+                  <span className="text-paper-fg text-sm font-semibold sm:text-base">
                     {item.q}
                   </span>
-                  <span className="border-border text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full border">
+                  <span className="border-paper-line text-paper-muted flex size-8 shrink-0 items-center justify-center rounded-full border">
                     {isOpen ? (
                       <Minus aria-hidden className="size-3.5" />
                     ) : (
@@ -61,12 +59,12 @@ export function FAQ() {
                   id={`public-faq-${i}`}
                   aria-hidden={!isOpen}
                   className={cn(
-                    'text-muted-foreground grid overflow-hidden text-sm leading-relaxed transition-[grid-template-rows] duration-300 ease-out',
+                    'text-paper-muted grid overflow-hidden text-sm leading-relaxed transition-[grid-template-rows] duration-300 ease-out',
                     isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                   )}
                 >
                   <div className="min-h-0">
-                    <p className="px-5 pb-5">{item.a}</p>
+                    <p className="px-5 pb-5 sm:px-7 sm:pb-6">{item.a}</p>
                   </div>
                 </div>
               </li>

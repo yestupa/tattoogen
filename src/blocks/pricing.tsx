@@ -334,13 +334,14 @@ export function Pricing({
   }
 
   return (
-    <section id="pricing" className="px-4 py-16 sm:px-6 sm:py-24">
-      <div className="mx-auto max-w-6xl">
+    <section id="pricing" className="section-paper px-4 py-20 sm:px-6 sm:py-28">
+      <div className="section-shell">
         <div className="text-center">
-          <h2 className="font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
+          <p className="eyebrow-vermilion">{m['landing.pricing.eyebrow']()}</p>
+          <h2 className="font-display mx-auto mt-4 max-w-3xl text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
             {title ?? m['landing.pricing.title']()}
           </h2>
-          <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-base">
+          <p className="text-paper-muted mx-auto mt-5 max-w-xl text-base leading-7 sm:text-lg">
             {m['landing.pricing.description']()}
           </p>
         </div>

@@ -8,6 +8,8 @@ export function Header({
 } = {}) {
   const navLinks = [
     { href: '/chat', label: m['landing.nav.create']() },
+    { href: '/#features', label: m['landing.nav.features']() },
+    { href: '/#gallery', label: m['landing.nav.gallery']() },
     { href: '/pricing', label: m['landing.nav.pricing']() },
     { href: '/blog', label: m['blog.title']() },
   ];

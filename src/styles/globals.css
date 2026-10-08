@@ -291,12 +291,65 @@
   }
 
   .section-ink {
+    --background: var(--ink-bg);
+    --foreground: var(--ink-fg);
+    --card: var(--ink-panel);
+    --card-foreground: var(--ink-fg);
+    --popover: var(--ink-panel);
+    --popover-foreground: var(--ink-fg);
+    --primary: var(--ink-fg);
+    --primary-foreground: var(--ink-bg);
+    --secondary: var(--ink-panel);
+    --secondary-foreground: var(--ink-fg);
+    --muted: var(--ink-panel);
+    --muted-foreground: var(--ink-muted);
+    --accent: var(--ink-panel);
+    --accent-foreground: var(--ink-fg);
+    --border: var(--ink-line);
+    --input: var(--ink-line);
+    --ring: var(--vermilion);
     background: var(--ink-bg);
     color: var(--ink-fg);
   }
 
   .section-paper {
+    --background: var(--paper-bg);
+    --foreground: var(--paper-fg);
+    --card: var(--paper-panel);
+    --card-foreground: var(--paper-fg);
+    --popover: var(--paper-panel);
+    --popover-foreground: var(--paper-fg);
+    --primary: var(--paper-fg);
+    --primary-foreground: var(--paper-bg);
+    --secondary: #f1ede5;
+    --secondary-foreground: var(--paper-fg);
+    --muted: #f1ede5;
+    --muted-foreground: var(--paper-muted);
+    --accent: #f1ede5;
+    --accent-foreground: var(--paper-fg);
+    --border: var(--paper-line);
+    --input: var(--paper-line);
+    --ring: var(--vermilion);
     background: var(--paper-bg);
+    color: var(--paper-fg);
+  }
+
+  .paper-ui {
+    --background: var(--paper-bg);
+    --foreground: var(--paper-fg);
+    --card: var(--paper-panel);
+    --card-foreground: var(--paper-fg);
+    --primary: var(--paper-fg);
+    --primary-foreground: var(--paper-bg);
+    --secondary: #f1ede5;
+    --secondary-foreground: var(--paper-fg);
+    --muted: #f1ede5;
+    --muted-foreground: var(--paper-muted);
+    --accent: #f1ede5;
+    --accent-foreground: var(--paper-fg);
+    --border: var(--paper-line);
+    --input: var(--paper-line);
+    --ring: var(--vermilion);
     color: var(--paper-fg);
   }
 

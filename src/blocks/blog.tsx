@@ -13,34 +13,40 @@ export function Blog({ posts = [] }: { posts?: BlogPost[] } = {}) {
   const locale = getLocale();
 
   return (
-    <section id="blog" className="px-4 py-16 sm:px-6 sm:py-24">
-      <div className="border-border bg-card rounded-shell mx-auto max-w-6xl border p-6 sm:p-12">
-        <div className="mb-10 text-center">
-          <h2 className="font-serif text-3xl font-normal tracking-tight sm:text-4xl">
+    <section id="blog" className="section-ink px-4 py-20 sm:px-6 sm:py-28">
+      <div className="section-shell">
+        <div className="mb-12 grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+          <h2 className="font-display max-w-2xl text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
             {m['landing.blog.title']()}
           </h2>
-          <p className="text-muted-foreground mx-auto mt-5 max-w-lg">
+          <p className="text-ink-muted max-w-2xl text-base leading-7 sm:text-lg lg:justify-self-end">
             {m['landing.blog.description']()}
           </p>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
-            <BlogCard
-              key={post.slug}
-              href={blogPostPath(post.slug)}
-              title={post.title}
-              description={post.description}
-              image={post.image}
-              date={formatPostDate(post.createdAt, locale)}
-              authorName={post.authorName}
-              authorImage={post.authorImage}
-            />
-          ))}
+        <div className="paper-ui grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {posts.length > 0 ? (
+            posts.map((post) => (
+              <BlogCard
+                key={post.slug}
+                href={blogPostPath(post.slug)}
+                title={post.title}
+                description={post.description}
+                image={post.image}
+                date={formatPostDate(post.createdAt, locale)}
+                authorName={post.authorName}
+                authorImage={post.authorImage}
+              />
+            ))
+          ) : (
+            <p className="border-ink-line text-ink-muted rounded-[1.25rem] border px-6 py-10 text-sm leading-6 sm:col-span-2 lg:col-span-3">
+              {m['landing.blog.empty']()}
+            </p>
+          )}
         </div>
         <div className="mt-10 text-center">
           <Link
             href="/blog"
-            className="touch-target text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium transition-colors"
+            className="touch-target text-ink-muted hover:text-ink-fg inline-flex items-center gap-2 text-sm font-semibold transition-colors"
           >
             {m['landing.blog.view_all']()}
             <ArrowRight aria-hidden className="size-4" />

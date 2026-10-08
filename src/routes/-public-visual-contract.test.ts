@@ -6,13 +6,18 @@ const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
 const blocks = [
   'hero',
-  'models-strip',
-  'features',
-  'gallery',
   'stats',
+  'start-ways',
+  'workbench',
+  'features',
+  'steps',
+  'gallery',
+  'try-on',
+  'studio',
+  'reviews',
   'pricing',
-  'faq',
   'blog',
+  'faq',
   'cta',
 ];
 

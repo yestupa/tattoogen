@@ -18,10 +18,15 @@ import { Footer } from '@/blocks/footer';
 import { Gallery } from '@/blocks/gallery';
 import { Header } from '@/blocks/header';
 import { Hero } from '@/blocks/hero';
-import { ModelsStrip } from '@/blocks/models-strip';
 import { Pricing } from '@/blocks/pricing';
+import { Reviews } from '@/blocks/reviews';
+import { StartWays } from '@/blocks/start-ways';
 import { Stats } from '@/blocks/stats';
+import { Steps } from '@/blocks/steps';
+import { Studio } from '@/blocks/studio';
 import { SupportWidget } from '@/blocks/support-widget';
+import { TryOn } from '@/blocks/try-on';
+import { Workbench } from '@/blocks/workbench';
 import { getBlogPostsFn } from '@/content/posts/server';
 
 /**
@@ -54,17 +59,22 @@ function HomePage() {
   }, [router]);
 
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col">
+    <div className="bg-ink-bg text-ink-fg flex min-h-screen flex-col">
       <Header />
       <main className="flex flex-1 flex-col">
         <Hero />
-        <ModelsStrip />
-        <Features />
-        <Gallery />
         <Stats />
+        <StartWays />
+        <Workbench />
+        <Features />
+        <Steps />
+        <Gallery />
+        <TryOn />
+        <Studio />
+        <Reviews />
         <Pricing />
-        <FAQ />
         <Blog posts={posts} />
+        <FAQ />
         <CTA />
       </main>
       <Footer />
