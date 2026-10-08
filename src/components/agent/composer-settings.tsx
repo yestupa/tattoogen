@@ -73,7 +73,7 @@ export function ComposerSettings({
             variant="ghost"
             size="sm"
             disabled={disabled}
-            aria-label={`${m['agent.composer.resolution']()}: ${resolutionLabel}; ${m['agent.composer.aspect_ratio']()}: ${aspectLabel}`}
+            aria-label={`${resolutionLabel} · ${aspectLabel}. ${m['agent.composer.resolution']()}: ${resolutionLabel}; ${m['agent.composer.aspect_ratio']()}: ${aspectLabel}`}
             className="bg-secondary text-foreground hover:bg-muted h-11 gap-1.5 rounded-xl px-3 text-xs"
           />
         }

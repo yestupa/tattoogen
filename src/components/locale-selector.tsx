@@ -27,6 +27,8 @@ export function LocaleSelector({
   localeHrefs?: Partial<Record<(typeof locales)[number], string>>;
 }) {
   const locale = getLocale();
+  const localeName = localeNames[locale] || locale;
+  const triggerLabel = variant === 'pill' ? `${localeName}. ${label}` : label;
 
   function handleSwitch(newLocale: (typeof locales)[number]) {
     const alternateHref = localeHrefs?.[newLocale];
@@ -46,7 +48,7 @@ export function LocaleSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={label}
+        aria-label={triggerLabel}
         className={cn(
           'inline-flex items-center transition-colors outline-none',
           variant === 'icon'
@@ -63,7 +65,7 @@ export function LocaleSelector({
         ) : (
           <>
             <Globe aria-hidden className="size-4" />
-            <span>{localeNames[locale] || locale}</span>
+            <span>{localeName}</span>
             <ChevronDown aria-hidden className="size-4 opacity-70" />
           </>
         )}

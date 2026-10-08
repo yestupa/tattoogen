@@ -13,6 +13,27 @@ describe('black ink site refresh contracts', () => {
     expect(css).toContain('--vermilion: #a83e2c;');
   });
 
+  it('keeps small accent copy readable on ink surfaces', () => {
+    const css = source('../styles/globals.css').toLowerCase();
+    expect(css).toContain('--vermilion-on-ink: #cf6651;');
+    expect(css).toMatch(
+      /\.section-ink\s+\.eyebrow-vermilion\s*\{[^}]*var\(--vermilion-on-ink\)/
+    );
+    expect(css).toMatch(
+      /\.landing-hero-launcher\s*\{[^}]*--muted-foreground:\s*var\(--ink-muted\)/
+    );
+  });
+
+  it('includes visible dropdown copy in accessible names', () => {
+    const settings = source('../components/agent/composer-settings.tsx');
+    const localeSelector = source('../components/locale-selector.tsx');
+    expect(settings).toContain(
+      'aria-label={`${resolutionLabel} · ${aspectLabel}.'
+    );
+    expect(localeSelector).toContain("variant === 'pill'");
+    expect(localeSelector).toContain('`${localeName}. ${label}`');
+  });
+
   it('composes the approved homepage narrative', () => {
     const home = source('./index.tsx');
     expect(home.indexOf('<Hero')).toBeLessThan(home.indexOf('<Stats'));

@@ -21,6 +21,7 @@
   --paper-muted: #6f6a5f;
   --paper-line: #e5e0d4;
   --vermilion: #a83e2c;
+  --vermilion-on-ink: #cf6651;
 }
 
 @theme inline {
@@ -69,6 +70,7 @@
   --color-paper-muted: var(--paper-muted);
   --color-paper-line: var(--paper-line);
   --color-vermilion: var(--vermilion);
+  --color-vermilion-on-ink: var(--vermilion-on-ink);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -307,7 +309,7 @@
     --accent-foreground: var(--ink-fg);
     --border: var(--ink-line);
     --input: var(--ink-line);
-    --ring: var(--vermilion);
+    --ring: var(--vermilion-on-ink);
     background: var(--ink-bg);
     color: var(--ink-fg);
   }
@@ -366,19 +368,27 @@
     text-transform: uppercase;
   }
 
+  .section-ink .eyebrow-vermilion {
+    color: var(--vermilion-on-ink);
+  }
+
+  .section-ink .text-vermilion {
+    color: var(--vermilion-on-ink);
+  }
+
   .landing-hero-launcher {
-    --foreground: var(--paper-fg);
-    --muted-foreground: var(--paper-muted);
-    --card: var(--paper-panel);
-    --background: var(--paper-bg);
-    --border: var(--paper-line);
-    --primary: var(--ink-bg);
-    --primary-foreground: var(--ink-fg);
-    --secondary: #f1ede5;
-    --secondary-foreground: var(--paper-fg);
-    --accent: #f1ede5;
-    --accent-foreground: var(--paper-fg);
-    --ring: var(--vermilion);
+    --foreground: var(--ink-fg);
+    --muted-foreground: var(--ink-muted);
+    --card: var(--ink-panel);
+    --background: var(--ink-bg);
+    --border: var(--ink-line);
+    --primary: var(--ink-fg);
+    --primary-foreground: var(--ink-bg);
+    --secondary: var(--ink-panel);
+    --secondary-foreground: var(--ink-fg);
+    --accent: var(--ink-panel);
+    --accent-foreground: var(--ink-fg);
+    --ring: var(--vermilion-on-ink);
   }
 
   .touch-target {
