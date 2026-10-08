@@ -37,17 +37,29 @@ export function SiteHeader({
   localeHrefs?: Partial<Record<'en' | 'zh', string>>;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { data: session } = useSession();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
+  useEffect(() => {
+    const updateScrolled = () => setScrolled(window.scrollY > 12);
+    updateScrolled();
+    window.addEventListener('scroll', updateScrolled, { passive: true });
+    return () => window.removeEventListener('scroll', updateScrolled);
+  }, []);
   const pathname = usePathname();
   // Session caches can resolve before hydration; match the anonymous SSR markup.
   const user = hydrated ? session?.user : undefined;
 
   return (
     <header
-      className="border-border/70 bg-background/90 sticky top-0 z-50 w-full border-b backdrop-blur-md"
+      data-public-header
+      data-scrolled={scrolled}
+      className={cn(
+        'bg-ink-bg/95 text-ink-fg border-ink-line sticky top-0 z-50 w-full border-b backdrop-blur-xl transition-shadow duration-300',
+        scrolled && 'shadow-[0_16px_42px_-28px_rgba(0,0,0,0.9)]'
+      )}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && mobileOpen) {
           setMobileOpen(false);
@@ -55,19 +67,19 @@ export function SiteHeader({
         }
       }}
     >
-      <div className="mx-auto flex min-h-18 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+      <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-8">
         <Link
           href="/"
-          className="touch-target flex min-w-0 items-center gap-2.5 justify-self-start"
+          className="touch-target group flex min-w-0 items-center gap-2.5 justify-self-start"
         >
           <img
             src={envConfigs.app_logo}
             alt={envConfigs.app_name}
             width={32}
             height={32}
-            className="size-7"
+            className="size-7 rounded-full ring-1 ring-white/15"
           />
-          <span className="truncate font-serif text-base sm:text-lg">
+          <span className="font-display truncate text-base font-bold tracking-[-0.03em] sm:text-lg">
             {envConfigs.app_name}
           </span>
         </Link>
@@ -80,7 +92,7 @@ export function SiteHeader({
                 href={withUtmSource(link.href)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="touch-target text-muted-foreground hover:text-primary inline-flex items-center rounded-full px-3 text-sm transition-colors"
+                className="touch-target text-ink-muted hover:text-ink-fg inline-flex items-center rounded-full px-3 text-sm transition-colors"
               >
                 {link.label}
               </a>
@@ -93,10 +105,10 @@ export function SiteHeader({
                   isActiveHref(pathname, link.href) ? 'page' : undefined
                 }
                 className={cn(
-                  'touch-target inline-flex items-center rounded-full px-3 text-sm transition-colors',
+                  'touch-target after:bg-vermilion relative inline-flex items-center rounded-full px-3 text-sm font-medium transition-colors after:absolute after:right-3 after:bottom-1.5 after:left-3 after:h-px after:origin-left after:transition-transform',
                   isActiveHref(pathname, link.href)
-                    ? 'bg-secondary text-primary font-medium'
-                    : 'text-muted-foreground hover:text-primary'
+                    ? 'text-ink-fg after:scale-x-100'
+                    : 'text-ink-muted hover:text-ink-fg after:scale-x-0'
                 )}
               >
                 {link.label}
@@ -105,7 +117,7 @@ export function SiteHeader({
           )}
         </nav>
         {/* Desktop actions */}
-        <div className="hidden items-center gap-2 justify-self-end lg:flex [&>button]:min-h-11 [&>button]:min-w-11">
+        <div className="[&>button]:text-ink-muted [&>button]:hover:bg-ink-panel [&>button]:hover:text-ink-fg hidden items-center gap-2 justify-self-end lg:flex [&>button]:min-h-11 [&>button]:min-w-11">
           <LocaleSelector
             label={m['common.nav.switch_language']()}
             className="touch-target"
@@ -123,7 +135,7 @@ export function SiteHeader({
               href="/chat"
               className={cn(
                 buttonVariants(),
-                'touch-target gap-1.5 rounded-full px-5'
+                'touch-target bg-ink-fg text-ink-bg gap-1.5 rounded-full px-5 shadow-none hover:bg-white'
               )}
             >
               {m['common.nav.get_started']()}
@@ -136,7 +148,7 @@ export function SiteHeader({
         <button
           ref={menuButtonRef}
           type="button"
-          className="touch-target hover:bg-secondary flex items-center justify-center rounded-xl lg:hidden"
+          className="touch-target text-ink-fg hover:bg-ink-panel flex items-center justify-center rounded-xl transition-colors lg:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={
             mobileOpen
@@ -158,7 +170,7 @@ export function SiteHeader({
       {mobileOpen && (
         <div
           id="public-mobile-nav"
-          className="border-border bg-background border-t px-4 pt-2 pb-4 lg:hidden"
+          className="border-ink-line bg-ink-bg border-t px-4 pt-2 pb-4 lg:hidden"
         >
           <nav className="flex flex-col gap-2">
             {navLinks?.map((link) =>
@@ -168,7 +180,7 @@ export function SiteHeader({
                   href={withUtmSource(link.href)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="touch-target text-muted-foreground hover:bg-accent hover:text-foreground flex items-center rounded-md px-3 py-2 text-sm transition-colors"
+                  className="touch-target text-ink-muted hover:bg-ink-panel hover:text-ink-fg flex items-center rounded-md px-3 py-2 text-sm transition-colors"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
@@ -181,7 +193,12 @@ export function SiteHeader({
                   aria-current={
                     isActiveHref(pathname, link.href) ? 'page' : undefined
                   }
-                  className="touch-target text-muted-foreground hover:bg-accent hover:text-foreground flex items-center rounded-md px-3 py-2 text-sm transition-colors"
+                  className={cn(
+                    'touch-target text-ink-muted hover:bg-ink-panel hover:text-ink-fg flex items-center rounded-md border-l-2 px-3 py-2 text-sm transition-colors',
+                    isActiveHref(pathname, link.href)
+                      ? 'border-vermilion bg-ink-panel text-ink-fg'
+                      : 'border-transparent'
+                  )}
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
@@ -189,7 +206,7 @@ export function SiteHeader({
               )
             )}
           </nav>
-          <div className="border-border mt-3 flex items-center gap-2 border-t pt-3 [&>button]:min-h-11 [&>button]:min-w-11">
+          <div className="border-ink-line [&>button]:text-ink-muted [&>button]:hover:bg-ink-panel [&>button]:hover:text-ink-fg mt-3 flex items-center gap-2 border-t pt-3 [&>button]:min-h-11 [&>button]:min-w-11">
             <LocaleSelector
               label={m['common.nav.switch_language']()}
               className="touch-target"
@@ -208,7 +225,7 @@ export function SiteHeader({
                 href="/chat"
                 className={cn(
                   buttonVariants(),
-                  'touch-target gap-1.5 rounded-full px-5'
+                  'touch-target bg-ink-fg text-ink-bg gap-1.5 rounded-full px-5 shadow-none hover:bg-white'
                 )}
                 onClick={() => setMobileOpen(false)}
               >

@@ -242,11 +242,29 @@ describe('public visual contracts', () => {
     expect(header).toContain('aria-controls="public-mobile-nav"');
   });
 
+  it('uses a dark public header with a scroll-aware treatment', () => {
+    const header = source('../components/site-header.tsx');
+    expect(header).toContain('data-public-header');
+    expect(header).toContain('data-scrolled={scrolled}');
+    expect(header).toContain("window.addEventListener('scroll'");
+    expect(header).toContain('bg-ink-bg');
+  });
+
   it('restores keyboard focus to the mobile trigger when Escape closes the menu', () => {
     const header = source('../components/site-header.tsx');
     expect(header).toContain("event.key === 'Escape'");
     expect(header).toContain('menuButtonRef.current?.focus()');
     expect(header).toContain('ref={menuButtonRef}');
+  });
+
+  it('keeps the public footer dark and free of template attribution', () => {
+    const footer = source('../components/site-footer.tsx');
+    const footerBlock = source('../blocks/footer.tsx');
+    expect(footer).toContain('data-public-footer');
+    expect(footer).toContain('bg-ink-bg');
+    expect(footerBlock).toContain("href: '/blog'");
+    expect(footerBlock).toContain("href: '/contact'");
+    expect(`${footer}\n${footerBlock}`).not.toMatch(/Built with|ShipAny/i);
   });
 
   it.each(['en', 'zh'])('provides non-empty marketing copy in %s', (locale) => {
