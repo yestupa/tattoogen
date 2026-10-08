@@ -9,6 +9,10 @@ export function Footer() {
         { label: m['landing.nav.pricing'](), href: '/pricing' },
         { label: m['blog.title'](), href: '/blog' },
         { label: m['womb.footer.link'](), href: '/womb-tattoo-generator' },
+        {
+          label: m['fear.footer.link'](),
+          href: '/fear-god-tattoo-generator',
+        },
       ],
     },
     {

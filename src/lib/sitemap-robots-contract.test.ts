@@ -91,6 +91,7 @@ describe('localized crawling contracts', () => {
       '/',
       '/pricing',
       '/womb-tattoo-generator',
+      '/fear-god-tattoo-generator',
       '/blog',
       '/contact',
       '/privacy-policy',
