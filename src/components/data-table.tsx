@@ -103,7 +103,7 @@ export function DataTable<T>({
 
   return (
     <div
-      className="bg-card min-w-0 space-y-4 rounded-2xl border p-3 sm:p-4"
+      className="paper-ui border-paper-line bg-paper-panel min-w-0 space-y-4 rounded-2xl border p-3 shadow-[0_18px_54px_-44px_rgba(17,17,16,0.6)] sm:p-4"
       aria-busy={busy || undefined}
     >
       {showHeader && (
@@ -156,9 +156,9 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="min-w-0 overflow-x-auto rounded-xl border">
+      <div className="border-paper-line min-w-0 overflow-x-auto rounded-xl border">
         <Table>
-          <TableHeader className="bg-muted/40">
+          <TableHeader className="bg-paper-bg/80">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -202,7 +202,7 @@ export function DataTable<T>({
                       error || m['common.table.total']({ count: total })
                     }
                     headingLevel={2}
-                    className="max-w-none rounded-none border-0 py-10 sm:py-12 [&_h2]:text-xl"
+                    className="max-w-none rounded-none border-0 py-10 shadow-none sm:py-12 [&_h2]:text-xl"
                   />
                 </TableCell>
               </TableRow>
@@ -210,7 +210,7 @@ export function DataTable<T>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="focus-within:bg-primary/5 data-[state=selected]:bg-primary/10"
+                  className="focus-within:bg-vermilion/5 data-[state=selected]:bg-vermilion/10"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

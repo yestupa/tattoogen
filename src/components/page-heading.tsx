@@ -25,12 +25,8 @@ export function PageHeading({
       )}
     >
       <div className="min-w-0 space-y-3">
-        {eyebrow && (
-          <p className="text-primary text-xs font-semibold tracking-widest uppercase">
-            {eyebrow}
-          </p>
-        )}
-        <h1 className="text-foreground font-serif text-3xl tracking-tight text-balance sm:text-4xl">
+        {eyebrow && <p className="eyebrow-vermilion">{eyebrow}</p>}
+        <h1 className="text-foreground font-display text-3xl leading-tight font-semibold tracking-[-0.04em] text-balance sm:text-4xl">
           {title}
         </h1>
         {description && (

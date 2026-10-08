@@ -126,7 +126,7 @@ export function AppLayout({
 
   if (isPending || !authorized || !session?.user) {
     return (
-      <div className="bg-background flex min-h-svh items-center justify-center p-4">
+      <div className="section-ink paper-texture flex min-h-svh items-center justify-center p-4">
         <PageState
           variant="loading"
           title={loadingTitle}
@@ -140,7 +140,7 @@ export function AppLayout({
   return (
     <SidebarProvider
       data-app-workspace
-      className="bg-background h-svh min-h-0 overflow-hidden"
+      className="bg-sidebar h-svh min-h-0 overflow-hidden"
     >
       {/* Dialog portals live outside this subtree. Scope their touch targets to
           a mounted workspace so public, auth and agent surfaces stay unchanged. */}
@@ -179,15 +179,15 @@ export function AppLayout({
       {/* min-w-0: let the inset shrink below its content's min-content width —
           otherwise wide tables stretch the page and force horizontal scroll
           instead of scrolling inside their own overflow-x-auto wrappers */}
-      <main className="bg-background relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:m-2 md:ml-0 md:rounded-3xl md:border">
-        <header className="bg-background flex min-h-16 shrink-0 items-center gap-2 border-b">
+      <main className="paper-ui border-paper-line bg-paper-bg paper-texture relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:m-2 md:ml-0 md:rounded-[1.4rem] md:border">
+        <header className="border-paper-line bg-paper-panel/95 flex min-h-16 shrink-0 items-center gap-2 border-b backdrop-blur">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger
               aria-label={mobileNavLabel}
               className="text-primary size-11 rounded-xl focus-visible:ring-2"
             />
           </div>
-          <span className="min-w-0 truncate font-serif text-lg md:hidden">
+          <span className="font-display min-w-0 truncate text-lg font-semibold tracking-[-0.025em] md:hidden">
             {mobileBrand || brand}
           </span>
           <div className="flex-1" />
@@ -195,7 +195,7 @@ export function AppLayout({
             <div className="flex items-center gap-1 px-4">{headerExtra}</div>
           )}
         </header>
-        <div className="[&_input]:focus-visible:ring-primary/40 [&_textarea]:focus-visible:ring-primary/40 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [&_[data-slot=card]]:min-w-0 [&_[data-slot=card]]:rounded-2xl [&_[data-slot=card]]:shadow-none [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
+        <div className="[&_input]:focus-visible:ring-vermilion/30 [&_textarea]:focus-visible:ring-vermilion/30 [&_[data-slot=card]]:border-paper-line [&_[data-slot=card]]:bg-paper-panel min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [&_[data-slot=card]]:min-w-0 [&_[data-slot=card]]:rounded-2xl [&_[data-slot=card]]:shadow-none [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_textarea]:min-h-11">
           {children}
         </div>
       </main>

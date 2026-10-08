@@ -659,8 +659,21 @@ describe('dashboard visual and behavior contracts', () => {
     expect(layout).toContain('overflow-x-hidden');
     expect(layout).toContain('<BrandArtwork');
     expect(layout).toContain('mobileBrand || brand');
-    expect(layout).toContain('bg-background');
+    expect(layout).toContain('bg-paper-bg');
     expect(layout.match(/<main\b/g)).toHaveLength(1);
+  });
+
+  it('uses a dark sidebar and warm paper dashboard workspace', () => {
+    const layout = source('src/components/app-layout.tsx');
+    expect(layout).toContain('bg-sidebar');
+    expect(layout).toContain('paper-ui');
+    expect(layout).toContain('bg-paper-bg');
+    expect(layout).toContain('border-paper-line');
+    expect(layout).toContain('font-display');
+
+    const heading = source('src/components/page-heading.tsx');
+    expect(heading).toContain('eyebrow-vermilion');
+    expect(heading).toContain('font-display');
   });
 
   it('gives navigation and user menu accessible touch targets and purple active states', () => {
@@ -668,6 +681,8 @@ describe('dashboard visual and behavior contracts', () => {
     expect(sidebar).toContain('data-[active=true]:bg-primary');
     expect(sidebar).toContain('min-h-11');
     expect(sidebar).toContain('bg-sidebar');
+    expect(sidebar).toContain('text-sidebar-foreground');
+    expect(sidebar).toContain('font-display');
     const menu = source('src/components/user-menu.tsx');
     expect(menu).toContain('min-h-11');
     expect(menu).toContain('aria-label={name}');
@@ -685,6 +700,9 @@ describe('dashboard visual and behavior contracts', () => {
     expect(table).toContain('min-w-0');
     expect(table).toContain('<PageState');
     expect(table).toContain('data-table-skeleton');
+    expect(table).toContain('paper-ui');
+    expect(table).toContain('bg-paper-panel');
+    expect(table).toContain('border-paper-line');
   });
 
   it('renders loading rows instead of announcing an empty table', () => {

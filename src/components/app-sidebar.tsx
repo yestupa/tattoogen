@@ -162,7 +162,7 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar variant="inset" className="bg-sidebar">
+    <Sidebar variant="inset" className="bg-sidebar text-sidebar-foreground">
       <SidebarHeader className="px-3 py-5">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -176,7 +176,7 @@ export function AppSidebar({
                 alt={envConfigs.app_name}
                 className="size-8 shrink-0"
               />
-              <span className="flex-1 font-serif text-lg leading-none italic">
+              <span className="font-display flex-1 text-lg leading-none font-semibold tracking-[-0.025em]">
                 {brand}
               </span>
             </Link>
