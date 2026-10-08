@@ -25,7 +25,7 @@ export function BlogCard({
   return (
     <Link
       href={href}
-      className="group border-border bg-card hover:border-primary/40 shadow-soft rounded-card relative flex min-w-0 flex-col overflow-hidden border transition-colors"
+      className="group border-border bg-card hover:border-vermilion/50 relative flex min-w-0 flex-col overflow-hidden rounded-[1.1rem] border transition-[border-color,transform] hover:-translate-y-1"
     >
       {image && (
         <img
@@ -34,16 +34,16 @@ export function BlogCard({
           width={640}
           height={360}
           loading="lazy"
-          className="aspect-video w-full object-cover object-center"
+          className="aspect-video w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
         />
       )}
       {!image && (
-        <div className="bg-secondary/40 paper-texture flex aspect-video items-center justify-center">
+        <div className="bg-secondary/70 paper-texture flex aspect-video items-center justify-center overflow-hidden">
           <BrandArtwork className="text-foreground/70 h-36 w-auto p-3" />
         </div>
       )}
       <div className="flex flex-1 flex-col gap-3 p-6">
-        <h3 className="text-lg leading-snug font-semibold group-hover:underline group-hover:underline-offset-4">
+        <h3 className="font-display text-xl leading-snug font-semibold tracking-[-0.025em] group-hover:underline group-hover:underline-offset-4">
           {title}
         </h3>
         {description && (

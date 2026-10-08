@@ -75,26 +75,30 @@ function BlogPostPage() {
   const localeHrefs = buildBlogLocalePaths(post.alternateSlugs);
 
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col">
+    <div className="bg-ink-bg text-ink-fg flex min-h-screen flex-col">
       <Header localeHrefs={localeHrefs} />
-      <main className="paper-texture flex-1 px-4 py-12 sm:px-6 sm:py-16">
-        <article className="border-border bg-card shadow-soft rounded-shell mx-auto max-w-3xl border p-6 sm:p-10 [&_pre]:max-w-full [&_pre]:overflow-x-auto">
-          <Link
-            href="/blog"
-            className="touch-target text-muted-foreground hover:text-primary inline-flex items-center gap-2 text-sm font-medium transition-colors"
-          >
-            <ArrowLeft aria-hidden className="size-4" />
-            {m['blog.back_to_blog']()}
-          </Link>
-
-          <header className="border-border mt-8 mb-6 border-b pb-6">
-            <h1 className="text-foreground font-serif text-3xl leading-tight tracking-tight md:text-4xl">
+      <main className="flex-1">
+        <header
+          data-public-hero
+          className="section-ink px-4 py-14 sm:px-6 sm:py-20"
+        >
+          <div className="mx-auto max-w-4xl">
+            <Link
+              href="/blog"
+              className="touch-target text-ink-muted hover:text-ink-fg inline-flex items-center gap-2 text-sm font-semibold transition-colors"
+            >
+              <ArrowLeft aria-hidden className="size-4" />
+              {m['blog.back_to_blog']()}
+            </Link>
+            <h1 className="font-display mt-8 text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
               {post.title}
             </h1>
             {post.description && (
-              <p className="text-muted-foreground mt-3">{post.description}</p>
+              <p className="text-ink-muted mt-5 max-w-3xl text-base leading-7 sm:text-lg">
+                {post.description}
+              </p>
             )}
-            <div className="text-muted-foreground mt-4 flex flex-wrap items-center gap-4 text-sm">
+            <div className="text-ink-muted mt-6 flex flex-wrap items-center gap-4 text-sm">
               <span className="inline-flex items-center gap-1.5">
                 <Calendar aria-hidden className="size-4" />
                 {formatPostDate(post.createdAt, locale)}
@@ -115,21 +119,25 @@ function BlogPostPage() {
                 </span>
               )}
             </div>
-          </header>
+          </div>
+        </header>
 
-          {post.image && (
-            <img
-              src={post.image}
-              alt={post.title}
-              width={1200}
-              height={675}
-              loading="lazy"
-              className="border-border mb-8 w-full rounded-lg border object-cover"
-            />
-          )}
+        <section className="section-paper paper-texture px-4 py-12 sm:px-6 sm:py-16">
+          <article className="border-paper-line bg-paper-panel mx-auto max-w-4xl rounded-[1.4rem] border p-6 shadow-[0_24px_70px_-48px_rgba(17,17,16,0.55)] sm:p-10 [&_pre]:max-w-full [&_pre]:overflow-x-auto">
+            {post.image && (
+              <img
+                src={post.image}
+                alt={post.title}
+                width={1200}
+                height={675}
+                loading="lazy"
+                className="border-paper-line mb-9 aspect-video w-full rounded-xl border object-cover"
+              />
+            )}
 
-          <MarkdownContent content={post.content || ''} />
-        </article>
+            <MarkdownContent content={post.content || ''} />
+          </article>
+        </section>
       </main>
       <Footer />
     </div>

@@ -54,20 +54,30 @@ export const Route = createFileRoute('/pricing')({
 
 function PricingPage() {
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col">
+    <div className="bg-ink-bg text-ink-fg flex min-h-screen flex-col">
       <Header />
-      <main className="paper-texture flex-1 px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <h1 className="font-serif text-4xl leading-tight sm:text-5xl">
+      <main className="flex-1">
+        <section
+          data-public-hero
+          className="section-ink px-4 py-16 sm:px-6 sm:py-24"
+        >
+          <div className="section-shell text-center">
+            <p className="eyebrow-vermilion">
+              {m['landing.pricing.eyebrow']()}
+            </p>
+            <h1 className="font-display mx-auto mt-4 max-w-3xl text-5xl leading-[0.94] font-semibold tracking-[-0.055em] text-balance sm:text-6xl lg:text-7xl">
               {m['landing.pricing.title']()}
             </h1>
-            <p className="text-muted-foreground mx-auto mt-5 max-w-xl leading-7">
+            <p className="text-ink-muted mx-auto mt-5 max-w-xl text-base leading-7 sm:text-lg">
               {m['landing.pricing.description']()}
             </p>
           </div>
-          <Pricing compact />
-        </div>
+        </section>
+        <section className="section-paper paper-texture px-4 py-16 sm:px-6 sm:py-24">
+          <div className="section-shell">
+            <Pricing compact />
+          </div>
+        </section>
       </main>
       <Footer />
     </div>

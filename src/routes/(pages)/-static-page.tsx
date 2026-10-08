@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react';
 import { notFound, useLoaderData } from '@tanstack/react-router';
+import { ArrowLeft } from 'lucide-react';
 
+import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import {
@@ -91,18 +93,34 @@ function StaticPage() {
 
   return (
     <article>
-      <header className="border-border mb-6 border-b pb-5">
-        <h1 className="text-foreground text-3xl font-semibold tracking-tight md:text-4xl">
-          {meta.title}
-        </h1>
-        <p className="text-muted-foreground mt-2 text-sm">{meta.description}</p>
-        <p className="text-muted-foreground mt-2 text-xs">
-          {m['common.pages.last_updated']()}: {meta.updated_at}
-        </p>
+      <header
+        data-public-hero
+        className="section-ink px-4 py-14 sm:px-6 sm:py-20"
+      >
+        <div className="mx-auto max-w-4xl">
+          <Link
+            href="/"
+            className="touch-target text-ink-muted hover:text-ink-fg inline-flex items-center gap-2 text-sm font-semibold transition-colors"
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+            {m['common.pages.back_to_home']()}
+          </Link>
+          <h1 className="font-display mt-8 text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
+            {meta.title}
+          </h1>
+          <p className="text-ink-muted mt-5 max-w-3xl text-base leading-7 sm:text-lg">
+            {meta.description}
+          </p>
+          <p className="text-ink-muted mt-4 text-xs">
+            {m['common.pages.last_updated']()}: {meta.updated_at}
+          </p>
+        </div>
       </header>
-      <div className="text-foreground/90 text-[15px] leading-7">
-        <Content />
-      </div>
+      <section className="section-paper paper-texture px-4 py-12 sm:px-6 sm:py-16">
+        <div className="border-paper-line bg-paper-panel mx-auto max-w-4xl rounded-[1.4rem] border p-6 text-[15px] leading-7 shadow-[0_24px_70px_-48px_rgba(17,17,16,0.55)] sm:p-10 [&_pre]:max-w-full [&_pre]:overflow-x-auto">
+          <Content />
+        </div>
+      </section>
     </article>
   );
 }

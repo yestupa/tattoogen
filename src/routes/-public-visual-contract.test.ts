@@ -169,6 +169,35 @@ describe('public visual contracts', () => {
       expect(legal).toContain(marker);
   });
 
+  it('gives every public content route an ink hero and paper content surface', () => {
+    for (const path of [
+      './pricing.tsx',
+      './contact.tsx',
+      './blog/index.tsx',
+      './blog/$slug.tsx',
+    ]) {
+      const route = source(path);
+      expect(route, path).toContain('<Header');
+      expect(route, path).toContain('<Footer');
+      expect(route, path).toContain('data-public-hero');
+      expect(route, path).toContain('section-paper');
+    }
+
+    const legal = `${source('./(pages)/route.tsx')}\n${source(
+      './(pages)/-static-page.tsx'
+    )}`;
+    expect(legal).toContain('data-public-hero');
+    expect(legal).toContain('section-paper');
+  });
+
+  it('keeps the contact ticket endpoint and anti-spam fields intact', () => {
+    const contact = source('./contact.tsx');
+    expect(contact).toContain("apiPost<{ reference: string }>('/api/contact'");
+    expect(contact).toContain('startedAt');
+    expect(contact).toContain("website: ''");
+    expect(contact).toContain('maxLength={5000}');
+  });
+
   it('keeps metadata, queries and article rendering on their existing routes', () => {
     for (const path of [
       './index.tsx',

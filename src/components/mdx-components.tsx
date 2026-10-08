@@ -7,7 +7,7 @@ export const mdxComponents: MDXComponents = {
   h1: ({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
     <h1
       className={cn(
-        'text-foreground mt-6 mb-2 text-xl font-semibold tracking-tight md:text-2xl',
+        'text-foreground font-display mt-8 mb-3 text-2xl leading-tight font-semibold tracking-[-0.035em] md:text-3xl',
         className
       )}
       {...props}
@@ -16,7 +16,7 @@ export const mdxComponents: MDXComponents = {
   h2: ({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
     <h2
       className={cn(
-        'text-foreground mt-6 mb-2 text-lg font-semibold tracking-tight md:text-xl',
+        'text-foreground font-display mt-8 mb-3 text-xl leading-tight font-semibold tracking-[-0.03em] md:text-2xl',
         className
       )}
       {...props}
@@ -25,7 +25,7 @@ export const mdxComponents: MDXComponents = {
   h3: ({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) => (
     <h3
       className={cn(
-        'text-foreground mt-4 mb-1.5 text-base font-semibold tracking-tight',
+        'text-foreground font-display mt-6 mb-2 text-lg font-semibold tracking-[-0.025em]',
         className
       )}
       {...props}
@@ -76,7 +76,7 @@ export const mdxComponents: MDXComponents = {
   blockquote: ({ className, ...props }: HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
       className={cn(
-        'border-border text-muted-foreground my-4 border-l-2 pl-4 italic',
+        'border-vermilion bg-muted/60 text-muted-foreground my-6 rounded-r-lg border-l-2 px-5 py-3 italic',
         className
       )}
       {...props}
