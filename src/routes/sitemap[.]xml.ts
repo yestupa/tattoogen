@@ -7,6 +7,7 @@ import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 const STATIC_PATHS = [
   '',
   '/pricing',
+  '/womb-tattoo-generator',
   '/blog',
   '/contact',
   '/privacy-policy',

@@ -90,6 +90,7 @@ describe('localized crawling contracts', () => {
     for (const path of [
       '/',
       '/pricing',
+      '/womb-tattoo-generator',
       '/blog',
       '/contact',
       '/privacy-policy',
