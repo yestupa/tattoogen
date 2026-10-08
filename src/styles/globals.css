@@ -3,12 +3,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Font families — loaded via @fontsource imports (Inter, Libre Baskerville)
-   and a Google Fonts <link> (Noto Serif SC) in src/routes/__root.tsx.
-   These variables were previously injected by next/font. */
+/* Font families are loaded locally via @fontsource. Noto Sans SC stays in the
+   fallback stack so Chinese copy uses an installed CJK sans when available. */
 :root {
-  --font-sans: 'Inter Variable', 'Inter', sans-serif;
-  --font-serif-display: 'Libre Baskerville', serif;
+  --font-display: 'Archivo Variable', 'Arial Narrow', sans-serif;
+  --font-sans:
+    'Inter Variable', 'Inter', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  --font-serif-display: var(--font-display);
+  --ink-bg: #111110;
+  --ink-panel: #1a1a18;
+  --ink-fg: #f4f0e8;
+  --ink-muted: #9b9488;
+  --ink-line: #2c2b27;
+  --paper-bg: #faf8f4;
+  --paper-panel: #ffffff;
+  --paper-fg: #211f1b;
+  --paper-muted: #6f6a5f;
+  --paper-line: #e5e0d4;
+  --vermilion: #a83e2c;
 }
 
 @theme inline {
@@ -46,113 +58,118 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-ink-bg: var(--ink-bg);
+  --color-ink-panel: var(--ink-panel);
+  --color-ink-fg: var(--ink-fg);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-line: var(--ink-line);
+  --color-paper-bg: var(--paper-bg);
+  --color-paper-panel: var(--paper-panel);
+  --color-paper-fg: var(--paper-fg);
+  --color-paper-muted: var(--paper-muted);
+  --color-paper-line: var(--paper-line);
+  --color-vermilion: var(--vermilion);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-card: 0.875rem;
   --radius-shell: 1.125rem;
-  --shadow-soft: var(--warm-violet-shadow-soft);
-  --shadow-panel: var(--warm-violet-shadow-panel);
+  --shadow-soft: var(--ink-shadow-soft);
+  --shadow-panel: var(--ink-shadow-panel);
   --font-sans:
     var(--font-sans), -apple-system, 'system-ui', 'Segoe UI', Helvetica, Arial,
     sans-serif;
-  /* CJK serif glyphs use locally-installed fonts — a Chinese serif webfont
-     ships 300+ @font-face subsets (~100KB render-blocking CSS on every page)
-     and is not worth it for headings. */
   --font-serif:
-    var(--font-serif-display), ui-serif, Georgia, Cambria, 'Times New Roman',
-    'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', Times, serif;
+    var(--font-serif-display), 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 @layer base {
   :root {
-    /* Warm paper and ink with violet accents shared by every app surface. */
-    --background: #fbf8f3;
-    --foreground: #171827;
-    --card: #fffdfc;
+    --background: #faf8f4;
+    --foreground: #211f1b;
+    --card: #ffffff;
     --card-foreground: var(--foreground);
     --popover: var(--card);
     --popover-foreground: var(--foreground);
-    --primary: #7137f2;
+    --primary: #171613;
     --primary-readable: var(--primary);
-    --primary-hover: #5f28d8;
-    --primary-foreground: var(--card);
-    --secondary: #f1eaff;
-    --secondary-foreground: var(--primary-hover);
-    --muted: color-mix(in oklch, var(--border) 35%, var(--background));
-    --muted-foreground: #676779;
-    --accent: var(--secondary);
-    --accent-foreground: var(--primary-hover);
-    --destructive: #c8324a;
+    --primary-hover: #2c2b27;
+    --primary-foreground: #f4f0e8;
+    --secondary: #f1ede5;
+    --secondary-foreground: #211f1b;
+    --muted: #f1ede5;
+    --muted-foreground: #6f6a5f;
+    --accent: #f3e7e2;
+    --accent-foreground: #812f23;
+    --destructive: #b62924;
     --destructive-foreground: var(--card);
-    --border: #e6e0d8;
+    --border: #e5e0d4;
     --input: var(--border);
-    --ring: var(--primary);
-    --chart-1: var(--primary);
-    --chart-2: var(--primary-hover);
-    --chart-3: color-mix(in oklch, var(--primary) 65%, var(--background));
-    --chart-4: color-mix(in oklch, var(--primary) 65%, var(--foreground));
+    --ring: #a83e2c;
+    --chart-1: #a83e2c;
+    --chart-2: #171613;
+    --chart-3: #6f6a5f;
+    --chart-4: #d1c8b8;
     --chart-5: var(--muted-foreground);
     --radius: 0.75rem;
-    --warm-violet-shadow-soft: 0 4px 16px -4px
-      color-mix(in oklch, var(--primary-hover) 8%, transparent);
-    --warm-violet-shadow-panel:
-      0 12px 40px -12px
-        color-mix(in oklch, var(--primary-hover) 12%, transparent),
-      0 2px 8px color-mix(in oklch, var(--primary-hover) 4%, transparent);
+    --ink-shadow-soft: 0 4px 16px -4px
+      color-mix(in oklch, var(--ink-bg) 10%, transparent);
+    --ink-shadow-panel:
+      0 12px 40px -12px color-mix(in oklch, var(--ink-bg) 14%, transparent),
+      0 2px 8px color-mix(in oklch, var(--ink-bg) 6%, transparent);
     --paper-grain: color-mix(in oklch, var(--foreground) 2%, transparent);
-    --sidebar: var(--card);
-    --sidebar-foreground: var(--foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: var(--accent);
-    --sidebar-accent-foreground: var(--accent-foreground);
-    --sidebar-border: var(--border);
-    --sidebar-ring: var(--ring);
+    --sidebar: #111110;
+    --sidebar-foreground: #f4f0e8;
+    --sidebar-primary: #a83e2c;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #1a1a18;
+    --sidebar-accent-foreground: #f4f0e8;
+    --sidebar-border: #2c2b27;
+    --sidebar-ring: #a83e2c;
   }
 
   .dark {
-    --background: #17151c;
-    --foreground: #f5f1ea;
-    --card: #211e28;
+    --background: #111110;
+    --foreground: #f4f0e8;
+    --card: #1a1a18;
     --card-foreground: var(--foreground);
     --popover: var(--card);
     --popover-foreground: var(--foreground);
-    --primary: #9668ff;
-    --primary-readable: #aa86ff;
-    --primary-hover: #a47dff;
+    --primary: #e9e2d2;
+    --primary-readable: #f4f0e8;
+    --primary-hover: #f4f0e8;
     --primary-foreground: var(--background);
-    --secondary: #2a2632;
+    --secondary: #211f1b;
     --secondary-foreground: var(--foreground);
     --muted: var(--secondary);
-    --muted-foreground: #aaa3b4;
-    --accent: color-mix(in oklch, var(--primary) 14%, var(--secondary));
+    --muted-foreground: #9b9488;
+    --accent: #2f1c17;
     --accent-foreground: var(--foreground);
-    --destructive: #f36c82;
-    --destructive-foreground: var(--background);
-    --border: #393441;
+    --destructive: #f16b62;
+    --destructive-foreground: #111110;
+    --border: #2c2b27;
     --input: var(--border);
-    --ring: var(--primary);
-    --chart-1: var(--primary);
-    --chart-2: var(--primary-hover);
-    --chart-3: color-mix(in oklch, var(--primary) 65%, var(--background));
-    --chart-4: color-mix(in oklch, var(--primary) 65%, var(--foreground));
+    --ring: #c25945;
+    --chart-1: #c25945;
+    --chart-2: #e9e2d2;
+    --chart-3: #9b9488;
+    --chart-4: #6f6a5f;
     --chart-5: var(--muted-foreground);
-    --warm-violet-shadow-soft: 0 4px 16px -4px
-      color-mix(in oklch, var(--primary) 12%, transparent);
-    --warm-violet-shadow-panel:
-      0 12px 40px -12px color-mix(in oklch, var(--primary) 16%, transparent),
-      0 2px 8px color-mix(in oklch, var(--primary) 6%, transparent);
+    --ink-shadow-soft: 0 4px 16px -4px
+      color-mix(in oklch, black 32%, transparent);
+    --ink-shadow-panel:
+      0 12px 40px -12px color-mix(in oklch, black 40%, transparent),
+      0 2px 8px color-mix(in oklch, black 24%, transparent);
     --paper-grain: color-mix(in oklch, var(--foreground) 3%, transparent);
-    --sidebar: var(--card);
-    --sidebar-foreground: var(--foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: var(--accent);
-    --sidebar-accent-foreground: var(--accent-foreground);
-    --sidebar-border: var(--border);
-    --sidebar-ring: var(--ring);
+    --sidebar: #111110;
+    --sidebar-foreground: #f4f0e8;
+    --sidebar-primary: #c25945;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #1a1a18;
+    --sidebar-accent-foreground: #f4f0e8;
+    --sidebar-border: #2c2b27;
+    --sidebar-ring: #c25945;
   }
 }
 
@@ -268,6 +285,34 @@
 }
 
 @layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    font-variation-settings: 'wdth' 92;
+  }
+
+  .section-ink {
+    background: var(--ink-bg);
+    color: var(--ink-fg);
+  }
+
+  .section-paper {
+    background: var(--paper-bg);
+    color: var(--paper-fg);
+  }
+
+  .section-shell {
+    width: min(100% - 2rem, 72rem);
+    margin-inline: auto;
+  }
+
+  .eyebrow-vermilion {
+    color: var(--vermilion);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
   .touch-target {
     min-width: 44px;
     min-height: 44px;

@@ -39,4 +39,13 @@ describe('black ink site refresh contracts', () => {
     expect(combined).not.toContain('无需信用卡');
     expect(combined).not.toMatch(/tat\.ink/i);
   });
+
+  it('loads Archivo locally without the legacy serif display font', () => {
+    const root = source('./__root.tsx');
+    const packageJson = source('../../package.json');
+    expect(root).toContain('@fontsource-variable/archivo');
+    expect(packageJson).toContain('"@fontsource-variable/archivo"');
+    expect(root).not.toContain('@fontsource/libre-baskerville');
+    expect(packageJson).not.toContain('"@fontsource/libre-baskerville"');
+  });
 });
