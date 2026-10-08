@@ -532,7 +532,7 @@ function ChatSessionPage() {
   ]);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+    <div className="bg-paper-bg paper-texture flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
       {/* Messages */}
       <div
         ref={scrollRef}
@@ -556,7 +556,7 @@ function ChatSessionPage() {
               type="button"
               onClick={scrollToBottom}
               aria-label={m['agent.chat.scroll_to_bottom']()}
-              className="border-border bg-background text-muted-foreground hover:text-foreground pointer-events-auto flex size-11 items-center justify-center rounded-full border shadow-sm"
+              className="border-paper-line bg-paper-panel text-muted-foreground hover:text-foreground pointer-events-auto flex size-11 items-center justify-center rounded-full border shadow-sm"
             >
               <ArrowDown aria-hidden className="size-4" />
             </button>
@@ -568,7 +568,7 @@ function ChatSessionPage() {
       {/* pt-4 is the gap the transcript can never eat into: the scroll
           container's own bottom padding only shows at rest, so mid-scroll the
           last line used to run right up against the input box. */}
-      <div className="border-border bg-background shrink-0 overflow-hidden border-t px-4 pt-4 pb-5 sm:px-6">
+      <div className="border-paper-line bg-paper-bg/95 shrink-0 overflow-hidden border-t px-4 pt-4 pb-5 backdrop-blur sm:px-6">
         <div className="mx-auto w-full max-w-3xl min-w-0 space-y-2">
           <ChatComposer
             // Rebuild per session: the composer's own state (expanded or

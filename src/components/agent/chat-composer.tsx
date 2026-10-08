@@ -188,7 +188,7 @@ export function ChatComposer({
         setExpanded(false);
       }}
       className={cn(
-        'border-border bg-card focus-within:ring-ring/30 min-w-0 rounded-3xl border shadow-sm focus-within:ring-2 motion-safe:transition-shadow',
+        'paper-ui border-paper-line bg-paper-panel focus-within:ring-vermilion/25 min-w-0 rounded-[1.25rem] border shadow-[0_18px_60px_-42px_rgba(17,17,16,0.65)] focus-within:ring-2 motion-safe:transition-shadow',
         className
       )}
     >

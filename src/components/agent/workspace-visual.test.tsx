@@ -51,6 +51,18 @@ describe('agent workspace presentation contract', () => {
     expect(layout).toContain('body:has([data-agent-workspace])');
   });
 
+  it('uses the black ink shell with a warm paper working surface', () => {
+    const layout = source('./agent-layout.tsx');
+    expect(layout).toContain('bg-sidebar');
+    expect(layout).toContain('paper-ui');
+    expect(layout).toContain('bg-paper-bg');
+    expect(layout).toContain('font-display');
+
+    const sidebar = source('./chats-sidebar.tsx');
+    expect(sidebar).toContain('text-sidebar-foreground');
+    expect(sidebar).toContain('font-display');
+  });
+
   it('keeps a tablet preview and uses an accessible mobile sheet', () => {
     const preview = source('./preview-pane.tsx');
     expect(preview).toContain('SheetContent');
@@ -61,6 +73,8 @@ describe('agent workspace presentation contract', () => {
     expect(preview).toContain('headingLevel={2}');
     expect(preview).toContain('annotationHandler({ source: current, guide })');
     expect(preview).toContain('/api/storage/download?url=');
+    expect(preview).toContain('paper-ui');
+    expect(preview).toContain('bg-paper-panel');
   });
 
   it('resets each client session to a visible tablet preview while clearing old images', () => {
@@ -131,6 +145,8 @@ describe('agent workspace presentation contract', () => {
     expect(source('./composer-settings.tsx')).toContain(
       'aria-pressed={active}'
     );
+    expect(composer).toContain('bg-paper-panel');
+    expect(composer).toContain('border-paper-line');
   });
 
   it('announces streaming, keeps annotations, and honors reduced motion', () => {
@@ -140,6 +156,17 @@ describe('agent workspace presentation contract', () => {
     expect(transcript).toContain('motion-safe:animate-spin');
     expect(transcript).toContain('usePreviewPane');
     expect(transcript).toContain('surfacedSrcs');
+    expect(transcript).toContain('bg-vermilion/10');
+    expect(transcript).toContain('font-display');
+  });
+
+  it('keeps both chat entry points on the shared paper workspace', () => {
+    expect(source('../../routes/(agent)/chat/index.tsx')).toContain(
+      'paper-texture'
+    );
+    const session = source('../../routes/(agent)/chat/$sessionId.tsx');
+    expect(session).toContain('bg-paper-bg');
+    expect(session).toContain('border-paper-line');
   });
 
   it('uses shared empty states in collection and editor routes without changing queries', () => {

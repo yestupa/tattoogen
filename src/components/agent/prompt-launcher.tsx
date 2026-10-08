@@ -191,7 +191,7 @@ export function PromptLauncher({ className }: { className?: string }) {
 
   return (
     <div className={cn('w-full', className)}>
-      <h1 className="text-foreground text-center font-serif text-3xl font-normal tracking-[-0.01em] sm:text-4xl">
+      <h1 className="text-foreground font-display text-center text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
         {m['landing.hero.headline_1']()}
       </h1>
 

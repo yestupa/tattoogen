@@ -60,7 +60,7 @@ export function AgentLayout({ children }: { children: React.ReactNode }) {
 
   if (isPending || !userId) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
+      <div className="section-ink flex min-h-screen items-center justify-center">
         <div
           className="flex flex-col items-center gap-3"
           role="status"
@@ -112,7 +112,7 @@ export function AgentLayout({ children }: { children: React.ReactNode }) {
           {/* No fixed h-dvh here: the inset carries `m-2` in inset variant, so
               pinning it to the full viewport height pushes its bottom margin
               off-screen. Stretching inside the h-dvh provider keeps the gap. */}
-          <SidebarInset className="bg-background flex min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden md:rounded-3xl md:border md:shadow-none">
+          <SidebarInset className="paper-ui border-paper-line bg-paper-bg paper-texture flex min-h-0 min-w-0 flex-1 basis-0 flex-col overflow-hidden md:rounded-[1.4rem] md:border md:shadow-none">
             <AgentHeader showGallery={showPreview} />
             <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
               {children}
@@ -132,14 +132,14 @@ function AgentHeader({ showGallery }: { showGallery: boolean }) {
   const { open, images, setOpen, clearImage } = usePreviewPane();
 
   return (
-    <header className="border-border flex min-h-16 shrink-0 items-center gap-2 border-b px-3 sm:px-5">
+    <header className="border-paper-line bg-paper-panel/95 flex min-h-16 shrink-0 items-center gap-2 border-b px-3 backdrop-blur sm:px-5">
       <SidebarTrigger
         aria-label={m['agent.chats.title']()}
         className="size-11 rounded-xl"
       />
       {content.title && (
         <div className="ml-2 flex min-w-0 items-center gap-1">
-          <h1 className="truncate font-serif text-lg font-normal">
+          <h1 className="font-display truncate text-lg font-semibold tracking-[-0.025em]">
             {content.title}
           </h1>
           {content.onEditClick && (

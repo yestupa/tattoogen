@@ -275,7 +275,7 @@ function UserBubble({ content }: { content: string }) {
         </div>
       )}
       {text && (
-        <div className="bg-primary/10 text-foreground max-w-[85%] min-w-0 overflow-hidden rounded-2xl rounded-br-md px-4 py-3 text-sm leading-7 break-words whitespace-pre-wrap">
+        <div className="border-vermilion/20 bg-vermilion/10 text-foreground max-w-[85%] min-w-0 overflow-hidden rounded-2xl rounded-br-md border px-4 py-3 text-sm leading-7 break-words whitespace-pre-wrap">
           {text}
         </div>
       )}
@@ -570,7 +570,9 @@ function MarkdownContent({
             urlTransform={(url, key) => agentUrlTransform(url, key)}
             components={{
               h1: ({ children }) => (
-                <h2 className="font-serif text-xl">{children}</h2>
+                <h2 className="font-display text-xl font-semibold tracking-[-0.025em]">
+                  {children}
+                </h2>
               ),
               img: ({ src, alt }) => {
                 const url = src as string;

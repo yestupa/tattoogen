@@ -164,9 +164,9 @@ export function PreviewPane({
       : m['agent.preview.gallery']({ count: images.length });
 
   const content = (
-    <div className="bg-card border-border [&_button]:focus-visible:outline-ring flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border [&_a]:min-h-11 [&_a]:min-w-11 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2">
-      <div className="border-border flex min-h-16 shrink-0 items-center justify-between gap-2 border-b px-3">
-        <span className="truncate text-sm font-medium">
+    <div className="paper-ui border-paper-line bg-paper-panel [&_button]:focus-visible:outline-ring flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-[1.4rem] border shadow-[0_20px_65px_-44px_rgba(0,0,0,0.8)] [&_a]:min-h-11 [&_a]:min-w-11 [&_button]:min-h-11 [&_button]:min-w-11 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2">
+      <div className="border-paper-line flex min-h-16 shrink-0 items-center justify-between gap-2 border-b px-3">
+        <span className="font-display truncate text-sm font-semibold tracking-[-0.015em]">
           {annotating ? m['agent.annotation.title']() : title}
         </span>
         <div className="flex shrink-0 items-center gap-1">
@@ -292,7 +292,7 @@ export function PreviewPane({
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="bg-sidebar w-full max-w-full gap-0 p-2 motion-reduce:transition-none sm:max-w-full"
+          className="bg-ink-bg w-full max-w-full gap-0 p-2 motion-reduce:transition-none sm:max-w-full"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>
@@ -379,7 +379,7 @@ function EmptyPreview() {
       artwork={<BrandArtwork className="text-primary mx-auto max-w-32" />}
       title={m['agent.preview.empty_title']()}
       description={m['agent.preview.empty_description']()}
-      className="border-0 bg-transparent px-3 py-8 sm:px-3 sm:py-8 [&_h2]:text-xl [&_h2]:sm:text-2xl"
+      className="border-0 bg-transparent px-3 py-8 shadow-none sm:px-3 sm:py-8 [&_h2]:text-xl [&_h2]:sm:text-2xl"
     />
   );
 }

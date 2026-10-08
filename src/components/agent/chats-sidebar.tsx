@@ -121,7 +121,7 @@ export function ChatsSidebar() {
     <Sidebar
       variant="inset"
       aria-label={m['agent.chats.title']()}
-      className="[&_a]:min-h-11 [&_button]:min-h-11 [&_button]:min-w-11 [&_svg]:shrink-0"
+      className="bg-ink-bg text-sidebar-foreground [&_a]:min-h-11 [&_button]:min-h-11 [&_button]:min-w-11 [&_svg]:shrink-0"
     >
       <SidebarHeader className="relative px-3 pt-5 pb-3">
         <Button
@@ -145,7 +145,7 @@ export function ChatsSidebar() {
                 alt={envConfigs.app_name}
                 className="size-6 shrink-0"
               />
-              <span className="flex flex-1 items-center font-serif text-lg italic">
+              <span className="font-display flex flex-1 items-center text-lg font-semibold tracking-[-0.025em]">
                 {envConfigs.app_name}
               </span>
             </Link>
