@@ -96,6 +96,7 @@ describe('localized crawling contracts', () => {
       '/poison-tree-tattoo-generator',
       '/butterfly-tattoo-generator',
       '/ghost-face-tattoo-generator',
+      '/throat-tattoo-for-men-generator',
       '/blog',
       '/contact',
       '/privacy-policy',
