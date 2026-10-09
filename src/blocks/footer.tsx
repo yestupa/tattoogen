@@ -21,6 +21,10 @@ export function Footer() {
           label: m['poison.footer.link'](),
           href: '/poison-tree-tattoo-generator',
         },
+        {
+          label: m['butterfly.footer.link'](),
+          href: '/butterfly-tattoo-generator',
+        },
       ],
     },
     {
