@@ -1,0 +1,17 @@
+{
+  "name": "Tattoo Generator",
+  "short_name": "Tattoo Generator",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111110",
+  "theme_color": "#111110"
+}

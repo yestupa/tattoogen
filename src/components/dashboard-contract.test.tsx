@@ -682,7 +682,7 @@ describe('dashboard visual and behavior contracts', () => {
     expect(sidebar).toContain('min-h-11');
     expect(sidebar).toContain('bg-sidebar');
     expect(sidebar).toContain('text-sidebar-foreground');
-    expect(sidebar).toContain('font-display');
+    expect(sidebar).toContain('<BrandLogo');
     const menu = source('src/components/user-menu.tsx');
     expect(menu).toContain('min-h-11');
     expect(menu).toContain('aria-label={name}');

@@ -5,6 +5,7 @@ import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { Link, usePathname } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { localizeHref } from '@/paraglide/runtime.js';
+import { BrandLogo } from '@/components/brand-logo';
 import {
   Sidebar,
   SidebarContent,
@@ -169,16 +170,12 @@ export function AppSidebar({
             <Link
               href={brandHref}
               onClickCapture={closeCurrentNavigation}
-              className="hover:bg-sidebar-accent focus-visible:ring-primary flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm outline-none focus-visible:ring-2"
+              aria-label={
+                typeof brand === 'string' ? brand : envConfigs.app_name
+              }
+              className="hover:bg-sidebar-accent focus-visible:ring-primary flex min-h-11 w-full items-center rounded-xl px-3 py-2 text-left text-sm outline-none focus-visible:ring-2"
             >
-              <img
-                src={envConfigs.app_logo}
-                alt={envConfigs.app_name}
-                className="size-8 shrink-0"
-              />
-              <span className="font-display flex-1 text-lg leading-none font-semibold tracking-[-0.025em]">
-                {brand}
-              </span>
+              <BrandLogo alt="" className="w-44" />
             </Link>
           </SidebarMenuItem>
         </SidebarMenu>

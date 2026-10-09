@@ -20,7 +20,7 @@ export const envConfigs: Record<string, string> = {
   app_description:
     publicEnv('VITE_APP_DESCRIPTION') ??
     'Turn an idea or reference image into an original tattoo concept with an AI tattoo artist.',
-  app_logo: publicEnv('VITE_APP_LOGO') ?? '/logo.svg',
+  app_logo: publicEnv('VITE_APP_LOGO') ?? '/favicon.png',
 
   // Database
   database_url: procEnv.DATABASE_URL ?? '',

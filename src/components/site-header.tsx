@@ -3,10 +3,10 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
 import { Link, usePathname } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { cn } from '@/lib/utils';
 import { withUtmSource } from '@/lib/utm';
 import { m } from '@/paraglide/messages.js';
+import { BrandLogo } from '@/components/brand-logo';
 import { LocaleSelector } from '@/components/locale-selector';
 import { SiteUserMenu } from '@/components/site-user-menu';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -71,18 +71,9 @@ export function SiteHeader({
       <div className="mx-auto flex min-h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-8">
         <Link
           href="/"
-          className="touch-target group flex min-w-0 items-center gap-2.5 justify-self-start"
+          className="touch-target group flex min-w-0 items-center justify-self-start"
         >
-          <img
-            src={envConfigs.app_logo}
-            alt={envConfigs.app_name}
-            width={32}
-            height={32}
-            className="size-7 rounded-full ring-1 ring-white/15"
-          />
-          <span className="font-display truncate text-base font-bold tracking-[-0.03em] sm:text-lg">
-            {envConfigs.app_name}
-          </span>
+          <BrandLogo className="w-44 sm:w-48 xl:w-52" />
         </Link>
 
         <nav className="hidden items-center justify-center gap-2 lg:flex">

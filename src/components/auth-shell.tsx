@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
 import { Check } from 'lucide-react';
 
+import { Link } from '@/core/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { BrandArtwork } from '@/components/brand-artwork';
+import { BrandLogo } from '@/components/brand-logo';
 
 export interface AuthShellProps {
   eyebrow: string;
   title: string;
   description?: ReactNode;
   benefits?: readonly string[];
-  brand?: ReactNode;
   children: ReactNode;
   className?: string;
 }
@@ -19,7 +20,6 @@ export function AuthShell({
   title,
   description,
   benefits = [],
-  brand,
   children,
   className,
 }: AuthShellProps) {
@@ -37,7 +37,9 @@ export function AuthShell({
       <div className="border-ink-line bg-ink-panel relative grid w-full max-w-5xl min-w-0 overflow-hidden rounded-[1.6rem] border shadow-[0_32px_90px_-45px_rgba(0,0,0,0.95)] md:grid-cols-[0.92fr_1.08fr]">
         <div className="flex min-w-0 flex-col gap-5 border-b border-white/10 p-6 sm:p-8 md:gap-8 md:border-r md:border-b-0 md:p-10">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
-            {brand}
+            <Link href="/" className="touch-target inline-flex items-center">
+              <BrandLogo className="w-48 sm:w-56" />
+            </Link>
             <p className="eyebrow-vermilion">{eyebrow}</p>
           </div>
           <BrandArtwork className="text-ink-fg/85 mx-auto h-32 w-auto max-w-full md:h-72 md:flex-1" />

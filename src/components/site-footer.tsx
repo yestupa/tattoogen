@@ -4,6 +4,7 @@ import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { cn } from '@/lib/utils';
 import { withUtmSource } from '@/lib/utm';
+import { BrandLogo } from '@/components/brand-logo';
 import { LocaleSelector } from '@/components/locale-selector';
 
 export interface FooterColumn {
@@ -48,16 +49,9 @@ export function SiteFooter({
           <div>
             <Link
               href="/"
-              className="touch-target font-display mb-5 inline-flex items-center gap-2.5 text-lg font-bold tracking-[-0.03em]"
+              className="touch-target mb-5 inline-flex items-center"
             >
-              <img
-                src={envConfigs.app_logo}
-                alt=""
-                width={28}
-                height={28}
-                className="size-7 rounded-full ring-1 ring-white/15"
-              />
-              {envConfigs.app_name}
+              <BrandLogo className="w-56 sm:w-64" />
             </Link>
             {tagline && (
               <p className="font-display max-w-2xl text-3xl leading-[1.08] font-semibold tracking-[-0.045em] text-balance sm:text-4xl lg:text-5xl">

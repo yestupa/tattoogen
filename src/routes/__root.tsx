@@ -87,14 +87,19 @@ export const Route = createRootRoute({
         { property: 'og:title', content: envConfigs.app_name },
         { property: 'og:description', content: description },
         { property: 'og:image', content: ogImage },
+        { property: 'og:image:width', content: '1536' },
+        { property: 'og:image:height', content: '1024' },
+        { property: 'og:image:alt', content: envConfigs.app_name },
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: envConfigs.app_name },
         { name: 'twitter:description', content: description },
         { name: 'twitter:image', content: ogImage },
+        { name: 'twitter:image:alt', content: envConfigs.app_name },
       ],
       links: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'apple-touch-icon', href: '/logo.png' },
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'apple-touch-icon', href: '/favicon.png' },
+        { rel: 'manifest', href: '/site.webmanifest' },
       ],
       scripts: [
         {

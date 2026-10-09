@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 import { resetPassword } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { AuthShell } from '@/components/auth-shell';
 import { TextField } from '@/components/form-field';
@@ -78,11 +77,6 @@ function ResetPasswordPage() {
         m['common.auth.benefit_refine'](),
         m['common.auth.benefit_save'](),
       ]}
-      brand={
-        <Link href="/" className="font-serif text-lg italic">
-          {envConfigs.app_name}
-        </Link>
-      }
     >
       {!tokenChecked ? null : !token ? (
         <FieldGroup>
