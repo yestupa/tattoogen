@@ -25,6 +25,10 @@ export function Footer() {
           label: m['butterfly.footer.link'](),
           href: '/butterfly-tattoo-generator',
         },
+        {
+          label: m['ghost.footer.link'](),
+          href: '/ghost-face-tattoo-generator',
+        },
       ],
     },
     {
