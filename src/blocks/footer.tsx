@@ -13,6 +13,10 @@ export function Footer() {
           label: m['fear.footer.link'](),
           href: '/fear-god-tattoo-generator',
         },
+        {
+          label: m['kaiser.footer.link'](),
+          href: '/kaiser-tattoo-generator',
+        },
       ],
     },
     {

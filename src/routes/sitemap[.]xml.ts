@@ -9,6 +9,7 @@ const STATIC_PATHS = [
   '/pricing',
   '/womb-tattoo-generator',
   '/fear-god-tattoo-generator',
+  '/kaiser-tattoo-generator',
   '/blog',
   '/contact',
   '/privacy-policy',
