@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 import { authClient, signIn, signUp, useSession } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { apiPost } from '@/lib/api-client';
 import { m } from '@/paraglide/messages.js';
 import { localizeHref } from '@/paraglide/runtime.js';
@@ -177,11 +176,6 @@ function SignUpPage() {
         m['common.auth.benefit_refine'](),
         m['common.auth.benefit_save'](),
       ]}
-      brand={
-        <Link href="/" className="font-serif text-lg italic">
-          {configs.app_name || envConfigs.app_name}
-        </Link>
-      }
     >
       {configsLoaded && !hasAnyMethod ? (
         <div className="rounded-lg border border-dashed p-6 text-center">

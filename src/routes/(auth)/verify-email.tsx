@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 
 import { authClient, useSession } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { deLocalizeHref, localizeHref } from '@/paraglide/runtime.js';
 import { AuthShell } from '@/components/auth-shell';
@@ -241,11 +240,6 @@ function VerifyEmailPage() {
         m['common.auth.benefit_refine'](),
         m['common.auth.benefit_save'](),
       ]}
-      brand={
-        <Link href="/" className="font-serif text-lg italic">
-          {envConfigs.app_name}
-        </Link>
-      }
     >
       {initialSendFailed && (
         <div

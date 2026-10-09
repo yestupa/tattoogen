@@ -3,7 +3,6 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { signOut, useSession } from '@/core/auth/client';
 import { useRouter } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { localizeHref } from '@/paraglide/runtime.js';
 import { AuthShell } from '@/components/auth-shell';
@@ -108,9 +107,6 @@ function RedeemInvitePage() {
         m['common.auth.benefit_refine'](),
         m['common.auth.benefit_save'](),
       ]}
-      brand={
-        <span className="font-serif text-lg italic">{envConfigs.app_name}</span>
-      }
     >
       {waitingForInvite ? (
         <div

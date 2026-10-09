@@ -20,6 +20,7 @@ import { m } from '@/paraglide/messages.js';
 import { useChatActions } from '@/components/agent/chat-actions';
 import { ChatCover } from '@/components/agent/chat-cover';
 import { PlanCard } from '@/components/agent/plan-card';
+import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -138,16 +139,10 @@ export function ChatsSidebar() {
           <SidebarMenuItem>
             <Link
               href="/chat"
-              className="focus-visible:outline-ring flex min-h-11 w-full items-center gap-3 rounded-xl px-2 pr-11 text-left text-sm focus-visible:outline-2"
+              aria-label={envConfigs.app_name}
+              className="focus-visible:outline-ring flex min-h-11 w-full items-center rounded-xl px-2 pr-11 text-left text-sm focus-visible:outline-2"
             >
-              <img
-                src={envConfigs.app_logo}
-                alt={envConfigs.app_name}
-                className="size-6 shrink-0"
-              />
-              <span className="font-display flex flex-1 items-center text-lg font-semibold tracking-[-0.025em]">
-                {envConfigs.app_name}
-              </span>
+              <BrandLogo alt="" className="w-44" />
             </Link>
           </SidebarMenuItem>
         </SidebarMenu>

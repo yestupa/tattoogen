@@ -15,6 +15,7 @@ import {
   PreviewPaneProvider,
   usePreviewPane,
 } from '@/components/agent/preview-pane-context';
+import { BrandMark } from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
 import {
   SidebarInset,
@@ -137,6 +138,7 @@ function AgentHeader({ showGallery }: { showGallery: boolean }) {
         aria-label={m['agent.chats.title']()}
         className="size-11 rounded-xl"
       />
+      <BrandMark alt="" className="size-7 xl:hidden" />
       {content.title && (
         <div className="ml-2 flex min-w-0 items-center gap-1">
           <h1 className="font-display truncate text-lg font-semibold tracking-[-0.025em]">

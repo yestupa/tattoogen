@@ -7,6 +7,7 @@ import { apiGet } from '@/lib/api-client';
 import { useUserPermissions } from '@/hooks/use-user-permissions';
 import { AppSidebar, type NavItem } from '@/components/app-sidebar';
 import { BrandArtwork } from '@/components/brand-artwork';
+import { BrandMark } from '@/components/brand-logo';
 import { PageState } from '@/components/page-state';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { UserMenu } from '@/components/user-menu';
@@ -187,8 +188,9 @@ export function AppLayout({
               className="text-primary size-11 rounded-xl focus-visible:ring-2"
             />
           </div>
-          <span className="font-display min-w-0 truncate text-lg font-semibold tracking-[-0.025em] md:hidden">
-            {mobileBrand || brand}
+          <span className="font-display flex min-w-0 items-center gap-2 text-lg font-semibold tracking-[-0.025em] md:hidden">
+            <BrandMark alt="" className="size-7" />
+            <span className="truncate">{mobileBrand || brand}</span>
           </span>
           <div className="flex-1" />
           {headerExtra && (

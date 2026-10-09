@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 import { authClient, signIn, useSession } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { localizeHref } from '@/paraglide/runtime.js';
 import { usePublicConfig } from '@/hooks/use-public-config';
@@ -138,11 +137,6 @@ function SignInPage() {
         m['common.auth.benefit_refine'](),
         m['common.auth.benefit_save'](),
       ]}
-      brand={
-        <Link href="/" className="font-serif text-lg italic">
-          {configs.app_name || envConfigs.app_name}
-        </Link>
-      }
     >
       {configsLoaded && !hasAnyMethod ? (
         <div className="rounded-lg border border-dashed p-6 text-center">

@@ -60,7 +60,7 @@ describe('agent workspace presentation contract', () => {
 
     const sidebar = source('./chats-sidebar.tsx');
     expect(sidebar).toContain('text-sidebar-foreground');
-    expect(sidebar).toContain('font-display');
+    expect(sidebar).toContain('<BrandLogo');
   });
 
   it('keeps a tablet preview and uses an accessible mobile sheet', () => {

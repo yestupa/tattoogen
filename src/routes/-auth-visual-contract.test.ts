@@ -2,9 +2,14 @@ import { readFileSync } from 'node:fs';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AuthShell } from '@/components/auth-shell';
+
+vi.mock('@/core/i18n/navigation', () => ({
+  Link: ({ href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) =>
+    React.createElement('a', { href, ...props }),
+}));
 
 const readSource = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
