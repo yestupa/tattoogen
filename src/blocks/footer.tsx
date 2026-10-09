@@ -17,6 +17,10 @@ export function Footer() {
           label: m['kaiser.footer.link'](),
           href: '/kaiser-tattoo-generator',
         },
+        {
+          label: m['poison.footer.link'](),
+          href: '/poison-tree-tattoo-generator',
+        },
       ],
     },
     {
