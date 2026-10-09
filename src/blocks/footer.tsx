@@ -29,6 +29,10 @@ export function Footer() {
           label: m['ghost.footer.link'](),
           href: '/ghost-face-tattoo-generator',
         },
+        {
+          label: m['throat.footer.link'](),
+          href: '/throat-tattoo-for-men-generator',
+        },
       ],
     },
     {
