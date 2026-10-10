@@ -9,7 +9,6 @@ import { m } from '@/paraglide/messages.js';
 import { BrandLogo } from '@/components/brand-logo';
 import { LocaleSelector } from '@/components/locale-selector';
 import { SiteUserMenu } from '@/components/site-user-menu';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { buttonVariants } from '@/components/ui/button';
 
 export interface NavLink {
@@ -115,7 +114,6 @@ export function SiteHeader({
             className="touch-target"
             localeHrefs={localeHrefs}
           />
-          <ThemeToggle label={m['common.nav.toggle_theme']()} />
           {user ? (
             <SiteUserMenu
               name={user.name || m['common.user.fallback_name']()}
@@ -204,7 +202,6 @@ export function SiteHeader({
               className="touch-target"
               localeHrefs={localeHrefs}
             />
-            <ThemeToggle label={m['common.nav.toggle_theme']()} />
             <div className="flex-1" />
             {user ? (
               <SiteUserMenu

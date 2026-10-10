@@ -35,6 +35,11 @@ describe('shared visual system components', () => {
     expect(html).toContain('href="/chat"');
     expect(html).not.toContain('Cached user');
   });
+  it('keeps the public header language switch without showing a theme toggle', () => {
+    const html = renderToStaticMarkup(<SiteHeader />);
+    expect(html).toContain('Locale');
+    expect(html).not.toContain('Theme');
+  });
   it('renders the original tattoo artwork as decorative by default', () => {
     const html = renderToStaticMarkup(<BrandArtwork />);
     expect(html).toContain('data-brand-artwork="tattoo-generator"');
