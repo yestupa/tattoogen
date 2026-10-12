@@ -14,6 +14,7 @@ const STATIC_PATHS = [
   '/butterfly-tattoo-generator',
   '/couple-tattoo-generator',
   '/angel-numbers-tattoo-generator',
+  '/joker-tattoo-generator',
   '/ghost-face-tattoo-generator',
   '/throat-tattoo-for-men-generator',
   '/blog',
