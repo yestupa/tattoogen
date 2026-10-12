@@ -34,6 +34,10 @@ export function Footer() {
           href: '/angel-numbers-tattoo-generator',
         },
         {
+          label: m['joker.footer.link'](),
+          href: '/joker-tattoo-generator',
+        },
+        {
           label: m['ghost.footer.link'](),
           href: '/ghost-face-tattoo-generator',
         },
