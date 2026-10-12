@@ -158,6 +158,7 @@ export async function findPublishedBySlug(
     .innerJoin(postTranslation, eq(postTranslation.postId, post.id))
     .where(
       and(
+        eq(post.type, PostType.ARTICLE),
         eq(post.status, PostStatus.PUBLISHED),
         eq(postTranslation.slug, normalizedSlug),
         eq(postTranslation.locale, locale),
@@ -353,6 +354,7 @@ export async function getPublishedLocaleAvailability() {
     .innerJoin(postTranslation, eq(postTranslation.postId, post.id))
     .where(
       and(
+        eq(post.type, PostType.ARTICLE),
         eq(post.status, PostStatus.PUBLISHED),
         inArray(postTranslation.locale, ['en', 'zh']),
         eq(postTranslation.status, PostStatus.PUBLISHED)

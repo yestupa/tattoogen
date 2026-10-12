@@ -1,8 +1,16 @@
+import type { SQL } from 'drizzle-orm';
+import { SQLiteSyncDialect } from 'drizzle-orm/sqlite-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { POST_SLUG_ERROR } from '@/lib/post-slug';
 
-import { create, update } from './service';
+import {
+  create,
+  findPublishedBySlug,
+  getPublishedLocaleAvailability,
+  PostType,
+  update,
+} from './service';
 
 const fixture = vi.hoisted(() => ({
   database: {} as any,
@@ -60,5 +68,41 @@ describe('post service slug defense', () => {
       POST_SLUG_ERROR
     );
     expect(fixture.database.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('published blog article selection', () => {
+  function capturePublishedWhere(withLimit: boolean) {
+    let condition: SQL | undefined;
+    fixture.database = {
+      select: () => ({
+        from: () => ({
+          innerJoin: () => ({
+            where: (value: SQL) => {
+              condition = value;
+              return withLimit
+                ? { limit: async () => [] }
+                : Promise.resolve([]);
+            },
+          }),
+        }),
+      }),
+    };
+    return () => {
+      expect(condition).toBeDefined();
+      return new SQLiteSyncDialect().sqlToQuery(condition!).params;
+    };
+  }
+
+  it('excludes published pages and logs from blog locale availability', async () => {
+    const params = capturePublishedWhere(false);
+    await getPublishedLocaleAvailability();
+    expect(params()).toContain(PostType.ARTICLE);
+  });
+
+  it('does not resolve a published page or log as a blog article', async () => {
+    const params = capturePublishedWhere(true);
+    await findPublishedBySlug('tattoo-aftercare', 'en');
+    expect(params()).toContain(PostType.ARTICLE);
   });
 });
