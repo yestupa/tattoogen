@@ -18,6 +18,12 @@ import {
   type InitialTurnPayload,
 } from '@/lib/agent-chat';
 import {
+  clearDeferredAgentTurn,
+  deferAgentTurn,
+  hasPendingAgentTurn,
+  readDeferredAgentTurn,
+} from '@/lib/agent-flow';
+import {
   dropRun,
   getRun,
   hasRun,
@@ -29,6 +35,7 @@ import {
 import {
   defaultComposerSettings,
   resolveGenerationSettings,
+  type AgentComposerSettings,
   type AgentGenerationSettings,
 } from '@/lib/agent-settings';
 import { apiGet, apiPatch } from '@/lib/api-client';
@@ -204,7 +211,7 @@ function ChatSessionPage() {
       // Read, don't consume — the initial-turn effect below still needs it.
       const pendingTurn = (() => {
         try {
-          return !!sessionStorage.getItem(`agent:initial-turn:${sessionId}`);
+          return hasPendingAgentTurn(sessionStorage, sessionId);
         } catch {
           return false;
         }
@@ -251,7 +258,8 @@ function ChatSessionPage() {
       settings: AgentGenerationSettings = {},
       // Fired once the server has accepted the turn (and therefore persisted
       // the user message) — the caller uses it to drop its retry copy.
-      onAccepted?: () => void
+      onAccepted?: () => void,
+      draftSettings: AgentComposerSettings = composerSettings
     ) => {
       void startRun({
         sessionId,
@@ -259,6 +267,11 @@ function ChatSessionPage() {
         attachments: imageAttachments,
         settings,
         onAccepted: () => {
+          try {
+            clearDeferredAgentTurn(sessionStorage, sessionId);
+          } catch {
+            // Storage can be disabled; the accepted turn is in the database.
+          }
           onAccepted?.();
           // The chat row exists the moment the server accepts the turn, so
           // the sidebar can show it (with its spinner) right away instead of
@@ -275,13 +288,27 @@ function ChatSessionPage() {
         // Refused before anything ran. No plan yet means "subscribe";
         // already on one just means the balance ran out, so offer a top-up.
         onInsufficientCredits: ({ subscribed }) => {
-          onAccepted?.();
+          try {
+            deferAgentTurn(sessionStorage, sessionId, {
+              prompt: text,
+              settings: draftSettings,
+              attachments: imageAttachments,
+            });
+            // The deferred draft replaces the auto-send stash so reloading
+            // after checkout restores the editor without silently charging.
+            onAccepted?.();
+          } catch {
+            // Even without storage, keep the draft visible in this tab.
+          }
+          setValue(text);
+          setAttachments(imageAttachments);
+          setComposerSettings(draftSettings);
           if (subscribed) setTopUpOpen(true);
           else setUpgradeOpen(true);
         },
       });
     },
-    [sessionId]
+    [sessionId, composerSettings, setComposerSettings]
   );
 
   // Auto-send the prompt typed on /chat, if any.
@@ -291,6 +318,17 @@ function ChatSessionPage() {
     try {
       const key = `agent:initial-prompt:${sessionId}`;
       const turnKey = `agent:initial-turn:${sessionId}`;
+      const deferred = readDeferredAgentTurn(sessionStorage, sessionId);
+      if (deferred) {
+        if (deferred.settings) setComposerSettings(deferred.settings);
+        setValue(deferred.prompt ?? '');
+        setAttachments(
+          (deferred.attachments ?? []).filter(
+            (item) => item.status === 'uploaded' && item.url
+          )
+        );
+        return;
+      }
       const rawTurn = sessionStorage.getItem(turnKey);
       if (rawTurn) {
         const payload = JSON.parse(rawTurn) as InitialTurnPayload;
@@ -308,7 +346,8 @@ function ChatSessionPage() {
             resolveGenerationSettings(
               payload.settings ?? defaultComposerSettings()
             ),
-            () => sessionStorage.removeItem(turnKey)
+            () => sessionStorage.removeItem(turnKey),
+            payload.settings ?? defaultComposerSettings()
           );
           return;
         }
@@ -340,7 +379,9 @@ function ChatSessionPage() {
     send(
       text,
       uploadedAttachments,
-      resolveGenerationSettings(composerSettings)
+      resolveGenerationSettings(composerSettings),
+      undefined,
+      composerSettings
     );
   }
 
@@ -630,11 +671,15 @@ function ChatSessionPage() {
         </DialogContent>
       </Dialog>
 
-      <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        redirect={`/chat/${sessionId}`}
+      />
       <CreditTopUpDialog
         open={topUpOpen}
         onOpenChange={setTopUpOpen}
-        redirect="/chat"
+        redirect={`/chat/${sessionId}`}
       />
     </div>
   );

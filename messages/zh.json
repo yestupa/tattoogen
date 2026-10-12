@@ -2513,6 +2513,7 @@
   "joker.generator.save_example": "保存这张参考图",
   "joker.generator.submit": "创作我的 Joker 纹身",
   "joker.generator.storage_error": "浏览器未能启动设计会话。请检查浏览器存储设置后重试。",
+  "agent.home.storage_error": "浏览器未能保存设计描述。请检查浏览器存储设置后重试。",
   "joker.features.eyebrow": "每一笔都有角色感",
   "joker.features.title": "一张有自己表情的纹身。",
   "joker.features.one.title": "面具细节与表情",

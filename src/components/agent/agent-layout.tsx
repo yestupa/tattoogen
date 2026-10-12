@@ -4,6 +4,7 @@ import { Images, Pencil } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
 import { usePathname, useRouter } from '@/core/i18n/navigation';
+import { agentSignInHref } from '@/lib/agent-flow';
 import { m } from '@/paraglide/messages.js';
 import {
   AgentHeaderProvider,
@@ -56,8 +57,8 @@ export function AgentLayout({ children }: { children: React.ReactNode }) {
     }
     if (signInRedirected.current) return;
     signInRedirected.current = true;
-    router.push('/sign-in');
-  }, [isPending, userId, router]);
+    router.push(agentSignInHref(pathname));
+  }, [isPending, userId, pathname, router]);
 
   if (isPending || !userId) {
     return (

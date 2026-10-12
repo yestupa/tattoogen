@@ -3,6 +3,7 @@ import ts from 'typescript';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { storedToMessages, type ChatHistoryData } from '@/lib/agent-chat';
+import { hasPendingAgentTurn } from '@/lib/agent-flow';
 import * as runs from '@/lib/agent-runs';
 
 const source = readFileSync('src/routes/(agent)/chat/$sessionId.tsx', 'utf8');
@@ -18,6 +19,7 @@ const invoke = new Function(
   'sessionId',
   'apiGet',
   'sessionStorage',
+  'hasPendingAgentTurn',
   'hasRun',
   'routerRef',
   'setTitle',
@@ -56,6 +58,7 @@ function request(pendingTurn = false) {
     id,
     apiGet,
     { getItem: () => (pendingTurn ? 'pending' : null) },
+    hasPendingAgentTurn,
     runs.hasRun,
     { current: { replace } },
     setTitle,

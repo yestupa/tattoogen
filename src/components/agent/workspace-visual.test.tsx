@@ -42,7 +42,7 @@ describe('agent workspace presentation contract', () => {
     const layout = source('./agent-layout.tsx');
     expect(layout).toContain('SidebarInset');
     expect(layout).toContain('isPending || !userId');
-    expect(layout).toContain("router.push('/sign-in')");
+    expect(layout).toContain('router.push(agentSignInHref(pathname))');
     expect(source('./chats-sidebar.tsx')).toContain('aria-label={m');
     expect(source('./chats-sidebar.tsx')).toContain('<nav');
     expect(source('./chats-sidebar.tsx')).toContain('right-2 z-10');
@@ -197,7 +197,7 @@ describe('agent workspace presentation contract', () => {
       expect(launcher).toContain(contract);
     expect(launcher.match(/<h1\b/g)).toHaveLength(1);
     expect(source('./upgrade-dialog.tsx')).toContain(
-      '<Pricing compact redirect="/chat" />'
+      '<Pricing compact redirect={redirect} />'
     );
   });
 });

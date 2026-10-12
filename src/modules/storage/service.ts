@@ -1,4 +1,5 @@
 import { R2Provider, StorageManager } from '@/core/storage';
+import { getR2Binding, R2BindingProvider } from '@/core/storage/r2-binding';
 import { getAllConfigs, type ConfigMap } from '@/modules/config/service';
 
 /**
@@ -8,7 +9,10 @@ import { getAllConfigs, type ConfigMap } from '@/modules/config/service';
  */
 function isConfigured(configs: ConfigMap): boolean {
   return Boolean(
-    configs.r2_access_key && configs.r2_secret_key && configs.r2_bucket_name
+    configs.r2_access_key &&
+    configs.r2_secret_key &&
+    configs.r2_bucket_name &&
+    configs.r2_domain?.startsWith('https://')
   );
 }
 
@@ -31,6 +35,7 @@ function buildManager(configs: ConfigMap): StorageManager {
 }
 
 export async function isStorageConfigured(): Promise<boolean> {
+  if (getR2Binding()) return true;
   return isConfigured(await getAllConfigs());
 }
 
@@ -39,7 +44,19 @@ export async function isStorageConfigured(): Promise<boolean> {
  * (caller should fall back to local/inline handling).
  */
 export async function getStorage(): Promise<StorageManager | null> {
+  const binding = getR2Binding();
   const configs = await getAllConfigs();
+  if (binding) {
+    const manager = new StorageManager();
+    manager.addProvider(
+      new R2BindingProvider(
+        binding,
+        configs.app_url || 'http://localhost:3000'
+      ),
+      true
+    );
+    return manager;
+  }
   if (!isConfigured(configs)) return null;
   return buildManager(configs);
 }
