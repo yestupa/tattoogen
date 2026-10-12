@@ -17,7 +17,7 @@ export const Route = createFileRoute('/joker-tattoo-generator')({
     const locale = getLocale();
     return {
       locale,
-      title: `${m['joker.meta.title']({}, { locale })} | ${envConfigs.app_name}`,
+      title: m['joker.meta.title']({}, { locale }),
       description: m['joker.meta.description']({}, { locale }),
     };
   },
