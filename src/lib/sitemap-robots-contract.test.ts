@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+import { publishedBlogLocales } from '@/content/posts';
 
 const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -40,6 +41,7 @@ function serverRoute(path: string, rows: PublishedLocale[] = []) {
     'localizeUrl',
     'blogPostPath',
     'isCanonicalPostSlug',
+    'publishedBlogLocales',
     'publishedQuery',
     `${js}\nreturn Route;`
   )(
@@ -50,6 +52,7 @@ function serverRoute(path: string, rows: PublishedLocale[] = []) {
     localizeUrl,
     blogPostPath,
     isCanonicalPostSlug,
+    publishedBlogLocales,
     getPublishedLocaleAvailability
   );
   return {
@@ -59,6 +62,33 @@ function serverRoute(path: string, rows: PublishedLocale[] = []) {
 }
 
 describe('localized crawling contracts', () => {
+  it('omits empty blog archives and lists only locales with articles', async () => {
+    const emptyXml = await (
+      await serverRoute('../routes/sitemap[.]xml.ts').get()
+    ).text();
+    expect(emptyXml).not.toContain('<loc>https://tattoo.example/blog</loc>');
+    expect(emptyXml).not.toContain('<loc>https://tattoo.example/zh/blog</loc>');
+
+    const englishXml = await (
+      await serverRoute('../routes/sitemap[.]xml.ts', [
+        {
+          postId: 'english-only',
+          locale: 'en',
+          slug: 'tattoo-aftercare',
+          updatedAt: '2026-10-01',
+        },
+      ]).get()
+    ).text();
+    expect(englishXml).toContain('<loc>https://tattoo.example/blog</loc>');
+    expect(englishXml).not.toContain(
+      '<loc>https://tattoo.example/zh/blog</loc>'
+    );
+    const englishBlogEntry = englishXml.match(
+      /<url>\s*<loc>https:\/\/tattoo\.example\/blog<\/loc>[\s\S]*?<\/url>/
+    )?.[0];
+    expect(englishBlogEntry).not.toContain('hreflang="zh"');
+  });
+
   it('lists public routes and only real published article locales', async () => {
     const route = serverRoute('../routes/sitemap[.]xml.ts', [
       {
@@ -144,6 +174,7 @@ describe('localized crawling contracts', () => {
     for (const slug of invalid) {
       expect(xml).not.toContain(blogPostPath(slug));
     }
+    expect(xml).not.toContain('<loc>https://tattoo.example/blog</loc>');
   });
 
   it('keeps static routes when the content database is unavailable', async () => {
@@ -153,6 +184,7 @@ describe('localized crawling contracts', () => {
     );
     const xml = await (await route.get()).text();
     expect(xml).toContain('<loc>https://tattoo.example/blog</loc>');
+    expect(xml).toContain('<loc>https://tattoo.example/zh/blog</loc>');
     expect(xml).not.toMatch(/\/blog\/[^<]+/);
   });
 

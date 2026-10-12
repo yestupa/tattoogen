@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { buildBlogLocalePaths } from './index';
+import { buildBlogLocalePaths, publishedBlogLocales } from './index';
 
 const serverSource = readFileSync(
   new URL('./server.ts', import.meta.url),
@@ -13,6 +13,22 @@ const homeSource = readFileSync(
 );
 
 describe('database-backed bilingual blog', () => {
+  it('only exposes published locales with canonical article slugs', () => {
+    expect(publishedBlogLocales([])).toEqual([]);
+    expect(publishedBlogLocales([{ locale: 'en', slug: 'fine-line' }])).toEqual(
+      ['en']
+    );
+    expect(
+      publishedBlogLocales([
+        { locale: 'zh', slug: 'xi-xian' },
+        { locale: 'en', slug: 'fine-line' },
+      ])
+    ).toEqual(['en', 'zh']);
+    expect(publishedBlogLocales([{ locale: 'zh', slug: 'bad slug' }])).toEqual(
+      []
+    );
+  });
+
   it('maps each available translation to its own localized slug', () => {
     expect(
       buildBlogLocalePaths({

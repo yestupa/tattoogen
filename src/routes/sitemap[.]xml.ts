@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { envConfigs } from '@/config';
 import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+import { publishedBlogLocales } from '@/content/posts';
 
 const STATIC_PATHS = [
   '',
@@ -83,17 +84,14 @@ export const Route = createFileRoute('/sitemap.xml')({
   server: {
     handlers: {
       GET: async () => {
-        const entries: Entry[] = STATIC_PATHS.map((path) => ({
-          paths: Object.fromEntries(locales.map((locale) => [locale, path])),
-          changeFrequency: path === '/blog' ? 'daily' : 'weekly',
-          priority: path === '' ? 1 : 0.8,
-        }));
+        const grouped = new Map<string, Entry>();
+        let blogLocales: Locale[] = [...locales];
 
         try {
           const { getPublishedLocaleAvailability } =
             await import('@/modules/posts/service');
           const translations = await getPublishedLocaleAvailability();
-          const grouped = new Map<string, Entry>();
+          blogLocales = publishedBlogLocales(translations);
           for (const item of translations) {
             if (
               (item.locale !== 'en' && item.locale !== 'zh') ||
@@ -114,10 +112,24 @@ export const Route = createFileRoute('/sitemap.xml')({
             }
             grouped.set(item.postId, current);
           }
-          entries.push(...grouped.values());
         } catch {
-          // Static pages remain available when the content database is offline.
+          // Keep blog archives crawlable if the database is temporarily offline.
         }
+
+        const entries: Entry[] = STATIC_PATHS.flatMap((path) => {
+          const available = path === '/blog' ? blogLocales : locales;
+          if (available.length === 0) return [];
+          return [
+            {
+              paths: Object.fromEntries(
+                available.map((locale) => [locale, path])
+              ),
+              changeFrequency: path === '/blog' ? 'daily' : 'weekly',
+              priority: path === '' ? 1 : 0.8,
+            },
+          ];
+        });
+        entries.push(...grouped.values());
 
         const urls = entries.flatMap((entry) =>
           locales

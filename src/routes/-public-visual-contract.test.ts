@@ -210,7 +210,12 @@ describe('public visual contracts', () => {
       expect(route).toContain('head:');
       expect(route).toContain("rel: 'canonical'");
     }
-    expect(source('./blog/index.tsx')).toContain('await getBlogPostsFn');
+    expect(source('./blog/index.tsx')).toContain(
+      'getBlogPostsFn({ data: { locale } })'
+    );
+    expect(source('./blog/index.tsx')).toContain(
+      'getBlogLocaleAvailabilityFn()'
+    );
     expect(source('./blog/$slug.tsx')).toContain('await getBlogPostFn');
     expect(source('./blog/$slug.tsx')).toContain(
       '<MarkdownContent content={post.content'

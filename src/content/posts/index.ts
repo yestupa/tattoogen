@@ -1,6 +1,15 @@
-import { blogPostPath } from '@/lib/post-slug';
+import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 
 export type BlogLocale = 'en' | 'zh';
+
+export function publishedBlogLocales(
+  rows: ReadonlyArray<{ locale: string; slug: string }>
+): BlogLocale[] {
+  const available = new Set(
+    rows.filter((row) => isCanonicalPostSlug(row.slug)).map((row) => row.locale)
+  );
+  return (['en', 'zh'] as const).filter((locale) => available.has(locale));
+}
 
 export type BlogPost = {
   slug: string;

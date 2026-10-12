@@ -13,16 +13,27 @@ import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { BlogCard } from '@/components/blog-card';
 import { formatPostDate } from '@/content/posts';
-import { getBlogPostsFn } from '@/content/posts/server';
+import {
+  getBlogLocaleAvailabilityFn,
+  getBlogPostsFn,
+} from '@/content/posts/server';
 
 export const Route = createFileRoute('/blog/')({
   loader: async () => {
     const locale = getLocale();
-    const posts = await getBlogPostsFn({ data: { locale } });
-    return { locale, posts };
+    const [posts, availability] = await Promise.all([
+      getBlogPostsFn({ data: { locale } }),
+      getBlogLocaleAvailabilityFn(),
+    ]);
+    return { locale, posts, availability };
   },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? baseLocale;
+    const availableLocales = loaderData?.availability?.locales ?? locales;
+    const indexable = availableLocales.includes(locale);
+    const fallbackLocale = availableLocales.includes(baseLocale)
+      ? baseLocale
+      : availableLocales[0];
     const title = `${m['blog.title']({}, { locale })} | ${envConfigs.app_name}`;
     const description = m['blog.description']({}, { locale });
     const urlFor = (loc: typeof locale) =>
@@ -36,15 +47,24 @@ export const Route = createFileRoute('/blog/')({
         { property: 'og:url', content: urlFor(locale) },
         { name: 'twitter:title', content: title },
         { name: 'twitter:description', content: description },
+        ...(!indexable ? [{ name: 'robots', content: 'noindex, follow' }] : []),
       ],
       links: [
         { rel: 'canonical', href: urlFor(locale) },
-        ...locales.map((loc) => ({
+        ...availableLocales.map((loc) => ({
           rel: 'alternate',
           hrefLang: loc,
           href: urlFor(loc),
         })),
-        { rel: 'alternate', hrefLang: 'x-default', href: urlFor(baseLocale) },
+        ...(fallbackLocale
+          ? [
+              {
+                rel: 'alternate',
+                hrefLang: 'x-default',
+                href: urlFor(fallbackLocale),
+              },
+            ]
+          : []),
       ],
     };
   },

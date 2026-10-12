@@ -2,11 +2,31 @@ import { createServerFn } from '@tanstack/react-start';
 
 import { isCanonicalPostSlug, normalizePostSlug } from '@/lib/post-slug';
 
-import type { BlogPost, BlogPostDetail } from './index';
+import {
+  publishedBlogLocales,
+  type BlogLocale,
+  type BlogPost,
+  type BlogPostDetail,
+} from './index';
 
 function normalizeLocale(locale: string): 'en' | 'zh' {
   return locale === 'zh' ? 'zh' : 'en';
 }
+
+export const getBlogLocaleAvailabilityFn = createServerFn().handler(
+  async (): Promise<{ locales: BlogLocale[]; known: boolean }> => {
+    try {
+      const { getPublishedLocaleAvailability } =
+        await import('@/modules/posts/service');
+      return {
+        locales: publishedBlogLocales(await getPublishedLocaleAvailability()),
+        known: true,
+      };
+    } catch {
+      return { locales: ['en', 'zh'], known: false };
+    }
+  }
+);
 
 export const getBlogPostsFn = createServerFn()
   .inputValidator((data: { locale: string; limit?: number }) => data)

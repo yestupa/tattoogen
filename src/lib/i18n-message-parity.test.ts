@@ -64,6 +64,23 @@ describe('locale message parity', () => {
   );
 });
 
+describe('search-facing localized copy', () => {
+  it.each([
+    'fear.hero.title',
+    'butterfly.hero.title',
+    'couple.hero.title',
+    'angel.hero.title',
+    'joker.hero.title',
+  ])('uses a Chinese main heading for %s', (key) => {
+    expect(dictionaries.zh[key]).toMatch(/[\u3400-\u9fff]/);
+  });
+
+  it('does not advertise free use in the homepage final CTA', () => {
+    expect(dictionaries.en['landing.cta.primary']).not.toMatch(/\bfree\b/i);
+    expect(dictionaries.zh['landing.cta.primary']).not.toContain('免费');
+  });
+});
+
 function legalMeta(slug: string, locale: 'en' | 'zh') {
   const text = source(`../content/pages/${slug}.${locale}.mdx`);
   const expression = text.match(/export const meta = (\{[\s\S]*?\n\});/)![1];
@@ -82,7 +99,8 @@ function routeHead(
     description: string;
     alternateSlugs?: Partial<Record<'en' | 'zh', string>>;
   },
-  slug?: string
+  slug?: string,
+  blogAvailability?: { locales: Array<'en' | 'zh'>; known: boolean }
 ) {
   const text = source(path);
   const ast = ts.createSourceFile(
@@ -157,12 +175,65 @@ function routeHead(
       title: dictionaries[locale]['landing.pricing.title'],
       description: dictionaries[locale]['landing.pricing.description'],
       meta: slug ? legalMeta(slug, locale) : undefined,
+      availability: blogAvailability,
     },
     slug
   );
 }
 
 describe('public localized metadata', () => {
+  it('does not index an empty blog locale or point to missing translations', () => {
+    const emptyHead = routeHead(
+      '../routes/blog/index.tsx',
+      'zh',
+      undefined,
+      undefined,
+      { locales: [], known: true }
+    );
+    expect(emptyHead.meta).toContainEqual({
+      name: 'robots',
+      content: 'noindex, follow',
+    });
+    expect(
+      emptyHead.links.filter(
+        (link: { rel: string }) => link.rel === 'alternate'
+      )
+    ).toEqual([]);
+
+    const englishHead = routeHead(
+      '../routes/blog/index.tsx',
+      'en',
+      undefined,
+      undefined,
+      { locales: ['en'], known: true }
+    );
+    expect(englishHead.meta).not.toContainEqual({
+      name: 'robots',
+      content: 'noindex, follow',
+    });
+    expect(
+      englishHead.links.filter(
+        (link: { hrefLang?: string }) => link.hrefLang === 'zh'
+      )
+    ).toEqual([]);
+    expect(englishHead.links).toContainEqual({
+      rel: 'canonical',
+      href: 'https://tattoo.example/blog',
+    });
+
+    const unknownHead = routeHead(
+      '../routes/blog/index.tsx',
+      'zh',
+      undefined,
+      undefined,
+      { locales: ['en', 'zh'], known: false }
+    );
+    expect(unknownHead.meta).not.toContainEqual({
+      name: 'robots',
+      content: 'noindex, follow',
+    });
+  });
+
   it.each(['en', 'zh'] as const)(
     'interpolates the real brand into the home title in %s',
     (locale) => {
