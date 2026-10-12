@@ -30,6 +30,10 @@ export function Footer() {
           href: '/couple-tattoo-generator',
         },
         {
+          label: m['angel.footer.link'](),
+          href: '/angel-numbers-tattoo-generator',
+        },
+        {
           label: m['ghost.footer.link'](),
           href: '/ghost-face-tattoo-generator',
         },
