@@ -94,25 +94,26 @@ export async function updateTask(params: {
 
   if (!task) throw new Error('Task not found');
 
-  // Update task
+  // Return reserved credits before recording a failed task. If the credit
+  // ledger is unavailable, leave the task retryable instead of falsely
+  // marking it failed while the user remains charged.
+  if (status === AITaskStatus.FAILED && task.taskInfo) {
+    let creditId: string | undefined;
+    try {
+      creditId = (JSON.parse(task.taskInfo as string) as { creditId?: string })
+        .creditId;
+    } catch {
+      // Legacy tasks can have no parseable credit metadata.
+    }
+    if (creditId) await revoke(creditId);
+  }
+
   const updateData: any = { status };
   if (taskResult) {
     updateData.taskResult = JSON.stringify(taskResult);
   }
 
   await db().update(aiTask).set(updateData).where(eq(aiTask.id, taskId));
-
-  // Revoke credits on failure
-  if (status === AITaskStatus.FAILED && task.taskInfo) {
-    try {
-      const info = JSON.parse(task.taskInfo as string);
-      if (info.creditId) {
-        await revoke(info.creditId);
-      }
-    } catch {
-      // Ignore parse errors
-    }
-  }
 }
 
 /**

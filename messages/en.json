@@ -2513,6 +2513,7 @@
   "joker.generator.save_example": "Save this reference",
   "joker.generator.submit": "Create my Joker tattoo",
   "joker.generator.storage_error": "This browser could not start a design session. Check your storage settings and try again.",
+  "agent.home.storage_error": "Your design brief could not be saved in this browser. Check storage settings and try again.",
   "joker.features.eyebrow": "A CHARACTER IN EVERY LINE",
   "joker.features.title": "A tattoo with its own expression.",
   "joker.features.one.title": "Faces with personality",

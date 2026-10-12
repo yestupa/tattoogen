@@ -6,6 +6,7 @@ import {
   updateTask,
 } from '@/modules/ai-tasks/service';
 import { getAllConfigs } from '@/modules/config/service';
+import { getStorage } from '@/modules/storage/service';
 import { splitAttachedImages } from '@/lib/agent-chat';
 import {
   AGENT_MODEL_OPTION_VALUES,
@@ -19,8 +20,11 @@ import {
 import {
   createFastClawBillingTask,
   createFastClawRequest,
+  persistFastClawFiles,
   readFastClawEvents,
   resolveFastClawConfig,
+  rewriteFastClawContent,
+  type FastClawOutputFile,
 } from './fastclaw';
 import { collectConversationImages, loadAgentHistory } from './history';
 import { createAgentTools } from './tools';
@@ -36,7 +40,7 @@ import { ensureFastClawUser } from './usage';
 // Cloudflare Workers.
 
 export interface AgentStreamEvent {
-  type: 'content' | 'tool_call' | 'tool_result' | 'error' | 'done';
+  type: 'content' | 'tool_call' | 'tool_result' | 'progress' | 'error' | 'done';
   data?: Record<string, unknown>;
 }
 
@@ -145,7 +149,16 @@ export async function* runAgentTurn(
 
   if (fastClaw) {
     let billingTaskId: string | undefined;
+    let failureReason = 'FastClaw image turn ended before completion';
     try {
+      // Never start a paid generation when its output has nowhere durable
+      // and browser-readable to live.
+      const storage = await getStorage();
+      if (!storage) {
+        throw new Error(
+          'Image storage is not configured; ask the site admin to enable R2.'
+        );
+      }
       await ensureFastClawUser({ config: fastClaw, userId });
       const history = await loadAgentHistory(sessionId, userId);
       const current = splitAttachedImages(message);
@@ -171,6 +184,9 @@ export async function* runAgentTurn(
         taskId,
         status: AITaskStatus.PROCESSING,
       });
+      // Open the client stream while FastClaw runs. The response text is held
+      // until its private image files have durable public URLs.
+      yield { type: 'progress' };
 
       const response = await fetch(
         createFastClawRequest({
@@ -185,12 +201,20 @@ export async function* runAgentTurn(
       );
 
       let responseText = '';
+      let producedFiles: FastClawOutputFile[] = [];
       for await (const event of readFastClawEvents(response)) {
         if (signal?.aborted) break;
         if (event.type === 'content') {
           responseText += String(event.data?.content ?? '');
+          if (responseText.length > 200_000) {
+            throw new Error('FastClaw response exceeded the allowed size');
+          }
+          yield { type: 'progress' };
+        } else if (event.type === 'files') {
+          producedFiles.push(
+            ...((event.data?.files ?? []) as FastClawOutputFile[])
+          );
         }
-        yield event;
       }
       if (signal?.aborted) {
         throw new DOMException(
@@ -198,35 +222,95 @@ export async function* runAgentTurn(
           'AbortError'
         );
       }
+
+      const storedFiles = await persistFastClawFiles({
+        files: Array.from(
+          new Map(
+            producedFiles.map((file) => [file.path || file.name, file])
+          ).values()
+        ),
+        config: fastClaw,
+        userId,
+        sessionId,
+        upload: ({ body, key, contentType }) =>
+          storage.uploadFile({ body, key, contentType, disposition: 'inline' }),
+      });
+
+      // A text-only answer can be useful, but no image was made, so return
+      // the credits reserved for an image turn instead of marking it successful.
+      if (storedFiles.length === 0) {
+        await updateTask({
+          taskId,
+          status: AITaskStatus.FAILED,
+          taskResult: { error: 'No image was generated' },
+        });
+        billingTaskId = undefined;
+        if (responseText.trim()) {
+          yield { type: 'content', data: { content: responseText } };
+        } else {
+          yield {
+            type: 'error',
+            data: { message: 'FastClaw returned no generated image.' },
+          };
+        }
+        yield { type: 'done' };
+        return;
+      }
+
+      const finalText = rewriteFastClawContent(responseText, storedFiles);
       await updateTask({
         taskId,
         status: AITaskStatus.SUCCESS,
-        taskResult: { response: responseText.slice(0, 20_000) },
-      }).catch((err) => {
-        console.error(
-          `[fastclaw] failed to finalize billing task ${billingTaskId}`,
-          err
-        );
+        taskResult: {
+          response: finalText.slice(0, 20_000),
+          files: storedFiles.map((file) => file.url),
+        },
       });
+      billingTaskId = undefined;
+      const toolId = `fastclaw-${taskId}`;
+      yield {
+        type: 'tool_call',
+        data: {
+          id: toolId,
+          name: 'generate_image',
+          arguments: JSON.stringify({ model: settings?.modelName || 'auto' }),
+        },
+      };
+      yield {
+        type: 'tool_result',
+        data: {
+          id: toolId,
+          result: JSON.stringify({
+            files: storedFiles.map((file) => file.url),
+            model: settings?.modelName || fastClaw.agentId,
+          }),
+        },
+      };
+      yield { type: 'content', data: { content: finalText } };
+      yield { type: 'done' };
     } catch (err: any) {
+      failureReason = String(err?.message ?? err).slice(0, 2_000);
+      if (err?.name !== 'AbortError' && !signal?.aborted) {
+        yield {
+          type: 'error',
+          data: { message: failureReason },
+        };
+        yield { type: 'done' };
+      }
+    } finally {
+      // A disconnected response closes this generator with return(), which
+      // bypasses catch. The finally block must release reserved credits.
       if (billingTaskId) {
         await updateTask({
           taskId: billingTaskId,
           status: AITaskStatus.FAILED,
-          taskResult: { error: String(err?.message ?? err).slice(0, 2_000) },
+          taskResult: { error: failureReason },
         }).catch((refundErr) => {
           console.error(
             `[fastclaw] failed to refund billing task ${billingTaskId}`,
             refundErr
           );
         });
-      }
-      if (err?.name !== 'AbortError' && !signal?.aborted) {
-        yield {
-          type: 'error',
-          data: { message: String(err?.message ?? err) },
-        };
-        yield { type: 'done' };
       }
     }
     return;

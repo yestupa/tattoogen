@@ -6,8 +6,10 @@ import {
   createFastClawUsageRequest,
   createFastClawUserRequest,
   normalizeFastClawUsage,
+  persistFastClawFiles,
   readFastClawEvents,
   resolveFastClawConfig,
+  rewriteFastClawContent,
 } from './fastclaw';
 
 async function collectEvents(response: Response) {
@@ -129,6 +131,7 @@ describe('FastClaw request contract', () => {
     expect(await request.json()).toEqual({
       agent_id: 'agt_test',
       stream: true,
+      return_files: 'inline',
       user: 'tattoo-generator:user-42',
       messages: [{ role: 'user', content: 'Design a fine-line crane tattoo.' }],
       images: ['https://cdn.example.com/reference.png'],
@@ -202,6 +205,37 @@ describe('FastClaw streaming responses', () => {
     ]);
   });
 
+  it('keeps generated file metadata from the final SSE chunk', async () => {
+    const files = [
+      {
+        name: 'tattoo.png',
+        path: 'tattoo.png',
+        content_type: 'image/png',
+        data_url: 'data:image/png;base64,iVBORw0KGgo=',
+      },
+    ];
+    const response = streamResponse([
+      'data: {"choices":[{"delta":{"content":"Done: ![tattoo](/workspace/tattoo.png)"}}]}\n\n',
+      `data: ${JSON.stringify({ choices: [{ finish_reason: 'stop' }], files })}\n\n`,
+      'data: [DONE]\n\n',
+    ]);
+
+    await expect(collectEvents(response)).resolves.toEqual([
+      {
+        type: 'content',
+        data: { content: 'Done: ![tattoo](/workspace/tattoo.png)' },
+      },
+      { type: 'files', data: { files } },
+      { type: 'done' },
+    ]);
+  });
+
+  it('rejects an empty successful response so a blank image cannot be billed', async () => {
+    await expect(
+      collectEvents(streamResponse(['data: [DONE]\n\n']))
+    ).rejects.toThrow('FastClaw returned no content or files');
+  });
+
   it('surfaces an upstream error without leaking credentials', async () => {
     const response = Response.json(
       { error: { message: 'agent not accessible' } },
@@ -222,5 +256,153 @@ describe('FastClaw streaming responses', () => {
     await expect(collectEvents(response)).rejects.toThrow(
       'FastClaw request failed with status 401: request rejected for redacted and redacted'
     );
+  });
+});
+
+describe('FastClaw generated files', () => {
+  const config = {
+    apiKey: 'test-key',
+    baseUrl: 'https://cloud.fastclaw.ai',
+    agentId: 'agt_test',
+  };
+  const png =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==';
+
+  it('copies an inline image into public storage and rewrites workspace links', async () => {
+    const uploads: Array<{
+      key: string;
+      contentType: string;
+      body: Uint8Array;
+    }> = [];
+    const stored = await persistFastClawFiles({
+      files: [
+        {
+          name: 'tattoo.png',
+          path: 'tattoo.png',
+          content_type: 'image/png',
+          data_url: `data:image/png;base64,${png}`,
+        },
+      ],
+      config,
+      userId: 'user-42',
+      sessionId: 's-1791783727607-whh39q',
+      upload: async (input) => {
+        uploads.push(input);
+        return { success: true, url: 'https://cdn.example.com/tattoo.png' };
+      },
+    });
+
+    expect(uploads).toHaveLength(1);
+    expect(uploads[0].key).toMatch(
+      /^agent\/sessions\/s-1791783727607-whh39q\/fastclaw_/
+    );
+    expect(uploads[0].contentType).toBe('image/png');
+    expect(uploads[0].body.byteLength).toBeGreaterThan(8);
+    expect(stored).toEqual([
+      { path: 'tattoo.png', url: 'https://cdn.example.com/tattoo.png' },
+    ]);
+    expect(
+      rewriteFastClawContent('Done: ![tattoo](/workspace/tattoo.png)', stored)
+    ).toBe('Done: ![tattoo](https://cdn.example.com/tattoo.png)');
+  });
+
+  it('downloads a private FastClaw file with server credentials only', async () => {
+    const requests: Request[] = [];
+    const stored = await persistFastClawFiles({
+      files: [
+        {
+          name: 'tattoo.png',
+          path: 'tattoo.png',
+          content_type: 'image/png',
+          url: 'https://cloud.fastclaw.ai/v1/agents/agt_test/sessions/conv/files/tattoo.png',
+        },
+      ],
+      config,
+      userId: 'user-42',
+      sessionId: 's-1791783727607-whh39q',
+      fetchPrivate: async (request) => {
+        requests.push(request);
+        return new Response(Buffer.from(png, 'base64'), {
+          headers: { 'content-type': 'image/png' },
+        });
+      },
+      upload: async () => ({
+        success: true,
+        url: 'https://cdn.example.com/tattoo.png',
+      }),
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].headers.get('authorization')).toBe('Bearer test-key');
+    expect(requests[0].headers.get('x-fastclaw-end-user')).toBe(
+      'tattoo-generator:user-42'
+    );
+    expect(stored[0].url).toBe('https://cdn.example.com/tattoo.png');
+  });
+
+  it('refuses an off-origin private file URL', async () => {
+    await expect(
+      persistFastClawFiles({
+        files: [
+          {
+            name: 'tattoo.png',
+            path: 'tattoo.png',
+            content_type: 'image/png',
+            url: 'https://attacker.example/file.png',
+          },
+        ],
+        config,
+        userId: 'user-42',
+        sessionId: 's-1791783727607-whh39q',
+        fetchPrivate: async () => {
+          throw new Error('should not fetch');
+        },
+        upload: async () => ({
+          success: true,
+          url: 'https://cdn.example.com/tattoo.png',
+        }),
+      })
+    ).rejects.toThrow('Unexpected FastClaw file URL');
+  });
+
+  it('stops a private image download that exceeds the size cap without a content-length header', async () => {
+    let uploaded = false;
+    await expect(
+      persistFastClawFiles({
+        files: [
+          {
+            path: 'large.png',
+            content_type: 'image/png',
+            url: 'https://cloud.fastclaw.ai/v1/agents/agt_test/sessions/conv/files/large.png',
+          },
+        ],
+        config,
+        userId: 'user-42',
+        sessionId: 's-1791783727607-whh39q',
+        fetchPrivate: async () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                const chunk = new Uint8Array(1024 * 1024);
+                for (let i = 0; i < 11; i++) controller.enqueue(chunk);
+                controller.close();
+              },
+            })
+          ),
+        upload: async () => {
+          uploaded = true;
+          return { success: true, url: 'https://cdn.example.com/large.png' };
+        },
+      })
+    ).rejects.toThrow('oversized');
+    expect(uploaded).toBe(false);
+  });
+
+  it('appends a public image when the agent reply omitted its markdown', () => {
+    expect(
+      rewriteFastClawContent('Your design is ready.', [
+        { path: 'tattoo.png', url: 'https://cdn.example.com/tattoo.png' },
+      ])
+    ).toContain('![tattoo.png](https://cdn.example.com/tattoo.png)');
   });
 });

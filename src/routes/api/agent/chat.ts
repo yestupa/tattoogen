@@ -13,6 +13,7 @@ import { getCurrentSubscription } from '@/modules/subscriptions/service';
 import { isAgentSessionId } from '@/lib/agent';
 import { CANCELLED_TOOL_RESULT } from '@/lib/agent-chat';
 import type { AgentGenerationSettings } from '@/lib/agent-settings';
+import { createAgentSseWriter } from '@/lib/agent-stream';
 
 interface ChatRequest {
   sessionId: string;
@@ -20,7 +21,7 @@ interface ChatRequest {
   settings?: AgentGenerationSettings;
 }
 
-async function POST({ request }: { request: Request }) {
+export async function POST({ request }: { request: Request }) {
   const auth = getAuth();
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {
@@ -142,12 +143,10 @@ async function POST({ request }: { request: Request }) {
     }
   };
 
-  const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const emit = (evt: { type: string; data?: Record<string, unknown> }) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(evt)}\n\n`));
-      };
+      const writer = createAgentSseWriter(controller);
+      const emit = writer.emit;
 
       try {
         for await (const evt of runAgentTurn({
@@ -205,7 +204,7 @@ async function POST({ request }: { request: Request }) {
         });
       } finally {
         await persistRounds();
-        controller.close();
+        writer.close();
       }
     },
   });

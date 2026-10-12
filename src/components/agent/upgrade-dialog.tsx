@@ -15,9 +15,11 @@ import {
 export function UpgradeDialog({
   open,
   onOpenChange,
+  redirect = '/chat',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  redirect?: string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -30,7 +32,7 @@ export function UpgradeDialog({
             {m['agent.plan.upgrade_description']()}
           </DialogDescription>
         </DialogHeader>
-        <Pricing compact redirect="/chat" />
+        <Pricing compact redirect={redirect} />
       </DialogContent>
     </Dialog>
   );

@@ -114,7 +114,7 @@ export function resolveReferenceImage(
 }
 
 function extFromUrl(url: string): string {
-  const m = url.match(/\.(png|jpe?g|gif|webp)(?:\?|$)/i);
+  const m = url.match(/\.(png|jpe?g|gif|webp|avif)(?:\?|$)/i);
   return m ? m[1].toLowerCase().replace('jpeg', 'jpg') : 'png';
 }
 
@@ -129,6 +129,8 @@ function contentTypeFromExt(ext: string): string {
       return 'image/webp';
     case 'gif':
       return 'image/gif';
+    case 'avif':
+      return 'image/avif';
     default:
       return 'application/octet-stream';
   }

@@ -184,7 +184,9 @@ export function PromptLauncher({ className }: { className?: string }) {
         })
       );
     } catch {
-      // sessionStorage unavailable — chat page will start blank.
+      setSubmitting(false);
+      toast.error(m['agent.home.storage_error']());
+      return;
     }
     router.push(`/chat/${sessionId}`);
   }
