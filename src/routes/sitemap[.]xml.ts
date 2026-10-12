@@ -13,6 +13,7 @@ const STATIC_PATHS = [
   '/poison-tree-tattoo-generator',
   '/butterfly-tattoo-generator',
   '/couple-tattoo-generator',
+  '/angel-numbers-tattoo-generator',
   '/ghost-face-tattoo-generator',
   '/throat-tattoo-for-men-generator',
   '/blog',
