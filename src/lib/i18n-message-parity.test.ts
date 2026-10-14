@@ -332,6 +332,10 @@ describe('public localized metadata', () => {
       expect(
         head.meta.find((meta: { title?: string }) => meta.title)?.title
       ).toBe(dictionaries[locale]['contact.meta_title']);
+      expect(head.meta).toContainEqual({
+        name: 'twitter:title',
+        content: dictionaries[locale]['contact.meta_title'],
+      });
     }
   );
 
@@ -434,12 +438,16 @@ describe('legal page metadata', () => {
     (locale) => {
       for (const slug of ['privacy-policy', 'terms-of-service']) {
         const expected = legalMeta(slug, locale);
+        const expectedTitle = `${expected.title} | Tattoo Generator`;
         const head = routeHead(
           '../routes/(pages)/-static-page.tsx',
           locale,
           undefined,
           slug
         );
+        expect(
+          head.meta.find((meta: { title?: string }) => meta.title)?.title
+        ).toBe(expectedTitle);
         expect(head.links).toEqual([
           {
             rel: 'canonical',
@@ -464,7 +472,7 @@ describe('legal page metadata', () => {
           head.meta.find(
             (meta: { property?: string }) => meta.property === 'og:title'
           )?.content
-        ).toBe(expected.title);
+        ).toBe(expectedTitle);
         expect(
           head.meta.find(
             (meta: { property?: string }) => meta.property === 'og:description'
@@ -479,7 +487,7 @@ describe('legal page metadata', () => {
           head.meta.find(
             (meta: { name?: string }) => meta.name === 'twitter:title'
           )?.content
-        ).toBe(expected.title);
+        ).toBe(expectedTitle);
         expect(
           head.meta.find(
             (meta: { name?: string }) => meta.name === 'twitter:description'

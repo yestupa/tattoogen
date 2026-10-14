@@ -54,18 +54,19 @@ export function staticPageRouteOptions(slug: string) {
     head: ({ loaderData }: { loaderData?: LoaderData }) => {
       if (!loaderData) return {};
       const { meta, locale } = loaderData;
+      const title = `${meta.title} | ${envConfigs.app_name}`;
       const urlFor = (loc: (typeof locales)[number]) =>
         localizeUrl(new URL(`/${slug}`, envConfigs.app_url), { locale: loc })
           .href;
       const canonical = urlFor(locale as (typeof locales)[number]);
       return {
         meta: [
-          { title: meta.title },
+          { title },
           { name: 'description', content: meta.description },
-          { property: 'og:title', content: meta.title },
+          { property: 'og:title', content: title },
           { property: 'og:description', content: meta.description },
           { property: 'og:url', content: canonical },
-          { name: 'twitter:title', content: meta.title },
+          { name: 'twitter:title', content: title },
           { name: 'twitter:description', content: meta.description },
         ],
         links: [

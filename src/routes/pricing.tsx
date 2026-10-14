@@ -65,7 +65,7 @@ function PricingPage() {
             <p className="eyebrow-vermilion">
               {m['landing.pricing.eyebrow']()}
             </p>
-            <h1 className="font-display mx-auto mt-4 max-w-3xl text-5xl leading-[0.94] font-semibold tracking-[-0.055em] text-balance sm:text-6xl lg:text-7xl">
+            <h1 className="font-display mx-auto mt-4 max-w-3xl text-5xl leading-tight font-semibold tracking-[-0.055em] text-balance sm:text-6xl lg:text-7xl">
               {m['landing.pricing.title']()}
             </h1>
             <p className="text-ink-muted mx-auto mt-5 max-w-xl text-base leading-7 sm:text-lg">
