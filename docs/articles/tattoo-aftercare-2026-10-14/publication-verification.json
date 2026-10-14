@@ -1,0 +1,192 @@
+{
+  "checkedAt": "2026-10-14T09:08:41.570Z",
+  "database": {
+    "checkedAt": "2026-10-14T08:58:04.611Z",
+    "postId": "9e3b39b9-70a8-4f76-bda6-c0947a2d0258",
+    "parentStatus": "published",
+    "translations": [
+      {
+        "locale": "en",
+        "title": "Tattoo Aftercare: How to Care for a New Tattoo",
+        "status": "published",
+        "characters": 10998,
+        "sha256": "e0fa5d088f0a09333426b9bd7158f77b534cb55558be1d8620a0e98b1d3a6ea4",
+        "publishedAt": "2026-10-14T08:57:07.767Z"
+      },
+      {
+        "locale": "zh",
+        "title": "纹身后护理指南：清洗、保湿与感染警示",
+        "status": "published",
+        "characters": 5083,
+        "sha256": "a223b1e445e9d3f4867e9973958d42b142063feadfc8158d3ebc433f81b5b128",
+        "publishedAt": "2026-10-14T08:57:07.767Z"
+      }
+    ],
+    "totalPosts": 1,
+    "totalTranslations": 2
+  },
+  "http": {
+    "pages": [
+      {
+        "locale": "en",
+        "url": "https://bestaitattoogenerator.com/blog/tattoo-aftercare",
+        "status": 200,
+        "title": "Tattoo Aftercare: How to Care for a New Tattoo | Tattoo Generator",
+        "description": "Learn how to clean, moisturize and protect a new tattoo, handle dressings, and recognize warning signs that need medical care.",
+        "canonical": "https://bestaitattoogenerator.com/blog/tattoo-aftercare",
+        "hreflang": {
+          "en": "https://bestaitattoogenerator.com/blog/tattoo-aftercare",
+          "zh": "https://bestaitattoogenerator.com/zh/blog/tattoo-aftercare",
+          "x-default": "https://bestaitattoogenerator.com/blog/tattoo-aftercare"
+        },
+        "h1Count": 1,
+        "bodyMatchesFinal": true,
+        "htmlBytes": 45931,
+        "bodyTextSha256": "4b3f982faf805aab3a3776e023755988c1fdfde32ae2bde4a4008042303c356d"
+      },
+      {
+        "locale": "zh",
+        "url": "https://bestaitattoogenerator.com/zh/blog/tattoo-aftercare",
+        "status": 200,
+        "title": "纹身后护理指南：清洗、保湿与感染警示 | Tattoo Generator",
+        "description": "纹身后怎么护理？了解敷贴拆除、温和清洗、保湿、洗澡与运动安排，分清恢复期常见变化和需要及时就医的感染警示。",
+        "canonical": "https://bestaitattoogenerator.com/zh/blog/tattoo-aftercare",
+        "hreflang": {
+          "en": "https://bestaitattoogenerator.com/blog/tattoo-aftercare",
+          "zh": "https://bestaitattoogenerator.com/zh/blog/tattoo-aftercare",
+          "x-default": "https://bestaitattoogenerator.com/blog/tattoo-aftercare"
+        },
+        "h1Count": 1,
+        "bodyMatchesFinal": true,
+        "htmlBytes": 44283,
+        "bodyTextSha256": "799b47b2f7b155c8f7d477a3a397990cfc843f0d183e4789b07da34737074692"
+      }
+    ],
+    "archivesLinkToArticles": true,
+    "archivesIndexable": true,
+    "sitemapUrlCount": 34,
+    "allFourNewUrlsInSitemap": true,
+    "robotsAllowsGooglebot": true,
+    "googleIndexingVerified": false
+  },
+  "browser": {
+    "articleStates": 12,
+    "archiveNavigations": 4,
+    "languageSwitches": [
+      {
+        "width": 1440,
+        "from": "en",
+        "to": "zh",
+        "url": "https://bestaitattoogenerator.com/zh/blog/tattoo-aftercare"
+      },
+      {
+        "width": 1440,
+        "from": "zh",
+        "to": "en",
+        "url": "https://bestaitattoogenerator.com/blog/tattoo-aftercare"
+      },
+      {
+        "width": 390,
+        "from": "en",
+        "to": "zh",
+        "url": "https://bestaitattoogenerator.com/zh/blog/tattoo-aftercare"
+      },
+      {
+        "width": 390,
+        "from": "zh",
+        "to": "en",
+        "url": "https://bestaitattoogenerator.com/blog/tattoo-aftercare"
+      }
+    ],
+    "consoleErrors": 0,
+    "failedRequests": 0,
+    "minimumHeadingLineHeightRatio": 1.25
+  },
+  "checks": {
+    "tests": {
+      "files": 68,
+      "passed": 524
+    },
+    "productionBuild": "passed",
+    "format": "passed",
+    "securityWorktree": "passed",
+    "typecheck": {
+      "status": "failed-before-template-change",
+      "diagnostics": 248,
+      "examples": [
+        "src/components/data-table.tsx: missing @tanstack/react-table exports",
+        "src/core/auth/index.ts: missing drizzleAdapter export",
+        "src/blocks/pricing.tsx: implicit any parameters"
+      ]
+    }
+  },
+  "cloudflareVersion": "8e0e1029-efe9-4164-a650-3709f17a65cf",
+  "sourceLinkChecks": [
+    {
+      "url": "https://faq.saniderm.com/knowledge-base/my-saniderm-is-filled-with-blood-what-should-i-do/",
+      "finalUrl": "https://faq.saniderm.com/knowledge-base/my-saniderm-is-filled-with-blood-what-should-i-do/",
+      "status": 200
+    },
+    {
+      "url": "https://health.clevelandclinic.org/tattoo-aftercare",
+      "finalUrl": "https://health.clevelandclinic.org/tattoo-aftercare",
+      "status": 200
+    },
+    {
+      "url": "https://inksocietycollective.com/blogs/journal/how-to-care-for-a-new-tattoo",
+      "finalUrl": "https://inksocietycollective.com/blogs/journal/how-to-care-for-a-new-tattoo",
+      "status": 429
+    },
+    {
+      "url": "https://outside.vermont.gov/dept/sos/office_professional_regulation/professions/tattooist_body_piercer/tattooist_aftercare_guidelines.pdf",
+      "finalUrl": "https://outside.vermont.gov/dept/sos/office_professional_regulation/professions/tattooist_body_piercer/tattooist_aftercare_guidelines.pdf",
+      "status": 200
+    },
+    {
+      "url": "https://rmadocs.venturacounty.gov/environmental-health/programs/body-art/publications/sample-body-art-recommended-tattoo-aftercare.pdf",
+      "finalUrl": "https://rmadocs.venturacounty.gov/environmental-health/programs/body-art/publications/sample-body-art-recommended-tattoo-aftercare.pdf",
+      "status": 200
+    },
+    {
+      "url": "https://www.aad.org/news/when-to-use-antibiotics-skin",
+      "finalUrl": "https://www.aad.org/news/when-to-use-antibiotics-skin",
+      "status": 200
+    },
+    {
+      "url": "https://www.aad.org/public/everyday-care/skin-care-basics/tattoos/caring-for-tattooed-skin",
+      "finalUrl": "https://www.aad.org/public/everyday-care/skin-care-basics/tattoos/caring-for-tattooed-skin",
+      "status": 200
+    },
+    {
+      "url": "https://www.aad.org/public/everyday-care/skin-care-basics/tattoos/tattoo-skin-reactions",
+      "finalUrl": "https://www.aad.org/public/everyday-care/skin-care-basics/tattoos/tattoo-skin-reactions",
+      "status": 200
+    },
+    {
+      "url": "https://www.fda.gov/consumers/consumer-updates/think-you-ink-tattoo-safety",
+      "status": null,
+      "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1010)>"
+    },
+    {
+      "url": "https://www.fyinorfolk.nhs.uk/my-health/piercings-tattoos/",
+      "finalUrl": "https://www.fyinorfolk.nhs.uk/my-health/piercings-tattoos/",
+      "status": 200
+    },
+    {
+      "url": "https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/tattoos-and-piercings/art-20045067",
+      "finalUrl": "https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/tattoos-and-piercings/art-20045067",
+      "status": 200
+    },
+    {
+      "url": "https://www.nhs.uk/conditions/cellulitis/",
+      "finalUrl": "https://www.nhs.uk/conditions/cellulitis/",
+      "status": 200
+    }
+  ],
+  "limits": [
+    "No Google Search Console inspection or ranking verification",
+    "No clinical review or personal medical assessment",
+    "No Lighthouse or field Core Web Vitals verification",
+    "CMS data was verified through authorized database access; no authenticated admin browser session was used"
+  ]
+}

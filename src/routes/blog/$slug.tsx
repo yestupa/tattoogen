@@ -90,7 +90,7 @@ function BlogPostPage() {
               <ArrowLeft aria-hidden className="size-4" />
               {m['blog.back_to_blog']()}
             </Link>
-            <h1 className="font-display mt-8 text-4xl leading-[0.98] font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="font-display mt-8 text-4xl leading-tight font-semibold tracking-[-0.05em] text-balance sm:text-5xl lg:text-6xl">
               {post.title}
             </h1>
             {post.description && (
