@@ -1,7 +1,22 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import handler from '@tanstack/react-start/server-entry';
 
 import { getCookieFromHeader } from './lib/cookie';
+import {
+  overwriteServerAsyncLocalStorage,
+  serverAsyncLocalStorage,
+} from './paraglide/runtime.js';
 import { paraglideMiddleware } from './paraglide/server.js';
+
+type LocaleStore = ReturnType<
+  NonNullable<typeof serverAsyncLocalStorage>['getStore']
+>;
+
+// Initialize once before requests arrive so concurrent cold requests cannot
+// replace the locale context while another request is already rendering.
+if (!serverAsyncLocalStorage) {
+  overwriteServerAsyncLocalStorage(new AsyncLocalStorage<LocaleStore>());
+}
 
 // On Cloudflare Workers, stash the binding env (D1, ASSETS, …) on globalThis
 // so synchronous code paths (e.g. the db() singleton with DATABASE_PROVIDER=d1)
