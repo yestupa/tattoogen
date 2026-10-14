@@ -56,7 +56,7 @@ export const Route = createFileRoute('/contact')({
         .href;
     return {
       meta: [
-        { title: `${title} | ${envConfigs.app_name}` },
+        { title },
         { name: 'description', content: description },
         { property: 'og:title', content: title },
         { property: 'og:description', content: description },

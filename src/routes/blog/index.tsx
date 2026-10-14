@@ -34,7 +34,7 @@ export const Route = createFileRoute('/blog/')({
     const fallbackLocale = availableLocales.includes(baseLocale)
       ? baseLocale
       : availableLocales[0];
-    const title = `${m['blog.title']({}, { locale })} | ${envConfigs.app_name}`;
+    const title = m['blog.meta_title']({}, { locale });
     const description = m['blog.description']({}, { locale });
     const urlFor = (loc: typeof locale) =>
       localizeUrl(new URL('/blog', envConfigs.app_url), { locale: loc }).href;

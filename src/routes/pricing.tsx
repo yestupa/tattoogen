@@ -17,14 +17,14 @@ export const Route = createFileRoute('/pricing')({
     const locale = getLocale();
     return {
       locale,
-      title: m['landing.pricing.title']({}, { locale }),
+      title: m['landing.pricing.meta_title']({}, { locale }),
       description: m['landing.pricing.description']({}, { locale }),
     };
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { description, locale } = loaderData;
-    const title = `${loaderData.title} | ${envConfigs.app_name}`;
+    const title = loaderData.title;
     const urlFor = (loc: typeof locale) =>
       localizeUrl(new URL('/pricing', envConfigs.app_url), { locale: loc })
         .href;

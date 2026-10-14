@@ -97,10 +97,7 @@ export const Route = createFileRoute('/')({
   },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? baseLocale;
-    const title = m['landing.metadata.title'](
-      { appName: envConfigs.app_name },
-      { locale }
-    );
+    const title = m['landing.metadata.title']({}, { locale });
     const description = m['landing.hero.subheadline']({}, { locale });
     const urlFor = (loc: typeof locale) =>
       localizeUrl(new URL('/', envConfigs.app_url), { locale: loc }).href;

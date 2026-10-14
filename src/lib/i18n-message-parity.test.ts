@@ -90,6 +90,39 @@ function legalMeta(slug: string, locale: 'en' | 'zh') {
   };
 }
 
+function routeLoaderTitle(path: string, locale: 'en' | 'zh'): string {
+  const text = source(path);
+  const ast = ts.createSourceFile(
+    path,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  );
+  let expression = '';
+  const visit = (node: ts.Node) => {
+    if (ts.isPropertyAssignment(node) && node.name.getText(ast) === 'loader')
+      expression = node.initializer.getText(ast);
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  if (!expression) throw new Error(`Missing route loader: ${path}`);
+  const js = ts.transpile(`const loader = ${expression};`, {
+    target: ts.ScriptTarget.ES2022,
+  });
+  const messages = Object.fromEntries(
+    Object.keys(dictionaries.en).map((key) => [
+      key,
+      (_params: Record<string, string>, options?: { locale: 'en' | 'zh' }) =>
+        dictionaries[options?.locale ?? locale][key],
+    ])
+  );
+  return new Function('getLocale', 'm', `${js}\nreturn loader().title;`)(
+    () => locale,
+    messages
+  );
+}
+
 function routeHead(
   path: string,
   locale: 'en' | 'zh',
@@ -100,7 +133,8 @@ function routeHead(
     alternateSlugs?: Partial<Record<'en' | 'zh', string>>;
   },
   slug?: string,
-  blogAvailability?: { locales: Array<'en' | 'zh'>; known: boolean }
+  blogAvailability?: { locales: Array<'en' | 'zh'>; known: boolean },
+  loaderTitle?: string
 ) {
   const text = source(path);
   const ast = ts.createSourceFile(
@@ -172,7 +206,11 @@ function routeHead(
     {
       locale,
       post: loaderPost,
-      title: dictionaries[locale]['landing.pricing.title'],
+      title:
+        loaderTitle ??
+        (path === '../routes/contact.tsx'
+          ? dictionaries[locale]['contact.meta_title']
+          : dictionaries[locale]['landing.pricing.meta_title']),
       description: dictionaries[locale]['landing.pricing.description'],
       meta: slug ? legalMeta(slug, locale) : undefined,
       availability: blogAvailability,
@@ -182,6 +220,45 @@ function routeHead(
 }
 
 describe('public localized metadata', () => {
+  const titleRoutes = [
+    ['../routes/pricing.tsx', 'landing.pricing.meta_title'],
+    ['../routes/contact.tsx', 'contact.meta_title'],
+    ['../routes/womb-tattoo-generator.tsx', 'womb.meta.title'],
+    ['../routes/fear-god-tattoo-generator.tsx', 'fear.meta.title'],
+    ['../routes/kaiser-tattoo-generator.tsx', 'kaiser.meta.title'],
+    ['../routes/poison-tree-tattoo-generator.tsx', 'poison.meta.title'],
+    ['../routes/butterfly-tattoo-generator.tsx', 'butterfly.meta.title'],
+    ['../routes/ghost-face-tattoo-generator.tsx', 'ghost.meta.title'],
+    ['../routes/throat-tattoo-for-men-generator.tsx', 'throat.meta.title'],
+    ['../routes/couple-tattoo-generator.tsx', 'couple.meta.title'],
+    ['../routes/angel-numbers-tattoo-generator.tsx', 'angel.meta.title'],
+    ['../routes/joker-tattoo-generator.tsx', 'joker.meta.title'],
+  ] as const;
+
+  it.each(['en', 'zh'] as const)(
+    'connects each public loader to its own visible %s title',
+    (locale) => {
+      for (const [path, key] of titleRoutes) {
+        const head = routeHead(
+          path,
+          locale,
+          undefined,
+          undefined,
+          undefined,
+          routeLoaderTitle(path, locale)
+        );
+        expect(
+          head.meta.find((meta: { title?: string }) => meta.title)?.title,
+          path
+        ).toBe(dictionaries[locale][key]);
+      }
+      const blogHead = routeHead('../routes/blog/index.tsx', locale);
+      expect(
+        blogHead.meta.find((meta: { title?: string }) => meta.title)?.title
+      ).toBe(dictionaries[locale]['blog.meta_title']);
+    }
+  );
+
   it('does not index an empty blog locale or point to missing translations', () => {
     const emptyHead = routeHead(
       '../routes/blog/index.tsx',
@@ -235,14 +312,26 @@ describe('public localized metadata', () => {
   });
 
   it.each(['en', 'zh'] as const)(
-    'interpolates the real brand into the home title in %s',
+    'gives the home title a localized AI generator keyword in %s',
     (locale) => {
       const head = routeHead('../routes/index.tsx', locale);
       const title = head.meta.find(
         (meta: { title?: string }) => meta.title
       )?.title;
       expect(title).not.toContain('{appName}');
-      expect(title).toContain('Tattoo Generator');
+      expect(title).toContain(
+        locale === 'en' ? 'AI Tattoo Generator' : 'AI 纹身生成器'
+      );
+    }
+  );
+
+  it.each(['en', 'zh'] as const)(
+    'uses one concise support title on the contact route in %s',
+    (locale) => {
+      const head = routeHead('../routes/contact.tsx', locale);
+      expect(
+        head.meta.find((meta: { title?: string }) => meta.title)?.title
+      ).toBe(dictionaries[locale]['contact.meta_title']);
     }
   );
 
