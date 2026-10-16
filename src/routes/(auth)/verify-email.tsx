@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { authClient, useSession } from '@/core/auth/client';
-import { Link, useRouter } from '@/core/i18n/navigation';
+import { useRouter } from '@/core/i18n/navigation';
 import { m } from '@/paraglide/messages.js';
 import { deLocalizeHref, localizeHref } from '@/paraglide/runtime.js';
 import { AuthShell } from '@/components/auth-shell';
@@ -15,9 +15,27 @@ const RESEND_COOLDOWN_SECONDS = 60;
 function safeDecodeCallbackUrl(raw?: string | null) {
   if (!raw) return '/';
   try {
-    const decoded = decodeURIComponent(raw);
-    if (decoded.startsWith('/')) return decoded;
-    return '/';
+    // URLSearchParams already decodes the outer query value. Preserve escapes
+    // inside a destination's own query; support older fully encoded values.
+    const decoded = raw.startsWith('/') ? raw : decodeURIComponent(raw);
+    if (
+      !decoded.startsWith('/') ||
+      decoded.startsWith('//') ||
+      /[\\\u0000-\u001f\u007f]/.test(decoded)
+    ) {
+      return '/';
+    }
+    const pathname = decodeURIComponent(
+      new URL(decoded, 'https://callback.invalid').pathname
+    );
+    if (
+      pathname.startsWith('//') ||
+      /[\\\u0000-\u001f\u007f]/.test(pathname) ||
+      /^\/(?:zh\/)?(?:sign-in|sign-up|verify-email)(?:\/|$)/.test(pathname)
+    ) {
+      return '/';
+    }
+    return decoded;
   } catch {
     return '/';
   }
@@ -25,7 +43,8 @@ function safeDecodeCallbackUrl(raw?: string | null) {
 
 function stripLocalePrefix(path: string) {
   if (!path?.startsWith('/')) return '/';
-  return deLocalizeHref(path);
+  // Removing a locale prefix can expose a protocol-relative path.
+  return safeDecodeCallbackUrl(deLocalizeHref(path));
 }
 
 function getCooldownKey(email?: string | null) {
@@ -57,9 +76,11 @@ function VerifyEmailPage() {
   const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
   const [paramsReady, setParamsReady] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(false);
   const [initialSendFailed, setInitialSendFailed] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const lastSessionCheckAtRef = useRef(0);
+  const continueInFlightRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -107,22 +128,26 @@ function VerifyEmailPage() {
     return `/sign-in?${query.toString()}`;
   }, [nextUrl]);
 
-  const hardNavigateToNextUrl = () => {
+  const hardNavigateToNextUrl = useCallback(() => {
     if (typeof window === 'undefined') return;
-    window.location.assign(localizeHref(nextUrl));
-  };
+    window.location.assign(safeDecodeCallbackUrl(localizeHref(nextUrl)));
+  }, [nextUrl]);
 
-  const checkSessionAndRedirect = async () => {
+  const checkSessionAndRedirect = useCallback(async () => {
     const now = Date.now();
-    if (now - lastSessionCheckAtRef.current < 800) return;
+    if (now - lastSessionCheckAtRef.current < 800) return false;
     lastSessionCheckAtRef.current = now;
     try {
-      const { data } = await authClient.getSession();
-      if (data?.user) {
+      const { data, error } = await authClient.getSession({
+        query: { disableCookieCache: true },
+      });
+      if (!error && data?.user) {
         hardNavigateToNextUrl();
+        return true;
       }
     } catch {}
-  };
+    return false;
+  }, [hardNavigateToNextUrl]);
 
   // Cooldown ticker
   useEffect(() => {
@@ -135,36 +160,35 @@ function VerifyEmailPage() {
 
   // If session exists, redirect to next.
   useEffect(() => {
-    if (!isPending && session?.user) {
+    if (paramsReady && !isPending && session?.user) {
       hardNavigateToNextUrl();
     }
-  }, [isPending, session?.user, nextUrl]);
+  }, [paramsReady, isPending, session?.user, hardNavigateToNextUrl]);
 
   // Brief polling on mount: detect verification link → cookie → session.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!paramsReady) return;
     let cancelled = false;
+    let timer: number | undefined;
     let attempts = 0;
     const maxAttempts = 12;
     const tick = async () => {
       if (cancelled) return;
       attempts += 1;
-      await checkSessionAndRedirect();
-      if (attempts >= maxAttempts) return;
-      const { data } = await authClient.getSession();
-      if (!data?.user) {
-        window.setTimeout(tick, 1000);
-      }
+      const redirected = await checkSessionAndRedirect();
+      if (cancelled || redirected || attempts >= maxAttempts) return;
+      timer = window.setTimeout(tick, 1000);
     };
     void tick();
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, [nextUrl]);
+  }, [paramsReady, checkSessionAndRedirect]);
 
   // Cross-tab sync: re-check session on focus / visibility change.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!paramsReady) return;
     const onFocus = () => void checkSessionAndRedirect();
     const onVisibility = () => {
       if (document.visibilityState === 'visible')
@@ -176,7 +200,7 @@ function VerifyEmailPage() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [nextUrl]);
+  }, [paramsReady, checkSessionAndRedirect]);
 
   const handleResend = async () => {
     if (!email) {
@@ -190,7 +214,7 @@ function VerifyEmailPage() {
       setLoading(true);
       const result = await authClient.sendVerificationEmail({
         email,
-        callbackURL: localizeHref(nextUrl || '/'),
+        callbackURL: safeDecodeCallbackUrl(localizeHref(nextUrl || '/')),
       });
       if (result?.error) {
         toast.error(
@@ -208,21 +232,28 @@ function VerifyEmailPage() {
     }
   };
 
-  const handleContinue = () => {
-    if (session?.user) {
-      hardNavigateToNextUrl();
-      return;
-    }
-    void (async () => {
-      await checkSessionAndRedirect();
-      const { data } = await authClient.getSession();
+  const handleContinue = async () => {
+    if (continueInFlightRef.current) return;
+    continueInFlightRef.current = true;
+    setCheckingSession(true);
+    try {
+      const { data, error } = await authClient.getSession({
+        query: { disableCookieCache: true },
+      });
+      if (error) throw error;
       if (data?.user) {
         hardNavigateToNextUrl();
       } else {
-        // User hasn't verified yet — show a toast instead of redirecting
-        toast.error(m['common.sign.verify_email_not_verified_yet']());
+        // A mail link can verify the account in another browser. No session
+        // here says nothing about email verification; sign-in enforces it.
+        router.push(signInPath);
       }
-    })();
+    } catch {
+      toast.error(m['common.sign.verify_email_check_failed']());
+    } finally {
+      continueInFlightRef.current = false;
+      setCheckingSession(false);
+    }
   };
 
   return (
@@ -271,10 +302,10 @@ function VerifyEmailPage() {
         <Button
           type="button"
           className="w-full"
-          disabled={isPending}
+          disabled={!paramsReady || isPending || checkingSession}
           onClick={handleContinue}
         >
-          {isPending ? (
+          {!paramsReady || isPending || checkingSession ? (
             <Loader2 size={16} className="animate-spin" />
           ) : (
             m['common.sign.verify_email_continue']()
