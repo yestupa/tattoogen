@@ -32,21 +32,31 @@ const SWATCHES = [
   'from-neutral-300 via-stone-100 to-orange-100',
 ];
 
-/**
- * Real before/after samples, keyed by example. `image` is the result shown in
- * the grid; `sourceImage` is the original it was made from. Examples without
- * an entry keep their gradient tile.
- */
+/** Curated concept thumbnails; captions and prompts describe the actual image. */
 const SAMPLES: Record<
   string,
   { image: string; sourceImage?: string; sourceImages?: string[] }
 > = {
   'fine_line-1': {
-    image: '/imgs/generated/tattoo-fine-line-phoenix-1790920629842.png',
+    image: '/imgs/butterfly/fine-line.webp',
   },
+  'fine_line-2': { image: '/imgs/poison-tree/fine-line.webp' },
+  'fine_line-3': { image: '/imgs/throat/geometric.webp' },
+  'fine_line-4': { image: '/imgs/couple/matching-hearts.webp' },
   'botanical-1': {
-    image: '/imgs/generated/tattoo-peony-snake-1790920650819.png',
+    image: '/imgs/butterfly/floral.webp',
   },
+  'botanical-2': { image: '/imgs/throat/rose.webp' },
+  'botanical-3': { image: '/imgs/couple/botanical.webp' },
+  'botanical-4': { image: '/imgs/kaiser/blue-rose.jpg' },
+  'traditional-1': { image: '/imgs/throat/blackwork-wings.webp' },
+  'traditional-2': { image: '/imgs/butterfly/blackwork.webp' },
+  'traditional-3': { image: '/imgs/throat/snake.webp' },
+  'traditional-4': { image: '/imgs/throat/ornamental.webp' },
+  'lettering-1': { image: '/imgs/fear-god/script.jpg' },
+  'lettering-2': { image: '/imgs/fear-god/blackletter.jpg' },
+  'lettering-3': { image: '/imgs/fear-god/minimal.jpg' },
+  'lettering-4': { image: '/imgs/fear-god/cross.jpg' },
 };
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {

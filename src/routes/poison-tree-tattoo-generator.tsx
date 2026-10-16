@@ -11,6 +11,7 @@ import {
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { PoisonTreeTattoo } from '@/blocks/poison-tree-tattoo';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/poison-tree-tattoo-generator')({
   loader: () => {
@@ -67,6 +68,7 @@ function PoisonTreeTattooPage() {
       <Header />
       <main className="flex-1">
         <PoisonTreeTattoo />
+        <TattooNextSteps context="poison-tree" />
       </main>
       <Footer />
     </div>

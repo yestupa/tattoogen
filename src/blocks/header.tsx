@@ -7,9 +7,9 @@ export function Header({
   localeHrefs?: Partial<Record<'en' | 'zh', string>>;
 } = {}) {
   const navLinks = [
-    { href: '/chat', label: m['landing.nav.create']() },
-    { href: '/#features', label: m['landing.nav.features']() },
-    { href: '/#gallery', label: m['landing.nav.gallery']() },
+    { href: '/tattoo-tools', label: m['landing.nav.tools']() },
+    { href: '/tattoo-ideas', label: m['landing.nav.ideas']() },
+    { href: '/tattoo-styles', label: m['landing.nav.styles']() },
     { href: '/pricing', label: m['landing.nav.pricing']() },
     { href: '/blog', label: m['blog.title']() },
   ];

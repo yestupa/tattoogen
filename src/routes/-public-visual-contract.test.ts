@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
+import { tattooExamples } from '@/content/tattoos/catalog';
+
 const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
 const blocks = [
@@ -261,9 +263,19 @@ describe('public visual contracts', () => {
             const attribute = imageAttributes.find(
               (attribute) => attribute.name.getText(file) === dimension
             );
-            expect(attribute?.initializer?.getText(file), path).toMatch(
-              /^\{[1-9]\d*\}$/
-            );
+            const value = attribute?.initializer?.getText(file);
+            if (
+              path === '../blocks/gallery.tsx' &&
+              value === `{item.${dimension}}`
+            ) {
+              // The curated gallery keeps the intrinsic sizes with each image.
+              expect(tattooExamples.length).toBeGreaterThan(0);
+              for (const item of tattooExamples) {
+                const size = item[dimension as 'width' | 'height'];
+                expect(Number.isInteger(size), item.id).toBe(true);
+                expect(size, item.id).toBeGreaterThan(0);
+              }
+            } else expect(value, path).toMatch(/^\{[1-9]\d*\}$/);
           }
         }
         ts.forEachChild(node, visit);

@@ -6,7 +6,7 @@ import { overwriteGetLocale } from '@/paraglide/runtime.js';
 import { uploadImageFile } from '@/components/image-uploader';
 import { uploadRichTextImage } from '@/components/rich-text-editor';
 
-import { uploadChatImage } from './agent';
+import { uploadChatImage, uploadChatImages } from './agent';
 
 const file = new File(['png'], 'tattoo.png', { type: 'image/png' });
 const serverMessage = 'Invalid image MIME type from server';
@@ -97,4 +97,77 @@ it('does not read a server message in any upload-image browser client', () => {
     const source = readFileSync(url, 'utf8');
     expect(source).not.toMatch(/(?:result|data|json)\.message/);
   }
+});
+
+describe('ordered batch chat uploads', () => {
+  it('sends the source and annotation in one multipart request and keeps URL order', async () => {
+    const guide = new File(['guide'], 'guide.png', { type: 'image/png' });
+    const fetch = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(
+          JSON.stringify({
+            code: 0,
+            data: { urls: ['/uploads/source.png', '/uploads/guide.png'] },
+          }),
+          { status: 200 }
+        )
+    );
+    vi.stubGlobal('fetch', fetch);
+    expect(await uploadChatImages([file, guide])).toEqual([
+      '/uploads/source.png',
+      '/uploads/guide.png',
+    ]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const body = fetch.mock.calls[0][1]?.body as FormData;
+    expect(body.getAll('files').map((part) => (part as File).name)).toEqual([
+      'tattoo.png',
+      'guide.png',
+    ]);
+  });
+
+  it('keeps the single image API compatible and skips empty batches', async () => {
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ code: 0, data: { urls: ['/uploads/source.png'] } }),
+          { status: 200 }
+        )
+    );
+    vi.stubGlobal('fetch', fetch);
+    expect(await uploadChatImages([])).toEqual([]);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await uploadChatImage(file)).toBe('/uploads/source.png');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { urls: ['/uploads/only-one.png'] },
+    { urls: ['/uploads/source.png', 42] },
+    { urls: ['/uploads/source.png', ''] },
+  ])('rejects partial or malformed batch responses', async (data) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ code: 0, data }), { status: 200 })
+      )
+    );
+    expect(await errorMessage(uploadChatImages([file, file]))).toBe(
+      'Upload failed'
+    );
+  });
+
+  it('rejects unsupported files and batches above the server count before requesting', async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    await expect(
+      uploadChatImages(Array.from({ length: 10 }, () => file))
+    ).rejects.toThrow('Upload failed');
+    await expect(
+      uploadChatImages([
+        new File(['svg'], 'bad.svg', { type: 'image/svg+xml' }),
+      ])
+    ).rejects.toThrow('Upload failed');
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

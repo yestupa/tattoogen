@@ -45,7 +45,7 @@ export function SiteFooter({
       className="bg-ink-bg text-ink-fg border-ink-line border-t"
     >
       <div className="mx-auto max-w-7xl px-4 pt-16 pb-7 sm:px-6 sm:pt-20 lg:px-8">
-        <div className="mb-14 grid gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start">
+        <div className="mb-14 grid gap-10 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,1.8fr)] lg:items-start">
           <div>
             <Link
               href="/"

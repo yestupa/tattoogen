@@ -11,6 +11,7 @@ import {
 import { FearGodTattoo } from '@/blocks/fear-god-tattoo';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/fear-god-tattoo-generator')({
   loader: () => {
@@ -66,6 +67,7 @@ function FearGodTattooPage() {
       <Header />
       <main className="flex-1">
         <FearGodTattoo />
+        <TattooNextSteps context="fear-god" />
       </main>
       <Footer />
     </div>

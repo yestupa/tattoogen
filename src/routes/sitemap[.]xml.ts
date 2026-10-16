@@ -4,6 +4,7 @@ import { envConfigs } from '@/config';
 import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { publishedBlogLocales } from '@/content/posts';
+import { tattooPublicPaths } from '@/content/tattoos/public-paths';
 
 const STATIC_PATHS = [
   '',
@@ -22,6 +23,7 @@ const STATIC_PATHS = [
   '/contact',
   '/privacy-policy',
   '/terms-of-service',
+  ...tattooPublicPaths(),
 ];
 
 type Locale = (typeof locales)[number];

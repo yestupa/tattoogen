@@ -10,6 +10,7 @@ import {
 } from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 import { WombTattoo } from '@/blocks/womb-tattoo';
 
 export const Route = createFileRoute('/womb-tattoo-generator')({
@@ -58,6 +59,7 @@ function WombTattooPage() {
       <Header />
       <main className="flex-1">
         <WombTattoo />
+        <TattooNextSteps context="womb" />
       </main>
       <Footer />
     </div>

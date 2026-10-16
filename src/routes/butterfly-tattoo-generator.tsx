@@ -11,6 +11,7 @@ import {
 import { ButterflyTattoo } from '@/blocks/butterfly-tattoo';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/butterfly-tattoo-generator')({
   loader: () => {
@@ -66,6 +67,7 @@ function ButterflyTattooPage() {
       <Header />
       <main className="flex-1">
         <ButterflyTattoo />
+        <TattooNextSteps context="butterfly" />
       </main>
       <Footer />
     </div>

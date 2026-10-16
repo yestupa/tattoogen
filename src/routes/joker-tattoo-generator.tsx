@@ -11,6 +11,7 @@ import {
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { JokerTattoo } from '@/blocks/joker-tattoo';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/joker-tattoo-generator')({
   loader: () => {
@@ -63,6 +64,7 @@ function JokerTattooPage() {
       <Header />
       <main className="flex-1">
         <JokerTattoo />
+        <TattooNextSteps context="joker" />
       </main>
       <Footer />
     </div>

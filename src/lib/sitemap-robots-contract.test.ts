@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { blogPostPath, isCanonicalPostSlug } from '@/lib/post-slug';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { publishedBlogLocales } from '@/content/posts';
+import { tattooPublicPaths } from '@/content/tattoos/public-paths';
 
 const source = (path: string) =>
   readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -42,6 +43,7 @@ function serverRoute(path: string, rows: PublishedLocale[] = []) {
     'blogPostPath',
     'isCanonicalPostSlug',
     'publishedBlogLocales',
+    'tattooPublicPaths',
     'publishedQuery',
     `${js}\nreturn Route;`
   )(
@@ -53,6 +55,7 @@ function serverRoute(path: string, rows: PublishedLocale[] = []) {
     blogPostPath,
     isCanonicalPostSlug,
     publishedBlogLocales,
+    tattooPublicPaths,
     getPublishedLocaleAvailability
   );
   return {
@@ -134,6 +137,7 @@ describe('localized crawling contracts', () => {
       '/contact',
       '/privacy-policy',
       '/terms-of-service',
+      ...tattooPublicPaths(),
     ]) {
       for (const locale of locales) {
         expect(xml).toContain(
@@ -142,6 +146,12 @@ describe('localized crawling contracts', () => {
       }
     }
     expect(xml).toContain('/blog/fine-line-guide');
+    const locations = Array.from(
+      xml.matchAll(/<loc>([^<]+)<\/loc>/g),
+      (match) => match[1]
+    );
+    expect(new Set(locations).size).toBe(locations.length);
+    expect(xml).not.toContain('/tattoo-ideas/phoenix');
     expect(xml).toContain('/zh/blog/xi-xian-wen-shen');
     expect(xml).toContain('/blog/tattoo-aftercare');
     expect(xml).not.toContain('/zh/blog/tattoo-aftercare');

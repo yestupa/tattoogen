@@ -1,0 +1,24 @@
+{
+  "source_file": "blackink关键词 - blackink.csv",
+  "source_sha256": "EBBF599A36F8743F35A644261391DA488D495AD022657FD2B437230FFEF72A9E",
+  "source_record_count": 9933,
+  "source_countries": {
+    "US": 9933
+  },
+  "metric_note": "User-supplied competitor ranking snapshot; export date unknown. Not live measurements, forecasts, or our rankings. Keyword variants can overlap and must not be summed as unique demand.",
+  "matching_note": "Automated candidate mapping only. Editorial review decides whether a page independently satisfies the intent. Unmapped and meaning backlogs do not create URLs.",
+  "intent_counts": {
+    "existing": 181,
+    "unmapped-backlog": 8657,
+    "style": 205,
+    "tool": 310,
+    "editorial-backlog": 124,
+    "placement": 267,
+    "subject-backlog": 59,
+    "subject": 130
+  },
+  "candidate_page_count": 27,
+  "versioned_brief_records": 137,
+  "full_classification": "data/seo/blackink-keyword-classification.csv (gitignored)",
+  "raw_export_committed": false
+}

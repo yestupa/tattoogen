@@ -3,18 +3,19 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from '@/core/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
-import { BrandArtwork } from '@/components/brand-artwork';
+import { getLocale } from '@/paraglide/runtime.js';
 import { buttonVariants } from '@/components/ui/button';
+import { tattooExamples } from '@/content/tattoos/catalog';
 
-const artworkStyles = [
-  'bg-[#f0e9dc] [&_svg]:rotate-[-7deg]',
-  'bg-[#e7ddd0] [&_svg]:scale-90',
-  'bg-[#f7f2e8] [&_svg]:rotate-[5deg]',
-  'bg-[#d9cbbb] [&_svg]:scale-110',
-  'bg-[#eee7dc] [&_svg]:-translate-x-3',
-  'bg-[#e3d8ca] [&_svg]:rotate-[-3deg]',
-  'bg-[#f5efe5] [&_svg]:translate-x-3',
-  'bg-[#ddd0c1] [&_svg]:scale-95',
+const featuredIds = [
+  'fine-line-butterfly',
+  'blackwork-eagle',
+  'watercolor-blue-rose',
+  'geometric-neck-ornament',
+  'paired-botanical-branches',
+  'fear-god-script',
+  'fine-line-bare-tree',
+  'sun-and-moon-pair',
 ];
 
 const artworkLayouts = [
@@ -29,16 +30,10 @@ const artworkLayouts = [
 ];
 
 export function Gallery() {
-  const items = [
-    m['landing.gallery.item_1'](),
-    m['landing.gallery.item_2'](),
-    m['landing.gallery.item_3'](),
-    m['landing.gallery.item_4'](),
-    m['landing.gallery.item_5'](),
-    m['landing.gallery.item_6'](),
-    m['landing.gallery.item_7'](),
-    m['landing.gallery.item_8'](),
-  ];
+  const locale = getLocale();
+  const items = featuredIds.flatMap((id) =>
+    tattooExamples.filter((item) => item.id === id)
+  );
 
   return (
     <section id="gallery" className="section-paper px-4 py-20 sm:px-6 sm:py-28">
@@ -54,30 +49,30 @@ export function Gallery() {
         </div>
 
         <div className="mt-12 grid auto-rows-[16rem] gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((prompt, index) => (
+          {items.map((item, index) => (
             <article
-              key={prompt}
+              key={item.id}
               className={cn(
-                'group border-paper-line bg-paper-panel relative overflow-hidden rounded-[1.1rem] border',
+                'group border-paper-line bg-paper-panel focus-within:border-vermilion focus-within:ring-vermilion relative overflow-hidden rounded-[1.1rem] border focus-within:ring-2',
                 artworkLayouts[index]
               )}
             >
-              <div
-                className={cn(
-                  'paper-texture absolute inset-0 flex items-center justify-center',
-                  artworkStyles[index]
-                )}
+              <Link
+                href={`/tattoo-designs/${item.id}`}
+                className="touch-target absolute inset-0 flex flex-col focus-visible:outline-2 focus-visible:outline-offset-[-4px]"
               >
-                <BrandArtwork
-                  label={prompt}
-                  className="text-paper-fg h-full w-auto max-w-full p-5 transition-transform duration-500 group-hover:scale-[1.03]"
+                <img
+                  src={item.image}
+                  alt={item.title[locale]}
+                  width={item.width}
+                  height={item.height}
+                  loading="lazy"
+                  className="min-h-0 w-full flex-1 object-contain p-4 transition-transform duration-500 group-hover:scale-[1.02]"
                 />
-              </div>
-              <div className="absolute right-3 bottom-3 left-3 rounded-xl border border-white/35 bg-black/72 p-3 backdrop-blur-sm">
-                <p className="line-clamp-2 text-xs leading-5 text-white/80">
-                  {prompt}
-                </p>
-              </div>
+                <span className="border-paper-line bg-paper-panel text-paper-fg block shrink-0 border-t p-4 text-sm font-semibold">
+                  {item.title[locale]}
+                </span>
+              </Link>
             </article>
           ))}
         </div>
@@ -87,7 +82,7 @@ export function Gallery() {
         </p>
         <div className="mt-10 flex justify-center">
           <Link
-            href="/chat"
+            href="/tattoo-ideas"
             className={cn(
               buttonVariants({ variant: 'outline', size: 'lg' }),
               'touch-target border-paper-fg text-paper-fg hover:bg-paper-fg hover:text-paper-bg gap-2 rounded-full bg-transparent px-6'

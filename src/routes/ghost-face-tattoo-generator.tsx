@@ -11,6 +11,7 @@ import {
 import { Footer } from '@/blocks/footer';
 import { GhostFaceTattoo } from '@/blocks/ghost-face-tattoo';
 import { Header } from '@/blocks/header';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/ghost-face-tattoo-generator')({
   loader: () => {
@@ -66,6 +67,7 @@ function GhostFaceTattooPage() {
       <Header />
       <main className="flex-1">
         <GhostFaceTattoo />
+        <TattooNextSteps context="ghost-face" />
       </main>
       <Footer />
     </div>

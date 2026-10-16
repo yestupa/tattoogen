@@ -11,6 +11,7 @@ import {
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { KaiserTattoo } from '@/blocks/kaiser-tattoo';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/kaiser-tattoo-generator')({
   loader: () => {
@@ -64,6 +65,7 @@ function KaiserTattooPage() {
       <Header />
       <main className="flex-1">
         <KaiserTattoo />
+        <TattooNextSteps context="kaiser" />
       </main>
       <Footer />
     </div>

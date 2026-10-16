@@ -11,6 +11,7 @@ import {
 import { CoupleTattoo } from '@/blocks/couple-tattoo';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/couple-tattoo-generator')({
   loader: () => {
@@ -64,6 +65,7 @@ function CoupleTattooPage() {
       <Header />
       <main className="flex-1">
         <CoupleTattoo />
+        <TattooNextSteps context="couple" />
       </main>
       <Footer />
     </div>

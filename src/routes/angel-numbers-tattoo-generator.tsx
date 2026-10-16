@@ -11,6 +11,7 @@ import {
 import { AngelNumbersTattoo } from '@/blocks/angel-numbers-tattoo';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 
 export const Route = createFileRoute('/angel-numbers-tattoo-generator')({
   loader: () => {
@@ -69,6 +70,7 @@ function AngelNumbersTattooPage() {
       <Header />
       <main className="flex-1">
         <AngelNumbersTattoo />
+        <TattooNextSteps context="angel-numbers" />
       </main>
       <Footer />
     </div>

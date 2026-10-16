@@ -33,8 +33,33 @@ export function newAttachmentId(): string {
 
 /** Upload one image and return its public URL. Requires a signed-in session. */
 export async function uploadChatImage(file: File): Promise<string> {
+  return (await uploadChatImages([file]))[0];
+}
+
+/** Send an ordered batch in one request so paired references share the rate-limit slot. */
+export async function uploadChatImages(
+  files: readonly File[]
+): Promise<string[]> {
+  if (files.length === 0) return [];
+  const supported = new Set([
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'image/gif',
+    'image/avif',
+  ]);
+  if (
+    files.length > 9 ||
+    files.some(
+      (file) =>
+        !supported.has(file.type.toLowerCase()) ||
+        !Number.isFinite(file.size) ||
+        file.size <= 0
+    )
+  )
+    throw new Error(m['common.upload.failed']());
   const formData = new FormData();
-  formData.append('files', file);
+  for (const file of files) formData.append('files', file);
 
   const res = await fetch('/api/storage/upload-image', {
     method: 'POST',
@@ -50,10 +75,18 @@ export async function uploadChatImage(file: File): Promise<string> {
   } catch {
     throw new Error(m['common.upload.failed']());
   }
-  if (json.code !== 0 || !json.data?.urls?.[0]) {
+  const urls: unknown = json?.data?.urls;
+  if (
+    json?.code !== 0 ||
+    !Array.isArray(urls) ||
+    urls.length !== files.length ||
+    !urls.every(
+      (url): url is string => typeof url === 'string' && url.trim().length > 0
+    )
+  ) {
     throw new Error(m['common.upload.failed']());
   }
-  return json.data.urls[0] as string;
+  return urls;
 }
 
 /**

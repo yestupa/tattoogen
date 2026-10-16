@@ -13,6 +13,7 @@ import {
 } from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
+import { TattooNextSteps } from '@/blocks/tattoo-next-steps';
 import { MarkdownContent } from '@/components/markdown-content';
 import { buildBlogLocalePaths, formatPostDate } from '@/content/posts';
 import { getBlogPostFn } from '@/content/posts/server';
@@ -138,6 +139,7 @@ function BlogPostPage() {
             <MarkdownContent content={post.content || ''} />
           </article>
         </section>
+        <TattooNextSteps context={post.slug} />
       </main>
       <Footer />
     </div>

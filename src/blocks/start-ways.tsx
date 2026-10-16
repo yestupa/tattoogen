@@ -15,21 +15,25 @@ export function StartWays() {
       icon: Sparkles,
       title: m['landing.start.idea_title'](),
       description: m['landing.start.idea_description'](),
+      href: '/tattoo-idea-generator',
     },
     {
       icon: ImagePlus,
       title: m['landing.start.reference_title'](),
       description: m['landing.start.reference_description'](),
+      href: '/image-to-tattoo',
     },
     {
       icon: PenLine,
       title: m['landing.start.lettering_title'](),
       description: m['landing.start.lettering_description'](),
+      href: '/tattoo-font-generator',
     },
     {
       icon: RefreshCcw,
       title: m['landing.start.cover_title'](),
       description: m['landing.start.cover_description'](),
+      href: '/tattoo-cover-up',
     },
   ];
 
@@ -50,7 +54,7 @@ export function StartWays() {
           {items.map((item, index) => (
             <Link
               key={item.title}
-              href="/chat"
+              href={item.href}
               className="group bg-paper-panel flex min-h-72 flex-col p-6 transition-colors hover:bg-[#f5f1e8] sm:p-7"
             >
               <div className="flex items-start justify-between gap-4">
