@@ -1,5 +1,5 @@
 {
-  "verified_at": "2026-10-16T07:51:50.818986+00:00",
+  "verified_at": "2026-10-16T09:00:25.381979+00:00",
   "translations": [
     {
       "post_id": "54db49b7-61e5-5b67-b806-04af5289ab85",
@@ -7,7 +7,7 @@
       "locale": "en",
       "title": "222 Tattoo Meaning: Personal Symbols, Fonts & Placement",
       "body_sha256": "70d75cd9606e94e7d0f6874e08ab77f4411d839f3077e521547bfc6ed0d14f88",
-      "status": "draft"
+      "status": "published"
     },
     {
       "post_id": "54db49b7-61e5-5b67-b806-04af5289ab85",
@@ -15,7 +15,7 @@
       "locale": "zh",
       "title": "222 纹身的含义：个人象征、字体与部位选择",
       "body_sha256": "c201fcf030b08c6ab126e6f429a53a57ce060599a5639854fa5849df86782193",
-      "status": "draft"
+      "status": "published"
     },
     {
       "post_id": "04371f32-0a18-5265-ad9e-72ad90db977d",
@@ -23,7 +23,7 @@
       "locale": "en",
       "title": "Butterfly Tattoo Meaning: Symbols, Styles & Placement",
       "body_sha256": "9d6c4c4d6fd712dab909672f1a4025e3b560cac454852e59c1818ec46a30701a",
-      "status": "draft"
+      "status": "published"
     },
     {
       "post_id": "04371f32-0a18-5265-ad9e-72ad90db977d",
@@ -31,7 +31,7 @@
       "locale": "zh",
       "title": "蝴蝶纹身的含义：象征、风格与部位选择",
       "body_sha256": "15852dd3ac8faeb83542618c725a51a31387e6053519ef1b38601fea1d6e6193",
-      "status": "draft"
+      "status": "published"
     },
     {
       "post_id": "642a6d16-4374-56ce-ada2-f9c28cd17eca",
@@ -39,7 +39,7 @@
       "locale": "en",
       "title": "Poison Tree Tattoo Meaning: Blake, Symbols & Design Choices",
       "body_sha256": "f1a90aa0f98b50c5bd8b04abc62907e33991932079ff09e286cb837ca05f5016",
-      "status": "draft"
+      "status": "published"
     },
     {
       "post_id": "642a6d16-4374-56ce-ada2-f9c28cd17eca",
@@ -47,7 +47,7 @@
       "locale": "zh",
       "title": "毒树纹身的含义：布莱克诗歌、图案元素与设计选择",
       "body_sha256": "cae92bec38500fda457160c4cf1b049e82bc20febad08e95e45aedf936b159d9",
-      "status": "draft"
+      "status": "published"
     }
   ]
 }

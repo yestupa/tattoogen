@@ -50,15 +50,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--origin', required=True)
     parser.add_argument('--canonical-origin')
+    parser.add_argument('--browser-capture', help='Read raw public responses captured by a normal browser; never fall back to HTTP')
     parser.add_argument('--output', default='data/verification/release-crawl.json')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     origin = args.origin.rstrip('/')
     canonical_origin = (args.canonical_origin or origin).rstrip('/')
+    capture = json.loads((root / args.browser_capture).read_text(encoding='utf-8')) if args.browser_capture else None
+    if capture and capture.get('origin') != origin:
+        raise ValueError('Browser capture origin does not match the requested origin')
     handlers = [urllib.request.ProxyHandler({})] if urlsplit(origin).hostname in ('localhost', '127.0.0.1') else []
     opener = urllib.request.build_opener(*handlers)
 
     def get(path, body=True):
+        if capture is not None:
+            result = dict(capture.get('resources', {}).get(path, {'path': path, 'status': 0, 'error': 'Response missing from browser capture'}))
+            content = result.pop('body', '')
+            if body:
+                result['body'] = content.encode('utf-8')
+            return result
         target = origin + path
         started = time.monotonic()
         try:
