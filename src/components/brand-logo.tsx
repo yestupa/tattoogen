@@ -23,6 +23,9 @@ export function BrandLogo({
         alt={alt}
         width={1536}
         height={1024}
+        loading="lazy"
+        decoding="async"
+        fetchPriority="low"
         draggable={false}
         className="absolute top-1/2 left-1/2 h-auto w-[110%] max-w-none -translate-x-1/2 -translate-y-1/2"
       />
